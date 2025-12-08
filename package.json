@@ -1,0 +1,33 @@
+{
+  "name": "AI-Copy-enhanced",
+  "version": "0.5.0",
+  "description": "Chrome Extension for ChatGPT with better Markdown export, preview, and click-to-copy math. Works with Typora-like Markdown editors.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && npm run postbuild",
+    "postbuild": "cp manifest.json dist/ && mkdir -p dist/icons && cp public/icons/*.png dist/icons/",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "katex": "^0.16.9",
+    "markdown-it": "^14.0.0",
+    "marked": "^17.0.1",
+    "marked-katex-extension": "^5.1.6",
+    "turndown-plugin-gfm": "^1.0.2"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.21",
+    "@types/chrome": "^0.0.258",
+    "@types/katex": "^0.16.7",
+    "@types/markdown-it": "^13.0.7",
+    "@types/turndown": "^5.0.4",
+    "autoprefixer": "^10.4.16",
+    "jsdom": "^24.1.3",
+    "postcss": "^8.4.32",
+    "turndown": "^7.2.2",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  }
+}

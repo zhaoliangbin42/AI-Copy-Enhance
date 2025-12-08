@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Debug files
+Debug/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.DS_Store
+.vscode/
+.github/
+.idea/
+*.swp
+*.swo
+*~
+
+# Package files
+*.zip
+*.crx
+*.pem
+
+# Test and debug files
+test-*.ts
+test-*.js
+test-*.html
+debug-*.js
+*.cjs
+
+# Temporary files
+.cache/
+.temp/
+tmp/
+
+# Others
+ARCHITECTURE.md
+CHANGELOG.md
+CONTRIBUTING.md
