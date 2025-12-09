@@ -1,100 +1,145 @@
 <div align="center">
   <img src="./public/icons/icon128.png" alt="AI Copy Enhance Logo" width="100" height="100">
   <h1>AI Copy Enhance</h1>
-  <p><strong>ChatGPT Markdown 源码复制，从未如此简单 ✨</strong></p>
+  <p><strong>ChatGPT Markdown Export Made Easy ✨</strong></p>
+  
+  [中文文档](./README.zh-CN.md) | English
 </div>
 
 ---
 
-## 🤔 是否适合我？
-
-- 你是否经常因为**复制出来的公式总是出错**而抓耳挠腮？
-- 你是否经常需要单独复制段落内的**单个数学公式**？
-- 你是否经常想**复制部分内容**而非全部？
-- 你是否经常因为页面中部分公式渲染失败导致的整体段落难以阅读（特别是 **Deep Research** 的长文输出）而几次想砸掉电脑？
-
-上面这些痛点，但凡占一个，这款插件都无比适合你。😉
-
----
-## 界面
-
-![](imgs/ChatGPT-Example.png)
+<p align="center">
+  <img src="imgs/Compact.png" style="max-width:600px;width:100%;" />
+</p>
 
 ---
 
-## ✨ 特性一览
+## 🤔 Is This For You?
 
-### 📐 数学公式点击复制
+- Are you frustrated by **math formulas breaking** when copying from ChatGPT?
+- Do you need to copy **individual math formulas** from within paragraphs?
+- Do you want to **copy specific parts** instead of the entire conversation?
+- Are you tired of **unreadable content** due to failed formula rendering (especially in **Deep Research** long outputs)?
 
-- 支持在对话**实时流式输出时**，点击复制单个公式（Click-to-copy）
-- 自动从 AI 回复中提取 LaTeX 公式
-- 同时支持**行内公式**（`$...$`）和**块级公式**（`$$...$$`）
-- 复制出来的内容直接适配 Typora、Obsidian 等常见 Markdown 编辑器
-
-### 🧾 ChatGPT 对话一键格式化复制（Markdown）
-
-- 一键复制当前完整对话的 **Markdown 源码**
-- 自动用 `$...$` 和 `$$...$$` 包裹公式
-- 尝试将 `\[\]`、`\(\)` 等包裹的公式用 `$...$` 和 `$$...$$` 重新包裹
-- 自动去除 ChatGPT 生成内容中的引用标记、超链接等噪音内容，让 Markdown 更干净
-
-### 🪟 Markdown 源码展示面板
-
-- 将当前对话的 Markdown 源码以面板形式**直接展示**
-- 想复制多少就复制多少，自由框选、分段复制
-- 适合只想复制“其中一小段”的精细操作场景
-
-### 🔄 Live Preview 实时重渲染预览
-
-- 解析出 Markdown 后，在面板中进行**二次重渲染**
-- 对 Deep Research 长文、公式/表格/文本混排等“灾难现场”，进行一次“重置阅读体验”
-- 尤其是 ChatGPT 原页面中有部分公式渲染失败、大片飘红时，预览区依然能正常渲染
-- 支持**全屏显示**，专注阅读不被 ChatGPT 页面打断
-
-### 📊 字数 & 字符统计（中英都算得明明白白）
-
-- 针对中日韩（CJK）做了特殊处理：`1 个 CJK 字 = 1 word + 2 chars`
-- 实时统计当前对话的字数、字符数
-- 自动排除代码块、数学公式等内容，统计更贴近真实“正文长度”
+If any of these pain points resonate with you, this extension is perfect for you. 😉
 
 ---
 
-## 🚀 安装方式
+## Interface
 
-### 🏬 Chrome 商店（推荐）
-
-- 正在上架中，审核通过后会在此更新链接～
-
-### 📦 手动安装（本地加载）
-
-1. 前往 GitHub 页面，下载最新版本的打包压缩包：[Releases](../../releases)
-2. 解压 ZIP 文件
-3. 打开 Chrome，地址栏输入：`chrome://extensions/`
-4. 在右上角开启 **开发者模式（Developer mode）**
-5. 点击“加载已解压的扩展程序（Load unpacked）”，选择解压后的 `dist/` 文件夹
-6. 加载成功后，打开 ChatGPT 页面即可开始使用 🎉
-
-## 🏗️ 项目架构
-
-本扩展基于现代 Web 技术栈构建：
-
-- **TypeScript** —— 更安全的类型系统与开发体验
-- **Chrome Manifest V3** —— 最新的扩展平台标准
-- **Shadow DOM** —— UI 与页面样式完全隔离，避免样式冲突
-- **多平台适配** —— 目前支持 ChatGPT，后续将适配 Gemini 等更多平台
+<p align="center">
+  <img src="imgs/ScreenShot.png" style="max-width:800px;width:100%;" />
+</p>
 
 ---
 
-## 🛠️ 本地开发
+## ✨ Features
 
-欢迎一起来折腾这个插件，如果你想在本地跑起来或做二次开发，可以按下面步骤操作。
+### 📐 Click-to-Copy Math Formulas
 
-### 环境要求
+- Click to copy individual formulas **during real-time streaming output**
+- Automatically extract LaTeX formulas from AI responses
+- Support both **inline formulas** (`$...$`) and **block formulas** (`$$...$$`)
+- Direct compatibility with Typora, Obsidian, and other Markdown editors
 
-- Node.js `18+`
-- npm
+### 🧾 One-Click Markdown Export
+
+- Copy the complete conversation as **Markdown source code** with one click
+- Automatically wrap formulas with `$...$` and `$$...$$`
+- Convert `\\[\\]`, `\\(\\)` wrapped formulas to standard `$...$` and `$$...$$`
+- Remove citation marks, hyperlinks, and other noise from ChatGPT content for cleaner Markdown
+
+### 🪟 Markdown Source Panel
+
+- Display the conversation's Markdown source in a **dedicated panel**
+- Copy as much or as little as you need with free selection
+- Perfect for scenarios where you only need "a small section"
+
+### 🔄 Live Preview with Re-rendering
+
+- Parse and **re-render** Markdown in a preview panel
+- "Reset the reading experience" for Deep Research long texts and formula/table/text mixed content
+- Especially useful when ChatGPT's rendering fails
+
+### 📊 Word Count Statistics
+
+- Real-time display of **word count** for the current conversation
+- Separate counts for **Chinese characters** and **Latin words**
+- Helps you quickly assess content length
+
 ---
 
-## 🙏 致谢
+## 🚀 Quick Start
 
-特别感谢 [AITimeline](https://github.com/houyanchao/AITimeline) 项目对本项目的启发与参考。
+### Installation
+
+1. Download or clone this repository
+2. Run `npm install` to install dependencies
+3. Run `npm run build` to build the extension
+4. Open Chrome and navigate to `chrome://extensions/`
+5. Enable "Developer mode"
+6. Click "Load unpacked" and select the `dist` directory
+
+### Usage
+
+1. Visit [ChatGPT](https://chatgpt.com/)
+2. Start a conversation
+3. You'll see the toolbar appear below AI responses
+4. Click buttons to:
+   - **Copy Markdown**: Copy the entire message as Markdown
+   - **View Source**: View Markdown source code
+   - **Preview**: Re-render and preview Markdown
+5. Click on any math formula to copy it individually
+
+---
+
+## 🛠️ Tech Stack
+
+- **TypeScript** - Type-safe development
+- **Vite** - Fast build tool
+- **Turndown** - HTML to Markdown conversion
+- **Marked** - Markdown rendering
+- **KaTeX** - Math formula rendering
+- **Shadow DOM** - Style isolation
+
+---
+
+## 📝 Development
+
+```bash
+# Install dependencies
+npm install
+
+# Development mode (with hot reload)
+npm run dev
+
+# Build for production
+npm run build
+
+# Type checking
+npm run type-check
+```
+
+---
+
+## 🤝 Contributing
+
+Issues and Pull Requests are welcome!
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+## 🙏 Acknowledgments
+
+Inspired by various ChatGPT enhancement tools and the open-source community.
+
+---
+
+<div align="center">
+  Made with ❤️ for better ChatGPT experience
+</div>

@@ -131,6 +131,13 @@ body {
   max-width: 100%;
 }
 
+/* Limit content width in fullscreen mode for better readability */
+.aicopy-panel-fullscreen .markdown-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+
 h1, h2 {
   padding-bottom: 0.3em;
   border-bottom: 1px solid #d0d7de;
@@ -277,78 +284,78 @@ img {
  * Re-render panel - direct DOM rendering, no iframe
  */
 export class ReRenderPanel {
-  private container: HTMLElement | null = null;
+    private container: HTMLElement | null = null;
 
-  constructor() {
-    // Configure marked with GitHub Flavored Markdown
-    marked.setOptions({
-      breaks: true,   // Convert \n to <br>
-      gfm: true,      // GitHub Flavored Markdown
-    });
+    constructor() {
+        // Configure marked with GitHub Flavored Markdown
+        marked.setOptions({
+            breaks: true,   // Convert \n to <br>
+            gfm: true,      // GitHub Flavored Markdown
+        });
 
-    // Add KaTeX support with non-greedy matching
-    marked.use(markedKatex({
-      throwOnError: false,
-      output: 'html',
-      nonStandard: true  // Allow non-standard syntax
-    }));
-  }
-
-  /**
-   * Show panel with rendered Markdown
-   */
-  show(markdown: string): void {
-    this.hide();
-
-    // Inject panel styles
-    if (!document.querySelector('#aicopy-panel-styles')) {
-      const style = document.createElement('style');
-      style.id = 'aicopy-panel-styles';
-      style.textContent = panelStyles;
-      document.head.appendChild(style);
+        // Add KaTeX support with non-greedy matching
+        marked.use(markedKatex({
+            throwOnError: false,
+            output: 'html',
+            nonStandard: true  // Allow non-standard syntax
+        }));
     }
 
-    this.createPanel(markdown);
-  }
+    /**
+     * Show panel with rendered Markdown
+     */
+    show(markdown: string): void {
+        this.hide();
 
-  /**
-   * Hide panel
-   */
-  hide(): void {
-    if (this.container) {
-      this.container.remove();
-      this.container = null;
+        // Inject panel styles
+        if (!document.querySelector('#aicopy-panel-styles')) {
+            const style = document.createElement('style');
+            style.id = 'aicopy-panel-styles';
+            style.textContent = panelStyles;
+            document.head.appendChild(style);
+        }
+
+        this.createPanel(markdown);
     }
-  }
 
-  /**
-   * Create panel with direct DOM rendering
-   */
-  private createPanel(markdown: string): void {
-    // Pre-process: Fix consecutive inline math formulas
-    // Pattern: $...$、$...$  or  $...$——$...$
-    // Replace with space between formulas to prevent KaTeX parsing errors
-    let processedMarkdown = markdown
-      .replace(/\$([^$]+)\$([、，。；：！？])\$([^$]+)\$/g, '$$$1$$ $2 $$$3$$')  // Chinese punctuation between formulas
-      .replace(/\$([^$]+)\$(——)\$([^$]+)\$/g, '$$$1$$ $2 $$$3$$');  // Em dash between formulas
-    
-    // Render Markdown to HTML
-    const html = marked.parse(processedMarkdown) as string;
+    /**
+     * Hide panel
+     */
+    hide(): void {
+        if (this.container) {
+            this.container.remove();
+            this.container = null;
+        }
+    }
 
-    // Create overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'aicopy-panel-overlay';
-    overlay.addEventListener('click', () => this.hide());
+    /**
+     * Create panel with direct DOM rendering
+     */
+    private createPanel(markdown: string): void {
+        // Pre-process: Fix consecutive inline math formulas
+        // Pattern: $...$、$...$  or  $...$——$...$
+        // Replace with space between formulas to prevent KaTeX parsing errors
+        let processedMarkdown = markdown
+            .replace(/\$([^$]+)\$([、，。；：！？])\$([^$]+)\$/g, '$$$1$$ $2 $$$3$$')  // Chinese punctuation between formulas
+            .replace(/\$([^$]+)\$(——)\$([^$]+)\$/g, '$$$1$$ $2 $$$3$$');  // Em dash between formulas
 
-    // Create panel
-    const panel = document.createElement('div');
-    panel.className = 'aicopy-panel';
-    panel.addEventListener('click', (e) => e.stopPropagation());
+        // Render Markdown to HTML
+        const html = marked.parse(processedMarkdown) as string;
 
-    // Header
-    const header = document.createElement('div');
-    header.className = 'aicopy-panel-header';
-    header.innerHTML = `
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'aicopy-panel-overlay';
+        overlay.addEventListener('click', () => this.hide());
+
+        // Create panel
+        const panel = document.createElement('div');
+        panel.className = 'aicopy-panel';
+        panel.addEventListener('click', (e) => e.stopPropagation());
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'aicopy-panel-header';
+        header.innerHTML = `
       <div class="aicopy-panel-header-left">
         <h2 class="aicopy-panel-title">Rendered Markdown</h2>
         <button class="aicopy-panel-fullscreen-btn" aria-label="Toggle fullscreen">
@@ -361,57 +368,57 @@ export class ReRenderPanel {
       <button class="aicopy-panel-close" aria-label="Close">×</button>
     `;
 
-    // Bind event listeners
-    const closeBtn = header.querySelector('.aicopy-panel-close');
-    closeBtn?.addEventListener('click', () => this.hide());
+        // Bind event listeners
+        const closeBtn = header.querySelector('.aicopy-panel-close');
+        closeBtn?.addEventListener('click', () => this.hide());
 
-    const fullscreenBtn = header.querySelector('.aicopy-panel-fullscreen-btn');
-    fullscreenBtn?.addEventListener('click', () => this.toggleFullscreen());
+        const fullscreenBtn = header.querySelector('.aicopy-panel-fullscreen-btn');
+        fullscreenBtn?.addEventListener('click', () => this.toggleFullscreen());
 
-    // Body with inline styles
-    const body = document.createElement('div');
-    body.className = 'aicopy-panel-body';
-    
-    // Create style element for markdown
-    const styleEl = document.createElement('style');
-    styleEl.textContent = markdownStyles;
-    
-    // Create content div
-    const content = document.createElement('div');
-    content.className = 'markdown-content';
-    content.innerHTML = html;
-    
-    body.appendChild(styleEl);
-    body.appendChild(content);
-    
-    panel.appendChild(header);
-    panel.appendChild(body);
+        // Body with inline styles
+        const body = document.createElement('div');
+        body.className = 'aicopy-panel-body';
 
-    // Assemble
-    this.container = document.createElement('div');
-    this.container.appendChild(overlay);
-    this.container.appendChild(panel);
-    document.body.appendChild(this.container);
+        // Create style element for markdown
+        const styleEl = document.createElement('style');
+        styleEl.textContent = markdownStyles;
 
-    // ESC key to close
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        this.hide();
-        document.removeEventListener('keydown', handleEscape);
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
-  }
+        // Create content div
+        const content = document.createElement('div');
+        content.className = 'markdown-content';
+        content.innerHTML = html;
 
-  /**
-   * Toggle fullscreen mode
-   */
-  private toggleFullscreen(): void {
-    if (!this.container) return;
-    
-    const panel = this.container.querySelector('.aicopy-panel');
-    if (panel) {
-      panel.classList.toggle('aicopy-panel-fullscreen');
+        body.appendChild(styleEl);
+        body.appendChild(content);
+
+        panel.appendChild(header);
+        panel.appendChild(body);
+
+        // Assemble
+        this.container = document.createElement('div');
+        this.container.appendChild(overlay);
+        this.container.appendChild(panel);
+        document.body.appendChild(this.container);
+
+        // ESC key to close
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                this.hide();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
     }
-  }
+
+    /**
+     * Toggle fullscreen mode
+     */
+    private toggleFullscreen(): void {
+        if (!this.container) return;
+
+        const panel = this.container.querySelector('.aicopy-panel');
+        if (panel) {
+            panel.classList.toggle('aicopy-panel-fullscreen');
+        }
+    }
 }

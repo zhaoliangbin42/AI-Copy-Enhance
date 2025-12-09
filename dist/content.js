@@ -212,11 +212,13 @@ const DEBOUNCE_DELAYS = {
   MUTATION: 200};
 class MessageObserver {
   observer = null;
+  copyButtonObserver = null;
   intersectionObserver = null;
   adapter;
   processedMessages = /* @__PURE__ */ new Set();
   onMessageDetected;
   periodicCheckInterval = null;
+  lastCopyButtonCount = 0;
   constructor(adapter, onMessageDetected) {
     this.adapter = adapter;
     this.onMessageDetected = onMessageDetected;
@@ -243,7 +245,7 @@ class MessageObserver {
         return;
       }
     }
-    logger.info("Starting message observer");
+    logger.info("Starting message observer (dual strategy: MutationObserver + Copy Button monitoring)");
     this.observer = new MutationObserver((mutations) => {
       this.handleMutations(mutations);
     });
@@ -253,6 +255,7 @@ class MessageObserver {
       attributes: false
       // Performance optimization
     });
+    this.setupCopyButtonMonitoring();
     this.processExistingMessages();
     setTimeout(() => {
       logger.debug("Re-processing messages after delay");
@@ -266,7 +269,75 @@ class MessageObserver {
     this.periodicCheckInterval = window.setInterval(() => {
       this.processExistingMessages();
     }, 2e3);
-    logger.debug("Setup complete: MutationObserver + IntersectionObserver + Periodic check");
+    logger.debug("Setup complete: MutationObserver + Copy Button Monitor + IntersectionObserver + Periodic check");
+  }
+  /**
+   * Setup copy button monitoring for streaming completion detection
+   * This is more reliable than waiting for action bars
+   */
+  setupCopyButtonMonitoring() {
+    this.lastCopyButtonCount = document.querySelectorAll('button[aria-label="Copy"]').length;
+    logger.debug(`Initial copy button count: ${this.lastCopyButtonCount}`);
+    const handleCopyButtonChange = debounce(() => {
+      const currentCount = document.querySelectorAll('button[aria-label="Copy"]').length;
+      if (currentCount > this.lastCopyButtonCount) {
+        logger.debug(`Copy button added: ${this.lastCopyButtonCount} → ${currentCount}`);
+        this.lastCopyButtonCount = currentCount;
+        this.processLatestMessage();
+      }
+    }, 300);
+    this.copyButtonObserver = new MutationObserver((mutations) => {
+      let foundNewButton = false;
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node instanceof HTMLElement) {
+            if (node.matches('button[aria-label="Copy"]')) {
+              foundNewButton = true;
+              break;
+            }
+            if (node.querySelector('button[aria-label="Copy"]')) {
+              foundNewButton = true;
+              break;
+            }
+          }
+        }
+        if (foundNewButton) break;
+      }
+      if (foundNewButton) {
+        handleCopyButtonChange();
+      }
+    });
+    this.copyButtonObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: false
+    });
+    logger.debug("Copy button monitoring active");
+  }
+  /**
+   * Process only the latest message (for streaming completion)
+   */
+  processLatestMessage() {
+    const articles = document.querySelectorAll("article");
+    if (articles.length === 0) return;
+    const lastArticle = articles[articles.length - 1];
+    const messageId = this.adapter.getMessageId(lastArticle);
+    if (!messageId) {
+      logger.debug("Latest article has no ID, processing anyway");
+      this.onMessageDetected(lastArticle);
+      return;
+    }
+    if (this.processedMessages.has(messageId)) {
+      const hasToolbar = lastArticle.querySelector(".aicopy-toolbar-container");
+      if (!hasToolbar) {
+        logger.debug("Latest message processed but toolbar missing, retrying:", messageId);
+        this.onMessageDetected(lastArticle);
+      }
+      return;
+    }
+    this.processedMessages.add(messageId);
+    logger.debug("New streaming message completed:", messageId);
+    this.onMessageDetected(lastArticle);
   }
   /**
    * Setup IntersectionObserver to detect messages entering viewport
@@ -302,6 +373,10 @@ class MessageObserver {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
+    }
+    if (this.copyButtonObserver) {
+      this.copyButtonObserver.disconnect();
+      this.copyButtonObserver = null;
     }
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
@@ -379,6 +454,7 @@ class MessageObserver {
    */
   reset() {
     this.processedMessages.clear();
+    this.lastCopyButtonCount = 0;
     logger.info("Observer reset");
   }
 }
@@ -430,20 +506,20 @@ class ToolbarInjector {
   waitForActionBar(article, toolbar, selector) {
     const existingTimer = this.pendingObservers.get(article);
     if (existingTimer) {
-      clearInterval(existingTimer);
+      window.clearInterval(existingTimer);
     }
     let attempts = 0;
     const maxAttempts = 15;
-    const checkInterval = setInterval(() => {
+    const checkInterval = window.setInterval(() => {
       attempts++;
       const actionBar = safeQuerySelector(article, selector);
       if (actionBar) {
-        clearInterval(checkInterval);
+        window.clearInterval(checkInterval);
         this.pendingObservers.delete(article);
         logger.debug(`Action bar appeared after ${attempts} seconds`);
         this.doInject(article, actionBar, toolbar);
       } else if (attempts >= maxAttempts) {
-        clearInterval(checkInterval);
+        window.clearInterval(checkInterval);
         this.pendingObservers.delete(article);
         logger.warn("Action bar did not appear after 15 seconds");
       }
@@ -2280,6 +2356,7 @@ class MarkdownParser {
       strongDelimiter: "**"
       // Use ** for strong
     });
+    this.turndownService.options.listIndent = "  ";
     this.turndownService.use(tables);
     this.turndownService.escape = (text) => text;
     this.turndownService.addRule("removeLinks", {
@@ -2299,21 +2376,32 @@ class MarkdownParser {
     });
     this.turndownService.addRule("codeBlocks", {
       filter: (node) => {
-        return node.nodeName === "PRE" && node.querySelector("code") !== null;
+        const hasCode = node.nodeName === "PRE" && node.querySelector("code") !== null;
+        if (hasCode) {
+          logger.debug(`[CodeBlock] Found PRE with code: ${node.textContent?.substring(0, 50)}...`);
+        }
+        return hasCode;
       },
       replacement: (content, node) => {
         const pre = node;
+        logger.debug(`[CodeBlock] Processing PRE element`);
         const langDiv = pre.querySelector(".flex.items-center");
         let language = langDiv?.textContent?.trim() || "";
+        logger.debug(`[CodeBlock] Language from UI: "${language}"`);
         const codeEl = pre.querySelector("code");
-        if (!codeEl) return content;
+        if (!codeEl) {
+          logger.warn(`[CodeBlock] No code element found in PRE`);
+          return content;
+        }
         if (!language && codeEl.className) {
           const langMatch = codeEl.className.match(/language-(\w+)/);
           if (langMatch) {
             language = langMatch[1];
+            logger.debug(`[CodeBlock] Language from class: "${language}"`);
           }
         }
         const codeText = codeEl.textContent || "";
+        logger.debug(`[CodeBlock] Code length: ${codeText.length} chars`);
         return `
 
 \`\`\`${language}
@@ -2441,6 +2529,33 @@ $$`
           });
           blockMathCount++;
           logger.debug(`[Extract] Block math ${blockMathCount}: ${latex.substring(0, 40)}...`);
+        }
+        return;
+      }
+      if (node.tagName.toLowerCase() === "pre" && node.querySelector("code")) {
+        logger.debug(`[Extract] Found PRE element with code`);
+        const langDiv = node.querySelector(".flex.items-center");
+        let language = langDiv?.textContent?.trim() || "";
+        const codeEl = node.querySelector("code");
+        if (!language && codeEl?.className) {
+          const langMatch = codeEl.className.match(/language-(\w+)/);
+          if (langMatch) {
+            language = langMatch[1];
+          }
+        }
+        const codeText = codeEl?.textContent || "";
+        logger.debug(`[Extract] Code block: language="${language}", length=${codeText.length}`);
+        if (codeText.trim()) {
+          blocks.push({
+            type: "text",
+            content: `
+
+\`\`\`${language}
+${codeText.trimEnd()}
+\`\`\`
+
+`
+          });
         }
         return;
       }
@@ -2599,6 +2714,11 @@ $$` });
    */
   postProcess(markdown) {
     let result = markdown;
+    result = result.replace(/^(    )+/gm, (match) => {
+      const spaceCount = match.length;
+      const level = spaceCount / 4;
+      return "  ".repeat(level);
+    });
     const lines = result.split("\n");
     const fixedLines = [];
     for (let i = 0; i < lines.length; i++) {
@@ -2611,19 +2731,19 @@ $$` });
         let normalizedIndent;
         if (currentIndent === 0) {
           normalizedIndent = "";
+        } else if (currentIndent <= 1) {
+          normalizedIndent = "  ";
+          logger.debug(`[PostProcess] Normalizing indent: ${currentIndent} → 2 spaces`);
         } else if (currentIndent <= 3) {
-          normalizedIndent = "    ";
-          logger.debug(`[PostProcess] Normalizing indent: ${currentIndent} → 4 spaces`);
-        } else if (currentIndent <= 7) {
-          normalizedIndent = "    ";
-          if (currentIndent > 4) {
-            logger.debug(`[PostProcess] Normalizing indent: ${currentIndent} → 4 spaces`);
+          normalizedIndent = "  ";
+          if (currentIndent > 2) {
+            logger.debug(`[PostProcess] Normalizing indent: ${currentIndent} → 2 spaces`);
           }
         } else {
-          const level = Math.round(currentIndent / 4);
-          normalizedIndent = "    ".repeat(level);
-          if (currentIndent !== level * 4) {
-            logger.debug(`[PostProcess] Normalizing indent: ${currentIndent} → ${level * 4} spaces`);
+          const level = Math.round(currentIndent / 2);
+          normalizedIndent = "  ".repeat(level);
+          if (currentIndent !== level * 2) {
+            logger.debug(`[PostProcess] Normalizing indent: ${currentIndent} → ${level * 2} spaces`);
           }
         }
         fixedLines.push(`${normalizedIndent}${marker} ${restOfLine}`);
@@ -2719,7 +2839,12 @@ class MathClickHandler {
         elements.push(el);
       }
     });
-    container.querySelectorAll(".katex-error").forEach((el) => elements.push(el));
+    container.querySelectorAll(".katex-error").forEach((el) => {
+      const text = el.textContent?.trim() || "";
+      if (text.length > 0 && text.length < 200) {
+        elements.push(el);
+      }
+    });
     return elements;
   }
   /**
@@ -21626,6 +21751,13 @@ body {
   max-width: 100%;
 }
 
+/* Limit content width in fullscreen mode for better readability */
+.aicopy-panel-fullscreen .markdown-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+
 h1, h2 {
   padding-bottom: 0.3em;
   border-bottom: 1px solid #d0d7de;
@@ -21908,6 +22040,10 @@ class ContentScript {
    */
   handleNewMessage(messageElement) {
     logger.debug("Handling new message");
+    if (messageElement.querySelector(".aicopy-toolbar-container")) {
+      logger.debug("Toolbar already exists, skipping");
+      return;
+    }
     const callbacks = {
       onCopyMarkdown: async () => {
         return this.getMarkdown(messageElement);

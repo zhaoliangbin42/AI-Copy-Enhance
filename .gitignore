@@ -3,6 +3,7 @@ node_modules/
 
 # Debug files
 Debug/
+mocks/
 
 # Logs
 *.log
@@ -40,3 +41,4 @@ tmp/
 ARCHITECTURE.md
 CHANGELOG.md
 CONTRIBUTING.md
+bugs.md
