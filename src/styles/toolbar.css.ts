@@ -5,7 +5,6 @@
 export const toolbarStyles = `
 :host {
   display: block;
-  width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin-bottom: 8px;
   
@@ -36,7 +35,6 @@ export const toolbarStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
   padding: 4px 0;
 }
 

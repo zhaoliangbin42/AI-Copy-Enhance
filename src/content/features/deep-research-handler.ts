@@ -1,5 +1,6 @@
 import { MarkdownParser } from '../parsers/markdown-parser';
 import { ReRenderPanel } from './re-render';
+import { TooltipHelper } from '../utils/tooltip-helper';
 import { copyToClipboard } from '../../utils/dom-utils';
 import { logger } from '../../utils/logger';
 
@@ -81,13 +82,13 @@ export class DeepResearchHandler {
             return;
         }
 
-        // Create copy button (复制) - using terminal icon like Gemini
-        const copyBtn = this.createButton('Copy Content', 'content_copy', () => {
+        // Create copy button - using content_copy icon
+        const copyBtn = this.createButton('Copy Markdown', 'content_copy', () => {
             this.handleCopy(panel);
         });
 
-        // Create preview button (Preview Enhance) - using refresh icon like Gemini
-        const previewBtn = this.createButton('Preview Enhance', 'refresh', () => {
+        // Create preview button - using travel_explore icon
+        const previewBtn = this.createButton('Preview Enhance', 'travel_explore', () => {
             this.handlePreview(panel);
         });
 
@@ -114,9 +115,11 @@ export class DeepResearchHandler {
         button.className = 'mdc-icon-button mat-mdc-icon-button mat-mdc-button-base mat-mdc-tooltip-trigger aicopy-dr-button';
         button.setAttribute('type', 'button');
         button.setAttribute('aria-label', tooltip);
-        button.setAttribute('title', tooltip);
 
-        // Match native button size (40x40px)
+        // Attach custom tooltip
+        TooltipHelper.attach(button, tooltip);
+
+        // Add hover effect with purple color
         button.style.cssText = `
             width: 40px;
             height: 40px;
@@ -214,7 +217,7 @@ export class DeepResearchHandler {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${isError ? '#ef4444' : '#10b981'};
+            background: ${isError ? '#ef4444' : '#8b5cf6'};
             color: white;
             padding: 12px 24px;
             border-radius: 8px;

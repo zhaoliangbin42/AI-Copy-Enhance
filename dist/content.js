@@ -655,9 +655,9 @@ class ToolbarInjector {
     const wrapper = document.createElement("div");
     wrapper.className = "aicopy-toolbar-container";
     if (isGemini) {
-      wrapper.style.cssText = "width: 100%; margin-bottom: 8px; padding-left: 60px;";
+      wrapper.style.cssText = "margin-bottom: 8px; padding-left: 60px;";
     } else {
-      wrapper.style.cssText = "width: 100%; margin-bottom: 8px;";
+      wrapper.style.cssText = "margin-bottom: 8px;";
     }
     wrapper.appendChild(toolbar);
     actionBar.parentElement?.insertBefore(wrapper, actionBar);
@@ -689,7 +689,6 @@ class ToolbarInjector {
 const toolbarStyles = `
 :host {
   display: block;
-  width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin-bottom: 8px;
   
@@ -720,7 +719,6 @@ const toolbarStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
   padding: 4px 0;
 }
 
@@ -22160,6 +22158,95 @@ class ReRenderPanel {
   }
 }
 
+class TooltipHelper {
+  static tooltipContainer = null;
+  static activeTooltip = null;
+  static hideTimeout = null;
+  /**
+   * Initialize tooltip container (call once)
+   */
+  static init() {
+    if (this.tooltipContainer) return;
+    this.tooltipContainer = document.createElement("div");
+    this.tooltipContainer.className = "aicopy-tooltip-container";
+    this.tooltipContainer.style.cssText = `
+      position: fixed;
+      z-index: 10000;
+      pointer-events: none;
+    `;
+    document.body.appendChild(this.tooltipContainer);
+  }
+  /**
+   * Attach tooltip to a button
+   */
+  static attach(button, text) {
+    this.init();
+    button.addEventListener("mouseenter", () => {
+      this.show(button, text);
+    });
+    button.addEventListener("mouseleave", () => {
+      this.hide();
+    });
+  }
+  /**
+   * Show tooltip
+   */
+  static show(anchor, text) {
+    if (this.hideTimeout !== null) {
+      clearTimeout(this.hideTimeout);
+      this.hideTimeout = null;
+    }
+    if (this.activeTooltip) {
+      this.activeTooltip.remove();
+      this.activeTooltip = null;
+    }
+    const tooltip = document.createElement("div");
+    tooltip.className = "aicopy-tooltip";
+    tooltip.textContent = text;
+    tooltip.style.cssText = `
+      position: absolute;
+      background: rgba(60, 64, 67, 0.9);
+      color: white;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Google Sans', Roboto, Arial, sans-serif;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s ease-in-out;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    `;
+    this.tooltipContainer.appendChild(tooltip);
+    const rect = anchor.getBoundingClientRect();
+    tooltip.style.left = `${rect.left + rect.width / 2}px`;
+    tooltip.style.top = `${rect.bottom + 8}px`;
+    tooltip.style.transform = "translateX(-50%)";
+    requestAnimationFrame(() => {
+      tooltip.style.opacity = "1";
+    });
+    this.activeTooltip = tooltip;
+  }
+  /**
+   * Hide tooltip
+   */
+  static hide() {
+    if (this.activeTooltip) {
+      const tooltip = this.activeTooltip;
+      tooltip.style.opacity = "0";
+      if (this.hideTimeout !== null) {
+        clearTimeout(this.hideTimeout);
+      }
+      this.hideTimeout = window.setTimeout(() => {
+        tooltip.remove();
+        if (this.activeTooltip === tooltip) {
+          this.activeTooltip = null;
+        }
+        this.hideTimeout = null;
+      }, 150);
+    }
+  }
+}
+
 class DeepResearchHandler {
   observer = null;
   activePanel = null;
@@ -22220,10 +22307,10 @@ class DeepResearchHandler {
       logger.debug("[DeepResearch] Buttons already injected");
       return;
     }
-    const copyBtn = this.createButton("Copy Content", "content_copy", () => {
+    const copyBtn = this.createButton("Copy Markdown", "content_copy", () => {
       this.handleCopy(panel);
     });
-    const previewBtn = this.createButton("Preview Enhance", "refresh", () => {
+    const previewBtn = this.createButton("Preview Enhance", "travel_explore", () => {
       this.handlePreview(panel);
     });
     const firstButton = actionButtons.firstElementChild;
@@ -22244,7 +22331,7 @@ class DeepResearchHandler {
     button.className = "mdc-icon-button mat-mdc-icon-button mat-mdc-button-base mat-mdc-tooltip-trigger aicopy-dr-button";
     button.setAttribute("type", "button");
     button.setAttribute("aria-label", tooltip);
-    button.setAttribute("title", tooltip);
+    TooltipHelper.attach(button, tooltip);
     button.style.cssText = `
             width: 40px;
             height: 40px;
@@ -22324,7 +22411,7 @@ class DeepResearchHandler {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${isError ? "#ef4444" : "#10b981"};
+            background: ${isError ? "#ef4444" : "#8b5cf6"};
             color: white;
             padding: 12px 24px;
             border-radius: 8px;

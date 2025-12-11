@@ -152,11 +152,11 @@ export class ToolbarInjector {
 
         // Apply platform-specific styling
         if (isGemini) {
-            // Gemini: match official toolbar padding (60px left)
-            wrapper.style.cssText = 'width: 100%; margin-bottom: 8px; padding-left: 60px;';
+            // Gemini: match official toolbar padding (60px left), no fixed width
+            wrapper.style.cssText = 'margin-bottom: 8px; padding-left: 60px;';
         } else {
             // ChatGPT: no extra padding
-            wrapper.style.cssText = 'width: 100%; margin-bottom: 8px;';
+            wrapper.style.cssText = 'margin-bottom: 8px;';
         }
 
         wrapper.appendChild(toolbar);
