@@ -952,7 +952,7 @@ class Toolbar {
     const reRenderBtn = this.createIconButton(
       "re-render-btn",
       this.getEyeIcon(),
-      "Preview Markdown",
+      "Preview Enhance",
       () => this.handleReRender()
     );
     const stats = document.createElement("span");

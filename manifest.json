@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "AI Copy Enhance",
-    "version": "1.0.0",
-    "description": "ChatGPT enhancement: One-click Markdown copy, formatted preview, word count, perfect math formula support.",
+    "version": "1.2.0",
+    "description": "ChatGPT & Gemini enhancement: One-click Markdown copy, formatted preview, word count, perfect math formula support.",
     "permissions": [
         "storage",
         "clipboardWrite"

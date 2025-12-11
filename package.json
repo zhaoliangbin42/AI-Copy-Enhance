@@ -1,7 +1,7 @@
 {
     "name": "AI-Copy-enhanced",
     "private": true,
-    "version": "1.0.0",
+    "version": "1.2.0",
     "description": "ChatGPT enhancement: One-click Markdown copy, formatted preview, word count, perfect math formula support. Compatible with Typora/Obsidian.",
     "type": "module",
     "scripts": {
