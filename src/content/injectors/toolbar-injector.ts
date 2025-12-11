@@ -32,10 +32,14 @@ export class ToolbarInjector {
         }
 
         const isArticle = messageElement.tagName.toLowerCase() === 'article';
+        const isModelResponse = messageElement.tagName.toLowerCase() === 'model-response';
         const selector = this.adapter.getActionBarSelector();
 
         if (isArticle) {
             return this.injectArticle(messageElement, toolbar, selector);
+        } else if (isModelResponse) {
+            // Gemini: action bar is INSIDE model-response
+            return this.injectGemini(messageElement, toolbar, selector);
         } else {
             return this.injectNonArticle(messageElement, toolbar, selector);
         }
@@ -60,9 +64,28 @@ export class ToolbarInjector {
     }
 
     /**
+     * Inject for Gemini model-response elements
+     * Gemini's structure: action bar is INSIDE model-response
+     */
+    private injectGemini(modelResponse: HTMLElement, toolbar: HTMLElement, selector: string): boolean {
+        const actionBar = safeQuerySelector(modelResponse, selector);
+
+        if (actionBar) {
+            // Action bar already exists, inject immediately with Gemini-specific padding
+            logger.debug('Gemini action bar found, injecting toolbar');
+            return this.doInject(modelResponse, actionBar, toolbar, true);
+        } else {
+            // Action bar not yet rendered, wait for it
+            logger.debug('Gemini action bar not found, waiting for it to appear...');
+            this.waitForActionBar(modelResponse, toolbar, selector, true);
+            return false;
+        }
+    }
+
+    /**
      * Wait for action bar to appear using interval checking
      */
-    private waitForActionBar(article: HTMLElement, toolbar: HTMLElement, selector: string): void {
+    private waitForActionBar(article: HTMLElement, toolbar: HTMLElement, selector: string, isGemini: boolean = false): void {
         // Clear any existing observer for this article
         const existingTimer = this.pendingObservers.get(article);
         if (existingTimer) {
@@ -80,7 +103,7 @@ export class ToolbarInjector {
                 window.clearInterval(checkInterval);
                 this.pendingObservers.delete(article);
                 logger.debug(`Action bar appeared after ${attempts} seconds`);
-                this.doInject(article, actionBar, toolbar);
+                this.doInject(article, actionBar, toolbar, isGemini);
             } else if (attempts >= maxAttempts) {
                 window.clearInterval(checkInterval);
                 this.pendingObservers.delete(article);
@@ -122,11 +145,20 @@ export class ToolbarInjector {
     /**
      * Perform actual toolbar injection
      */
-    private doInject(messageElement: HTMLElement, actionBar: Element, toolbar: HTMLElement): boolean {
+    private doInject(messageElement: HTMLElement, actionBar: Element, toolbar: HTMLElement, isGemini: boolean = false): boolean {
         // Create wrapper div for toolbar
         const wrapper = document.createElement('div');
         wrapper.className = 'aicopy-toolbar-container';
-        wrapper.style.cssText = 'width: 100%; margin-bottom: 8px;';
+
+        // Apply platform-specific styling
+        if (isGemini) {
+            // Gemini: match official toolbar padding (60px left)
+            wrapper.style.cssText = 'width: 100%; margin-bottom: 8px; padding-left: 60px;';
+        } else {
+            // ChatGPT: no extra padding
+            wrapper.style.cssText = 'width: 100%; margin-bottom: 8px;';
+        }
+
         wrapper.appendChild(toolbar);
 
         // Insert wrapper BEFORE the action bar

@@ -105,6 +105,50 @@ export class MarkdownParser {
             }
         });
 
+        // 处理 Gemini 的 .math-inline 和 .math-block 容器
+        // IMPORTANT: 这个规则必须在 katexFormulas 之前,因为 Turndown 按添加顺序处理
+        // Gemini 的结构是: <span class="math-inline" data-latex-source="..."><span class="katex">...</span></span>
+        this.turndownService.addRule('geminiMathContainers', {
+            filter: (node) => {
+                return node.nodeName === 'SPAN' &&
+                    (node.classList.contains('math-inline') || node.classList.contains('math-block')) ||
+                    (node.nodeName === 'DIV' && node.classList.contains('math-block'));
+            },
+            replacement: (content, node) => {
+                const element = node as HTMLElement;
+
+                // 尝试从容器元素的 data-latex-source 属性提取
+                let latex = element.getAttribute('data-latex-source');
+
+                // Fallback: Gemini 的 .math-block 有时使用 data-math 而不是 data-latex-source
+                if (!latex) {
+                    latex = element.getAttribute('data-math');
+                }
+
+                // 如果容器没有,尝试从内部 .katex 元素提取
+                if (!latex) {
+                    const katexEl = element.querySelector('.katex, .katex-display');
+                    if (katexEl) {
+                        latex = this.extractLatex(katexEl as HTMLElement);
+                    }
+                }
+
+                if (latex) {
+                    // 块级公式 (.math-block 或 .katex-display)
+                    if (element.classList.contains('math-block') ||
+                        element.querySelector('.katex-display')) {
+                        return `\n\n$$\n${latex}\n$$\n\n`;
+                    }
+                    // 行内公式 (.math-inline)
+                    return `$${latex}$`;
+                }
+
+                // 如果没有找到 LaTeX,返回原内容而不是空字符串
+                // 这样可以避免破坏其他平台(如 ChatGPT)的公式提取
+                return content;
+            }
+        });
+
         // 处理 .katex 元素：从 annotation 提取 LaTeX，避免重复
         this.turndownService.addRule('katexFormulas', {
             filter: (node) => {

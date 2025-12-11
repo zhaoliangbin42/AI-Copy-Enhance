@@ -4,6 +4,7 @@ node_modules/
 # Debug files
 Debug/
 mocks/
+test/
 
 # Logs
 *.log
@@ -42,3 +43,4 @@ ARCHITECTURE.md
 CHANGELOG.md
 CONTRIBUTING.md
 bugs.md
+todo.md

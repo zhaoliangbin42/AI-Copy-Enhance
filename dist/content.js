@@ -129,11 +129,94 @@ class ChatGPTAdapter extends SiteAdapter {
   }
 }
 
+class GeminiAdapter extends SiteAdapter {
+  matches(url) {
+    return url.includes("gemini.google.com");
+  }
+  getMessageSelector() {
+    return "model-response";
+  }
+  getMessageContentSelector() {
+    return ".model-response-text";
+  }
+  getActionBarSelector() {
+    return ".response-container-footer";
+  }
+  extractMessageHTML(element) {
+    const contentElement = element.querySelector(this.getMessageContentSelector());
+    if (contentElement) {
+      return contentElement.innerHTML;
+    }
+    return element.innerHTML;
+  }
+  isStreamingMessage(element) {
+    const footer = element.querySelector(".response-footer");
+    if (!footer) {
+      return true;
+    }
+    return !footer.classList.contains("complete");
+  }
+  getMessageId(element) {
+    const draftElement = element.querySelector("[data-test-draft-id]");
+    if (draftElement) {
+      return draftElement.getAttribute("data-test-draft-id");
+    }
+    const allMessages = document.querySelectorAll(this.getMessageSelector());
+    const index = Array.from(allMessages).indexOf(element);
+    return index >= 0 ? `gemini-message-${index}` : null;
+  }
+  getObserverContainer() {
+    const selectors = [
+      "main",
+      '[data-test-id="chat-history-container"]',
+      ".chat-history",
+      "body"
+    ];
+    for (const selector of selectors) {
+      const container = document.querySelector(selector);
+      if (container instanceof HTMLElement) {
+        logger.debug(`Observer container found: ${selector}`);
+        return container;
+      }
+    }
+    logger.warn("No observer container found for Gemini, falling back to body");
+    return document.body;
+  }
+  /**
+   * Get all math elements in the message
+   * Gemini uses KaTeX just like ChatGPT
+   */
+  getMathElements(element) {
+    return element.querySelectorAll(".katex");
+  }
+  /**
+   * Get all code blocks in the message
+   * Gemini uses custom <code-block> element
+   */
+  getCodeBlocks(element) {
+    return element.querySelectorAll("code-block code, pre code");
+  }
+  /**
+   * Get all tables in the message
+   */
+  getTables(element) {
+    return element.querySelectorAll("table");
+  }
+  /**
+   * Gemini-specific: Check if this is a Gemini page
+   * Used to apply platform-specific styling
+   */
+  isGemini() {
+    return true;
+  }
+}
+
 class AdapterRegistry {
   adapters = [];
   currentAdapter = null;
   constructor() {
     this.register(new ChatGPTAdapter());
+    this.register(new GeminiAdapter());
   }
   /**
    * Register a new adapter
@@ -479,9 +562,12 @@ class ToolbarInjector {
       return false;
     }
     const isArticle = messageElement.tagName.toLowerCase() === "article";
+    const isModelResponse = messageElement.tagName.toLowerCase() === "model-response";
     const selector = this.adapter.getActionBarSelector();
     if (isArticle) {
       return this.injectArticle(messageElement, toolbar, selector);
+    } else if (isModelResponse) {
+      return this.injectGemini(messageElement, toolbar, selector);
     } else {
       return this.injectNonArticle(messageElement, toolbar, selector);
     }
@@ -501,9 +587,24 @@ class ToolbarInjector {
     }
   }
   /**
+   * Inject for Gemini model-response elements
+   * Gemini's structure: action bar is INSIDE model-response
+   */
+  injectGemini(modelResponse, toolbar, selector) {
+    const actionBar = safeQuerySelector(modelResponse, selector);
+    if (actionBar) {
+      logger.debug("Gemini action bar found, injecting toolbar");
+      return this.doInject(modelResponse, actionBar, toolbar, true);
+    } else {
+      logger.debug("Gemini action bar not found, waiting for it to appear...");
+      this.waitForActionBar(modelResponse, toolbar, selector, true);
+      return false;
+    }
+  }
+  /**
    * Wait for action bar to appear using interval checking
    */
-  waitForActionBar(article, toolbar, selector) {
+  waitForActionBar(article, toolbar, selector, isGemini = false) {
     const existingTimer = this.pendingObservers.get(article);
     if (existingTimer) {
       window.clearInterval(existingTimer);
@@ -517,7 +618,7 @@ class ToolbarInjector {
         window.clearInterval(checkInterval);
         this.pendingObservers.delete(article);
         logger.debug(`Action bar appeared after ${attempts} seconds`);
-        this.doInject(article, actionBar, toolbar);
+        this.doInject(article, actionBar, toolbar, isGemini);
       } else if (attempts >= maxAttempts) {
         window.clearInterval(checkInterval);
         this.pendingObservers.delete(article);
@@ -550,10 +651,14 @@ class ToolbarInjector {
   /**
    * Perform actual toolbar injection
    */
-  doInject(messageElement, actionBar, toolbar) {
+  doInject(messageElement, actionBar, toolbar, isGemini = false) {
     const wrapper = document.createElement("div");
     wrapper.className = "aicopy-toolbar-container";
-    wrapper.style.cssText = "width: 100%; margin-bottom: 8px;";
+    if (isGemini) {
+      wrapper.style.cssText = "width: 100%; margin-bottom: 8px; padding-left: 60px;";
+    } else {
+      wrapper.style.cssText = "width: 100%; margin-bottom: 8px;";
+    }
     wrapper.appendChild(toolbar);
     actionBar.parentElement?.insertBefore(wrapper, actionBar);
     this.injectedElements.add(messageElement);
@@ -864,7 +969,42 @@ class Toolbar {
     wrapper.appendChild(buttonGroup);
     wrapper.appendChild(stats);
     this.shadowRoot.appendChild(wrapper);
-    this.updateWordCount();
+    this.initWordCountWithRetry();
+  }
+  /**
+   * Initialize word count with retry mechanism
+   */
+  async initWordCountWithRetry() {
+    const maxRetries = 10;
+    let attempt = 0;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    while (attempt < maxRetries) {
+      try {
+        const markdown = await this.callbacks.onCopyMarkdown();
+        if (markdown && markdown.trim().length > 0) {
+          const stats2 = this.shadowRoot.querySelector("#word-stats");
+          if (stats2) {
+            const result = this.wordCounter.count(markdown);
+            const formatted = this.wordCounter.format(result);
+            if (formatted !== "No content") {
+              stats2.textContent = formatted;
+              logger.debug(`[WordCount] Initialized on attempt ${attempt + 1}`);
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        logger.debug("[WordCount] Retry failed:", error);
+      }
+      attempt++;
+      if (attempt < maxRetries) {
+        const delay = Math.min(500 * Math.pow(2, attempt), 1e4);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+    logger.warn("[WordCount] Failed after all retries");
+    const stats = this.shadowRoot.querySelector("#word-stats");
+    if (stats) stats.textContent = "Click copy";
   }
   /**
    * Create an icon button with tooltip
@@ -924,21 +1064,6 @@ class Toolbar {
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
     `;
-  }
-  /**
-   * Update word count statistics
-   */
-  async updateWordCount() {
-    try {
-      const markdown = await this.callbacks.onCopyMarkdown();
-      const stats = this.shadowRoot.querySelector("#word-stats");
-      if (!stats) return;
-      const result = this.wordCounter.count(markdown);
-      stats.textContent = this.wordCounter.format(result);
-    } catch (error) {
-      const stats = this.shadowRoot.querySelector("#word-stats");
-      if (stats) stats.textContent = "";
-    }
   }
   /**
    * Handle Copy Markdown button click
@@ -2411,6 +2536,37 @@ ${codeText.trimEnd()}
 `;
       }
     });
+    this.turndownService.addRule("geminiMathContainers", {
+      filter: (node) => {
+        return node.nodeName === "SPAN" && (node.classList.contains("math-inline") || node.classList.contains("math-block")) || node.nodeName === "DIV" && node.classList.contains("math-block");
+      },
+      replacement: (content, node) => {
+        const element = node;
+        let latex = element.getAttribute("data-latex-source");
+        if (!latex) {
+          latex = element.getAttribute("data-math");
+        }
+        if (!latex) {
+          const katexEl = element.querySelector(".katex, .katex-display");
+          if (katexEl) {
+            latex = this.extractLatex(katexEl);
+          }
+        }
+        if (latex) {
+          if (element.classList.contains("math-block") || element.querySelector(".katex-display")) {
+            return `
+
+$$
+${latex}
+$$
+
+`;
+          }
+          return `$${latex}$`;
+        }
+        return content;
+      }
+    });
     this.turndownService.addRule("katexFormulas", {
       filter: (node) => {
         return node.nodeName === "SPAN" && (node.classList.contains("katex") || node.classList.contains("katex-display"));
@@ -2901,13 +3057,12 @@ class MathClickHandler {
    * Show visual feedback after successful copy
    */
   showCopyFeedback(element) {
-    const originalBg = element.style.backgroundColor;
-    element.style.backgroundColor = "rgba(16, 185, 129, 0.2)";
+    element.style.backgroundColor = "rgba(139, 92, 246, 0.2)";
     const tooltip = document.createElement("div");
     tooltip.textContent = "Copied!";
     tooltip.style.cssText = `
       position: absolute;
-      background: #10b981;
+      background: #8b5cf6;
       color: white;
       padding: 4px 8px;
       border-radius: 4px;
@@ -2932,7 +3087,10 @@ class MathClickHandler {
     setTimeout(() => {
       tooltip.remove();
       style.remove();
-      element.style.backgroundColor = originalBg;
+      element.style.backgroundColor = "";
+      if (element.matches(":hover")) {
+        element.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+      }
     }, 1500);
   }
 }
@@ -22002,12 +22160,204 @@ class ReRenderPanel {
   }
 }
 
+class DeepResearchHandler {
+  observer = null;
+  activePanel = null;
+  parser;
+  reRenderPanel;
+  constructor() {
+    this.parser = new MarkdownParser();
+    this.reRenderPanel = new ReRenderPanel();
+  }
+  /**
+   * Enable Deep Research panel detection
+   */
+  enable() {
+    logger.info("[DeepResearch] Enabling Deep Research handler");
+    this.observer = new MutationObserver(() => {
+      this.checkForPanel();
+    });
+    this.observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    this.checkForPanel();
+  }
+  /**
+   * Disable and cleanup
+   */
+  disable() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+    this.activePanel = null;
+  }
+  /**
+   * Check if Deep Research panel exists
+   */
+  checkForPanel() {
+    const panel = document.querySelector("deep-research-immersive-panel");
+    if (panel && !this.activePanel) {
+      logger.info("[DeepResearch] Panel detected, injecting toolbar");
+      this.injectToolbar(panel);
+      this.activePanel = panel;
+    } else if (!panel && this.activePanel) {
+      logger.info("[DeepResearch] Panel closed");
+      this.activePanel = null;
+    }
+  }
+  /**
+   * Inject copy/preview buttons into panel toolbar
+   */
+  injectToolbar(panel) {
+    const actionButtons = panel.querySelector("toolbar .action-buttons");
+    if (!actionButtons) {
+      logger.warn("[DeepResearch] Action buttons container not found");
+      return;
+    }
+    if (actionButtons.querySelector(".aicopy-dr-button")) {
+      logger.debug("[DeepResearch] Buttons already injected");
+      return;
+    }
+    const copyBtn = this.createButton("Copy Content", "content_copy", () => {
+      this.handleCopy(panel);
+    });
+    const previewBtn = this.createButton("Preview Enhance", "refresh", () => {
+      this.handlePreview(panel);
+    });
+    const firstButton = actionButtons.firstElementChild;
+    if (firstButton) {
+      actionButtons.insertBefore(previewBtn, firstButton);
+      actionButtons.insertBefore(copyBtn, firstButton);
+    } else {
+      actionButtons.appendChild(copyBtn);
+      actionButtons.appendChild(previewBtn);
+    }
+    logger.info("[DeepResearch] Toolbar buttons injected");
+  }
+  /**
+   * Create a button matching Gemini's icon-button style
+   */
+  createButton(tooltip, icon, onClick) {
+    const button = document.createElement("button");
+    button.className = "mdc-icon-button mat-mdc-icon-button mat-mdc-button-base mat-mdc-tooltip-trigger aicopy-dr-button";
+    button.setAttribute("type", "button");
+    button.setAttribute("aria-label", tooltip);
+    button.setAttribute("title", tooltip);
+    button.style.cssText = `
+            width: 40px;
+            height: 40px;
+            padding: 8px;
+            flex-shrink: 0;
+        `;
+    const matIcon = document.createElement("mat-icon");
+    matIcon.className = "notranslate gds-icon-m google-symbols mat-ligature-font mat-icon-no-color";
+    matIcon.setAttribute("role", "img");
+    matIcon.setAttribute("aria-hidden", "true");
+    matIcon.setAttribute("data-mat-icon-type", "font");
+    matIcon.setAttribute("data-mat-icon-name", icon);
+    matIcon.setAttribute("fonticon", icon);
+    matIcon.textContent = icon;
+    const ripple = document.createElement("span");
+    ripple.className = "mat-mdc-button-persistent-ripple mdc-icon-button__ripple";
+    const touchTarget = document.createElement("span");
+    touchTarget.className = "mat-mdc-button-touch-target";
+    button.appendChild(ripple);
+    button.appendChild(matIcon);
+    button.appendChild(touchTarget);
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClick();
+    });
+    return button;
+  }
+  /**
+   * Handle copy button click
+   */
+  async handleCopy(panel) {
+    const content = panel.querySelector("#extended-response-markdown-content");
+    if (!content) {
+      logger.warn("[DeepResearch] Content element not found");
+      return;
+    }
+    try {
+      const markdown = this.parser.parse(content);
+      const success = await copyToClipboard(markdown);
+      if (success) {
+        logger.info("[DeepResearch] Content copied to clipboard");
+        this.showFeedback("已复制!");
+      } else {
+        logger.error("[DeepResearch] Failed to copy to clipboard");
+        this.showFeedback("复制失败", true);
+      }
+    } catch (error) {
+      logger.error("[DeepResearch] Error during copy:", error);
+      this.showFeedback("复制失败", true);
+    }
+  }
+  /**
+   * Handle preview button click
+   */
+  handlePreview(panel) {
+    const content = panel.querySelector("#extended-response-markdown-content");
+    if (!content) {
+      logger.warn("[DeepResearch] Content element not found");
+      return;
+    }
+    try {
+      const markdown = this.parser.parse(content);
+      this.reRenderPanel.show(markdown);
+      logger.info("[DeepResearch] Preview panel opened");
+    } catch (error) {
+      logger.error("[DeepResearch] Error during preview:", error);
+    }
+  }
+  /**
+   * Show feedback message
+   */
+  showFeedback(message, isError = false) {
+    const feedback = document.createElement("div");
+    feedback.textContent = message;
+    feedback.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${isError ? "#ef4444" : "#10b981"};
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 999999;
+            animation: fadeInOut 2s forwards;
+        `;
+    const style = document.createElement("style");
+    style.textContent = `
+            @keyframes fadeInOut {
+                0% { opacity: 0; transform: translateY(-10px); }
+                10% { opacity: 1; transform: translateY(0); }
+                90% { opacity: 1; transform: translateY(0); }
+                100% { opacity: 0; transform: translateY(-10px); }
+            }
+        `;
+    document.head.appendChild(style);
+    document.body.appendChild(feedback);
+    setTimeout(() => {
+      feedback.remove();
+      style.remove();
+    }, 2e3);
+  }
+}
+
 class ContentScript {
   observer = null;
   injector = null;
   markdownParser;
   mathClickHandler;
   reRenderPanel;
+  deepResearchHandler;
   constructor() {
     logger.setLevel(LogLevel.ERROR);
     this.markdownParser = new MarkdownParser();
@@ -22033,6 +22383,11 @@ class ContentScript {
     this.observer = new MessageObserver(adapter, (messageElement) => {
       this.handleNewMessage(messageElement);
     });
+    if ("isGemini" in adapter && typeof adapter.isGemini === "function" && adapter.isGemini()) {
+      logger.info("Enabling Deep Research handler for Gemini");
+      this.deepResearchHandler = new DeepResearchHandler();
+      this.deepResearchHandler.enable();
+    }
     this.observer.start();
   }
   /**

@@ -6,6 +6,7 @@ import { Modal } from './components/modal';
 import { MarkdownParser } from './parsers/markdown-parser';
 import { MathClickHandler } from './features/math-click';
 import { ReRenderPanel } from './features/re-render';
+import { DeepResearchHandler } from './features/deep-research-handler';
 import { logger, LogLevel } from '../utils/logger';
 
 /**
@@ -17,6 +18,7 @@ class ContentScript {
     private markdownParser: MarkdownParser;
     private mathClickHandler: MathClickHandler;
     private reRenderPanel: ReRenderPanel;
+    private deepResearchHandler?: DeepResearchHandler;
 
     constructor() {
         // Set log level (change to DEBUG for development)
@@ -55,6 +57,13 @@ class ContentScript {
         this.observer = new MessageObserver(adapter, (messageElement) => {
             this.handleNewMessage(messageElement);
         });
+
+        // Enable Deep Research support for Gemini
+        if ('isGemini' in adapter && typeof adapter.isGemini === 'function' && adapter.isGemini()) {
+            logger.info('Enabling Deep Research handler for Gemini');
+            this.deepResearchHandler = new DeepResearchHandler();
+            this.deepResearchHandler.enable();
+        }
 
         // Start observing
         this.observer.start();

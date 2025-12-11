@@ -136,7 +136,7 @@ MIT License
 
 ## 🙏 Acknowledgments
 
-Inspired by various ChatGPT enhancement tools and the open-source community.
+Many thanks to the [AITimeline](https://github.com/houyanchao/AITimeline) project for its inspiration and reference to this project.
 
 ---
 

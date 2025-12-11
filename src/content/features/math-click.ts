@@ -183,15 +183,16 @@ export class MathClickHandler {
      * Show visual feedback after successful copy
      */
     private showCopyFeedback(element: HTMLElement): void {
-        const originalBg = element.style.backgroundColor;
-        element.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
+        // Don't save originalBg - it might be the hover color
+        // We'll clear it completely and re-apply if needed
+        element.style.backgroundColor = 'rgba(139, 92, 246, 0.2)';
 
         // Create tooltip
         const tooltip = document.createElement('div');
         tooltip.textContent = 'Copied!';
         tooltip.style.cssText = `
       position: absolute;
-      background: #10b981;
+      background: #8b5cf6;
       color: white;
       padding: 4px 8px;
       border-radius: 4px;
@@ -223,7 +224,14 @@ export class MathClickHandler {
         setTimeout(() => {
             tooltip.remove();
             style.remove();
-            element.style.backgroundColor = originalBg;
+
+            // Clear background completely
+            element.style.backgroundColor = '';
+
+            // Re-apply hover effect if mouse is still over element
+            if (element.matches(':hover')) {
+                element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+            }
         }, 1500);
     }
 }
