@@ -2,6 +2,7 @@
 import { SimpleBookmarkStorage } from '../storage/SimpleBookmarkStorage';
 import { Bookmark } from '../storage/types';
 import { logger } from '../../utils/logger';
+import { bookmarkEditModal } from './BookmarkEditModal';
 
 /**
  * Simple Bookmark Panel - AITimeline Pattern with Tabs
@@ -15,6 +16,7 @@ export class SimpleBookmarkPanel {
     private searchQuery: string = '';
     private platformFilter: string = '';
     private storageListener: ((changes: any, areaName: string) => void) | null = null;
+    private selectedBookmarks: Set<string> = new Set(); // For batch delete (stores "url:position")
 
     /**
      * Show the bookmark panel
@@ -130,6 +132,7 @@ export class SimpleBookmarkPanel {
                             <option value="Gemini">Gemini</option>
                         </select>
                         <button class="export-btn">📤 Export</button>
+                        <button class="batch-delete-btn" style="display: none;">🗑 Delete Selected (<span class="selected-count">0</span>)</button>
                     </div>
 
                     <div class="content">
@@ -167,10 +170,13 @@ export class SimpleBookmarkPanel {
             return '<div class="empty">No bookmarks found.</div>';
         }
 
+        const bookmarkKey = (b: Bookmark) => `${b.url}:${b.position}`;
+
         return `
             <div class="bookmark-list">
                 ${this.filteredBookmarks.map(b => `
                     <div class="bookmark-item" data-url="${this.escapeHtml(b.url)}" data-position="${b.position}">
+                        <input type="checkbox" class="bookmark-checkbox" data-key="${bookmarkKey(b)}" ${this.selectedBookmarks.has(bookmarkKey(b)) ? 'checked' : ''}>
                         <span class="platform-badge ${b.platform?.toLowerCase() || 'chatgpt'}">
                             ${this.getPlatformIcon(b.platform)} ${b.platform || 'ChatGPT'}
                         </span>
@@ -292,6 +298,9 @@ export class SimpleBookmarkPanel {
             if (header) {
                 header.textContent = `📌 Bookmarks (${this.bookmarks.length})`;
             }
+
+            // Update batch delete button state
+            this.updateBatchDeleteButton();
         }
     }
 
@@ -333,6 +342,11 @@ export class SimpleBookmarkPanel {
         // Export button
         this.shadowRoot?.querySelector('.export-btn')?.addEventListener('click', () => {
             this.handleExport();
+        });
+
+        // Batch delete button
+        this.shadowRoot?.querySelector('.batch-delete-btn')?.addEventListener('click', () => {
+            this.handleBatchDelete();
         });
 
         // Bookmark list listeners
@@ -381,12 +395,37 @@ export class SimpleBookmarkPanel {
 
         // Row click for detail modal
         this.shadowRoot?.querySelectorAll('.bookmark-item').forEach(item => {
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                // Don't open detail if clicking checkbox or action buttons
+                const target = e.target as HTMLElement;
+                if (target.classList.contains('bookmark-checkbox') ||
+                    target.closest('.actions') ||
+                    target.classList.contains('action-btn')) {
+                    return;
+                }
+
                 const url = item.getAttribute('data-url');
                 const position = parseInt(item.getAttribute('data-position') || '0');
                 if (url && position) {
                     this.showDetailModal(url, position);
                 }
+            });
+        });
+
+        // Checkbox change
+        this.shadowRoot?.querySelectorAll('.bookmark-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const target = e.target as HTMLInputElement;
+                const key = target.getAttribute('data-key');
+                if (!key) return;
+
+                if (target.checked) {
+                    this.selectedBookmarks.add(key);
+                } else {
+                    this.selectedBookmarks.delete(key);
+                }
+
+                this.updateBatchDeleteButton();
             });
         });
     }
@@ -524,20 +563,136 @@ export class SimpleBookmarkPanel {
      * Handle edit
      */
     private handleEdit(url: string, position: number): void {
-        // TODO: Implement edit modal
-        logger.info(`[SimpleBookmarkPanel] Edit bookmark: ${url}:${position}`);
+        const bookmark = this.filteredBookmarks.find(
+            b => b.url === url && b.position === position
+        );
+
+        if (!bookmark) return;
+
+        // Show edit modal
+        bookmarkEditModal.show(
+            bookmark.userMessage,
+            async (title: string, notes: string) => {
+                // Update bookmark
+                await SimpleBookmarkStorage.updateBookmark(url, position, {
+                    title,
+                    notes
+                });
+
+                // Refresh panel
+                await this.refresh();
+            },
+            () => {
+                // Cancel - do nothing
+            }
+        );
+
+        // Pre-fill existing title and notes after modal is shown
+        setTimeout(() => {
+            const titleInput = document.querySelector('#bookmark-title') as HTMLInputElement;
+            const notesInput = document.querySelector('#bookmark-notes') as HTMLTextAreaElement;
+
+            if (titleInput && bookmark.title) {
+                titleInput.value = bookmark.title;
+            }
+            if (notesInput && bookmark.notes) {
+                notesInput.value = bookmark.notes;
+            }
+        }, 150);
     }
 
     /**
      * Handle delete
      */
     private async handleDelete(url: string, position: number): Promise<void> {
+        const bookmark = this.filteredBookmarks.find(
+            b => b.url === url && b.position === position
+        );
+
+        if (!bookmark) return;
+
+        // Show confirmation dialog
+        const confirmed = confirm(
+            `Delete bookmark "${bookmark.title || bookmark.userMessage.substring(0, 50)}"?\n\n` +
+            `Tip: You can export your bookmarks first to create a backup.`
+        );
+
+        if (!confirmed) return;
+
         try {
             await SimpleBookmarkStorage.remove(url, position);
             logger.info(`[SimpleBookmarkPanel] Deleted bookmark at position ${position}`);
             await this.refresh();
         } catch (error) {
             logger.error('[SimpleBookmarkPanel] Failed to delete bookmark:', error);
+        }
+    }
+
+    /**
+     * Update batch delete button visibility and count
+     */
+    private updateBatchDeleteButton(): void {
+        const batchDeleteBtn = this.shadowRoot?.querySelector('.batch-delete-btn') as HTMLElement;
+        const selectedCountSpan = this.shadowRoot?.querySelector('.selected-count');
+
+        if (!batchDeleteBtn) return;
+
+        const count = this.selectedBookmarks.size;
+
+        if (count > 0) {
+            batchDeleteBtn.style.display = 'block';
+            if (selectedCountSpan) {
+                selectedCountSpan.textContent = count.toString();
+            }
+        } else {
+            batchDeleteBtn.style.display = 'none';
+        }
+    }
+
+    /**
+     * Handle batch delete
+     */
+    private async handleBatchDelete(): Promise<void> {
+        if (this.selectedBookmarks.size === 0) return;
+
+        // Show confirmation dialog
+        const confirmed = confirm(
+            `Delete ${this.selectedBookmarks.size} selected bookmark(s)?\\n\\n` +
+            `Tip: You can export your bookmarks first to create a backup.`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            // Parse keys and delete each bookmark
+            const deletePromises: Promise<void>[] = [];
+
+            for (const key of this.selectedBookmarks) {
+                // Key format is "url:position", but url may contain "://"
+                // So we need to find the last ":" to split correctly
+                const lastColonIndex = key.lastIndexOf(':');
+                if (lastColonIndex === -1) continue;
+
+                const url = key.substring(0, lastColonIndex);
+                const posStr = key.substring(lastColonIndex + 1);
+                const position = parseInt(posStr);
+
+                if (url && !isNaN(position)) {
+                    deletePromises.push(SimpleBookmarkStorage.remove(url, position));
+                }
+            }
+
+            await Promise.all(deletePromises);
+
+            logger.info(`[SimpleBookmarkPanel] Batch deleted ${this.selectedBookmarks.size} bookmarks`);
+
+            // Clear selection
+            this.selectedBookmarks.clear();
+
+            // Refresh panel
+            await this.refresh();
+        } catch (error) {
+            logger.error('[SimpleBookmarkPanel] Failed to batch delete bookmarks:', error);
         }
     }
 

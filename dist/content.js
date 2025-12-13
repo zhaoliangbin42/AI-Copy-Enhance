@@ -22688,6 +22688,285 @@ class SimpleBookmarkStorage {
   }
 }
 
+class BookmarkEditModal {
+  overlay = null;
+  modal = null;
+  onSave = null;
+  onCancel = null;
+  escKeyHandler = null;
+  /**
+   * Show edit modal
+   */
+  show(userMessage, onSave, onCancel) {
+    this.onSave = onSave;
+    this.onCancel = onCancel;
+    this.overlay = document.createElement("div");
+    this.overlay.className = "bookmark-edit-modal-overlay";
+    this.overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2147483648;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+    this.modal = this.createModal(userMessage);
+    this.overlay.appendChild(this.modal);
+    document.body.appendChild(this.overlay);
+    this.overlay.addEventListener("click", (e) => {
+      if (e.target === this.overlay) {
+        this.handleCancel();
+      }
+    });
+    this.escKeyHandler = (e) => {
+      if (e.key === "Escape") {
+        this.handleCancel();
+      }
+    };
+    document.addEventListener("keydown", this.escKeyHandler);
+    setTimeout(() => {
+      const titleInput = this.modal?.querySelector("#bookmark-title");
+      if (titleInput) {
+        titleInput.focus();
+        titleInput.select();
+      }
+    }, 100);
+  }
+  /**
+   * Create modal structure
+   */
+  createModal(userMessage) {
+    const modal = document.createElement("div");
+    modal.className = "bookmark-edit-modal";
+    modal.style.cssText = `
+            position: relative;
+            width: 90%;
+            max-width: 500px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        `;
+    modal.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+    const defaultTitle = userMessage.substring(0, 50) + (userMessage.length > 50 ? "..." : "");
+    modal.innerHTML = `
+            <style>
+                .bookmark-edit-modal * {
+                    box-sizing: border-box;
+                }
+                .bookmark-edit-modal-header {
+                    padding: 20px 24px;
+                    border-bottom: 1px solid #e5e7eb;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .bookmark-edit-modal-header h2 {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #111827;
+                }
+                .bookmark-edit-modal-close-btn {
+                    background: none;
+                    border: none;
+                    font-size: 28px;
+                    color: #6b7280;
+                    cursor: pointer;
+                    padding: 0;
+                    width: 32px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 6px;
+                    transition: all 0.2s;
+                }
+                .bookmark-edit-modal-close-btn:hover {
+                    background: #f3f4f6;
+                    color: #111827;
+                }
+                .bookmark-edit-modal-body {
+                    padding: 24px;
+                }
+                .bookmark-edit-modal-form-group {
+                    margin-bottom: 20px;
+                }
+                .bookmark-edit-modal-form-group label {
+                    display: block;
+                    margin-bottom: 8px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: #374151;
+                }
+                .bookmark-edit-modal-form-group input,
+                .bookmark-edit-modal-form-group textarea {
+                    width: 100%;
+                    padding: 10px 12px;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-family: inherit;
+                    transition: all 0.2s;
+                }
+                .bookmark-edit-modal-form-group input:focus,
+                .bookmark-edit-modal-form-group textarea:focus {
+                    outline: none;
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+                .bookmark-edit-modal-preview-group {
+                    margin-top: 20px;
+                    padding: 16px;
+                    background: #f9fafb;
+                    border-radius: 8px;
+                }
+                .bookmark-edit-modal-preview-group label {
+                    display: block;
+                    margin-bottom: 8px;
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: #6b7280;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .bookmark-edit-modal-preview-text {
+                    font-size: 14px;
+                    color: #374151;
+                    line-height: 1.5;
+                    max-height: 100px;
+                    overflow-y: auto;
+                }
+                .bookmark-edit-modal-footer {
+                    padding: 16px 24px;
+                    border-top: 1px solid #e5e7eb;
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                }
+                .bookmark-edit-modal-btn {
+                    padding: 10px 20px;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    border: none;
+                }
+                .bookmark-edit-modal-btn-cancel {
+                    background: #f3f4f6;
+                    color: #374151;
+                }
+                .bookmark-edit-modal-btn-cancel:hover {
+                    background: #e5e7eb;
+                }
+                .bookmark-edit-modal-btn-save {
+                    background: #3b82f6;
+                    color: white;
+                }
+                .bookmark-edit-modal-btn-save:hover {
+                    background: #2563eb;
+                }
+            </style>
+            <div class="bookmark-edit-modal-header">
+                <h2>📌 Save Bookmark</h2>
+                <button class="bookmark-edit-modal-close-btn" aria-label="Close">×</button>
+            </div>
+            <div class="bookmark-edit-modal-body">
+                <div class="bookmark-edit-modal-form-group">
+                    <label for="bookmark-title">Title</label>
+                    <input 
+                        type="text" 
+                        id="bookmark-title" 
+                        value="${this.escapeHtml(defaultTitle)}"
+                        placeholder="Enter bookmark title..."
+                    />
+                </div>
+                <div class="bookmark-edit-modal-form-group">
+                    <label for="bookmark-notes">Notes (Optional)</label>
+                    <textarea 
+                        id="bookmark-notes" 
+                        rows="3"
+                        placeholder="Add any notes about this bookmark..."
+                    ></textarea>
+                </div>
+                <div class="bookmark-edit-modal-preview-group">
+                    <label>User Message Preview</label>
+                    <div class="bookmark-edit-modal-preview-text">${this.escapeHtml(userMessage)}</div>
+                </div>
+            </div>
+            <div class="bookmark-edit-modal-footer">
+                <button class="bookmark-edit-modal-btn bookmark-edit-modal-btn-cancel">Cancel</button>
+                <button class="bookmark-edit-modal-btn bookmark-edit-modal-btn-save">Save Bookmark</button>
+            </div>
+        `;
+    this.bindEvents(modal);
+    return modal;
+  }
+  /**
+   * Bind event listeners
+   */
+  bindEvents(modal) {
+    modal.querySelector(".bookmark-edit-modal-close-btn")?.addEventListener("click", () => this.handleCancel());
+    modal.querySelector(".bookmark-edit-modal-btn-cancel")?.addEventListener("click", () => this.handleCancel());
+    modal.querySelector(".bookmark-edit-modal-btn-save")?.addEventListener("click", () => this.handleSave());
+    modal.querySelector("#bookmark-title")?.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") this.handleSave();
+    });
+  }
+  /**
+   * Handle save
+   */
+  handleSave() {
+    const titleInput = this.modal?.querySelector("#bookmark-title");
+    const notesTextarea = this.modal?.querySelector("#bookmark-notes");
+    const title = titleInput?.value.trim() || "";
+    const notes = notesTextarea?.value.trim() || "";
+    if (this.onSave) {
+      this.onSave(title, notes);
+    }
+    this.close();
+  }
+  /**
+   * Handle cancel
+   */
+  handleCancel() {
+    if (this.onCancel) {
+      this.onCancel();
+    }
+    this.close();
+  }
+  /**
+   * Close modal
+   */
+  close() {
+    if (this.escKeyHandler) {
+      document.removeEventListener("keydown", this.escKeyHandler);
+      this.escKeyHandler = null;
+    }
+    if (this.overlay) {
+      this.overlay.remove();
+      this.overlay = null;
+      this.modal = null;
+    }
+  }
+  /**
+   * Escape HTML to prevent XSS
+   */
+  escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+}
+const bookmarkEditModal = new BookmarkEditModal();
+
 class SimpleBookmarkPanel {
   overlay = null;
   shadowRoot = null;
@@ -22696,6 +22975,8 @@ class SimpleBookmarkPanel {
   searchQuery = "";
   platformFilter = "";
   storageListener = null;
+  selectedBookmarks = /* @__PURE__ */ new Set();
+  // For batch delete (stores "url:position")
   /**
    * Show the bookmark panel
    */
@@ -22787,6 +23068,7 @@ class SimpleBookmarkPanel {
                             <option value="Gemini">Gemini</option>
                         </select>
                         <button class="export-btn">📤 Export</button>
+                        <button class="batch-delete-btn" style="display: none;">🗑 Delete Selected (<span class="selected-count">0</span>)</button>
                     </div>
 
                     <div class="content">
@@ -22821,10 +23103,12 @@ class SimpleBookmarkPanel {
     if (this.filteredBookmarks.length === 0) {
       return '<div class="empty">No bookmarks found.</div>';
     }
+    const bookmarkKey = (b) => `${b.url}:${b.position}`;
     return `
             <div class="bookmark-list">
                 ${this.filteredBookmarks.map((b) => `
                     <div class="bookmark-item" data-url="${this.escapeHtml(b.url)}" data-position="${b.position}">
+                        <input type="checkbox" class="bookmark-checkbox" data-key="${bookmarkKey(b)}" ${this.selectedBookmarks.has(bookmarkKey(b)) ? "checked" : ""}>
                         <span class="platform-badge ${b.platform?.toLowerCase() || "chatgpt"}">
                             ${this.getPlatformIcon(b.platform)} ${b.platform || "ChatGPT"}
                         </span>
@@ -22931,6 +23215,7 @@ class SimpleBookmarkPanel {
       if (header) {
         header.textContent = `📌 Bookmarks (${this.bookmarks.length})`;
       }
+      this.updateBatchDeleteButton();
     }
   }
   /**
@@ -22962,6 +23247,9 @@ class SimpleBookmarkPanel {
     }
     this.shadowRoot?.querySelector(".export-btn")?.addEventListener("click", () => {
       this.handleExport();
+    });
+    this.shadowRoot?.querySelector(".batch-delete-btn")?.addEventListener("click", () => {
+      this.handleBatchDelete();
     });
     this.bindBookmarkListeners();
   }
@@ -23000,12 +23288,29 @@ class SimpleBookmarkPanel {
       });
     });
     this.shadowRoot?.querySelectorAll(".bookmark-item").forEach((item) => {
-      item.addEventListener("click", () => {
+      item.addEventListener("click", (e) => {
+        const target = e.target;
+        if (target.classList.contains("bookmark-checkbox") || target.closest(".actions") || target.classList.contains("action-btn")) {
+          return;
+        }
         const url = item.getAttribute("data-url");
         const position = parseInt(item.getAttribute("data-position") || "0");
         if (url && position) {
           this.showDetailModal(url, position);
         }
+      });
+    });
+    this.shadowRoot?.querySelectorAll(".bookmark-checkbox").forEach((checkbox) => {
+      checkbox.addEventListener("change", (e) => {
+        const target = e.target;
+        const key = target.getAttribute("data-key");
+        if (!key) return;
+        if (target.checked) {
+          this.selectedBookmarks.add(key);
+        } else {
+          this.selectedBookmarks.delete(key);
+        }
+        this.updateBatchDeleteButton();
       });
     });
   }
@@ -23117,18 +23422,99 @@ class SimpleBookmarkPanel {
    * Handle edit
    */
   handleEdit(url, position) {
-    logger.info(`[SimpleBookmarkPanel] Edit bookmark: ${url}:${position}`);
+    const bookmark = this.filteredBookmarks.find(
+      (b) => b.url === url && b.position === position
+    );
+    if (!bookmark) return;
+    bookmarkEditModal.show(
+      bookmark.userMessage,
+      async (title, notes) => {
+        await SimpleBookmarkStorage.updateBookmark(url, position, {
+          title,
+          notes
+        });
+        await this.refresh();
+      },
+      () => {
+      }
+    );
+    setTimeout(() => {
+      const titleInput = document.querySelector("#bookmark-title");
+      const notesInput = document.querySelector("#bookmark-notes");
+      if (titleInput && bookmark.title) {
+        titleInput.value = bookmark.title;
+      }
+      if (notesInput && bookmark.notes) {
+        notesInput.value = bookmark.notes;
+      }
+    }, 150);
   }
   /**
    * Handle delete
    */
   async handleDelete(url, position) {
+    const bookmark = this.filteredBookmarks.find(
+      (b) => b.url === url && b.position === position
+    );
+    if (!bookmark) return;
+    const confirmed = confirm(
+      `Delete bookmark "${bookmark.title || bookmark.userMessage.substring(0, 50)}"?
+
+Tip: You can export your bookmarks first to create a backup.`
+    );
+    if (!confirmed) return;
     try {
       await SimpleBookmarkStorage.remove(url, position);
       logger.info(`[SimpleBookmarkPanel] Deleted bookmark at position ${position}`);
       await this.refresh();
     } catch (error) {
       logger.error("[SimpleBookmarkPanel] Failed to delete bookmark:", error);
+    }
+  }
+  /**
+   * Update batch delete button visibility and count
+   */
+  updateBatchDeleteButton() {
+    const batchDeleteBtn = this.shadowRoot?.querySelector(".batch-delete-btn");
+    const selectedCountSpan = this.shadowRoot?.querySelector(".selected-count");
+    if (!batchDeleteBtn) return;
+    const count = this.selectedBookmarks.size;
+    if (count > 0) {
+      batchDeleteBtn.style.display = "block";
+      if (selectedCountSpan) {
+        selectedCountSpan.textContent = count.toString();
+      }
+    } else {
+      batchDeleteBtn.style.display = "none";
+    }
+  }
+  /**
+   * Handle batch delete
+   */
+  async handleBatchDelete() {
+    if (this.selectedBookmarks.size === 0) return;
+    const confirmed = confirm(
+      `Delete ${this.selectedBookmarks.size} selected bookmark(s)?\\n\\nTip: You can export your bookmarks first to create a backup.`
+    );
+    if (!confirmed) return;
+    try {
+      const deletePromises = [];
+      for (const key of this.selectedBookmarks) {
+        const lastColonIndex = key.lastIndexOf(":");
+        if (lastColonIndex === -1) continue;
+        const url = key.substring(0, lastColonIndex);
+        const posStr = key.substring(lastColonIndex + 1);
+        const position = parseInt(posStr);
+        if (url && !isNaN(position)) {
+          deletePromises.push(SimpleBookmarkStorage.remove(url, position));
+        }
+      }
+      await Promise.all(deletePromises);
+      logger.info(`[SimpleBookmarkPanel] Batch deleted ${this.selectedBookmarks.size} bookmarks`);
+      this.selectedBookmarks.clear();
+      await this.refresh();
+    } catch (error) {
+      logger.error("[SimpleBookmarkPanel] Failed to batch delete bookmarks:", error);
     }
   }
   /**
@@ -23915,285 +24301,6 @@ class GeminiPanelButton {
   }
 }
 const geminiPanelButton = new GeminiPanelButton();
-
-class BookmarkEditModal {
-  overlay = null;
-  modal = null;
-  onSave = null;
-  onCancel = null;
-  escKeyHandler = null;
-  /**
-   * Show edit modal
-   */
-  show(userMessage, onSave, onCancel) {
-    this.onSave = onSave;
-    this.onCancel = onCancel;
-    this.overlay = document.createElement("div");
-    this.overlay.className = "bookmark-edit-modal-overlay";
-    this.overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 2147483646;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
-    this.modal = this.createModal(userMessage);
-    this.overlay.appendChild(this.modal);
-    document.body.appendChild(this.overlay);
-    this.overlay.addEventListener("click", (e) => {
-      if (e.target === this.overlay) {
-        this.handleCancel();
-      }
-    });
-    this.escKeyHandler = (e) => {
-      if (e.key === "Escape") {
-        this.handleCancel();
-      }
-    };
-    document.addEventListener("keydown", this.escKeyHandler);
-    setTimeout(() => {
-      const titleInput = this.modal?.querySelector("#bookmark-title");
-      if (titleInput) {
-        titleInput.focus();
-        titleInput.select();
-      }
-    }, 100);
-  }
-  /**
-   * Create modal structure
-   */
-  createModal(userMessage) {
-    const modal = document.createElement("div");
-    modal.className = "bookmark-edit-modal";
-    modal.style.cssText = `
-            position: relative;
-            width: 90%;
-            max-width: 500px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        `;
-    modal.addEventListener("click", (e) => {
-      e.stopPropagation();
-    });
-    const defaultTitle = userMessage.substring(0, 50) + (userMessage.length > 50 ? "..." : "");
-    modal.innerHTML = `
-            <style>
-                .bookmark-edit-modal * {
-                    box-sizing: border-box;
-                }
-                .bookmark-edit-modal-header {
-                    padding: 20px 24px;
-                    border-bottom: 1px solid #e5e7eb;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                .bookmark-edit-modal-header h2 {
-                    margin: 0;
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #111827;
-                }
-                .bookmark-edit-modal-close-btn {
-                    background: none;
-                    border: none;
-                    font-size: 28px;
-                    color: #6b7280;
-                    cursor: pointer;
-                    padding: 0;
-                    width: 32px;
-                    height: 32px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border-radius: 6px;
-                    transition: all 0.2s;
-                }
-                .bookmark-edit-modal-close-btn:hover {
-                    background: #f3f4f6;
-                    color: #111827;
-                }
-                .bookmark-edit-modal-body {
-                    padding: 24px;
-                }
-                .bookmark-edit-modal-form-group {
-                    margin-bottom: 20px;
-                }
-                .bookmark-edit-modal-form-group label {
-                    display: block;
-                    margin-bottom: 8px;
-                    font-size: 14px;
-                    font-weight: 500;
-                    color: #374151;
-                }
-                .bookmark-edit-modal-form-group input,
-                .bookmark-edit-modal-form-group textarea {
-                    width: 100%;
-                    padding: 10px 12px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-family: inherit;
-                    transition: all 0.2s;
-                }
-                .bookmark-edit-modal-form-group input:focus,
-                .bookmark-edit-modal-form-group textarea:focus {
-                    outline: none;
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-                }
-                .bookmark-edit-modal-preview-group {
-                    margin-top: 20px;
-                    padding: 16px;
-                    background: #f9fafb;
-                    border-radius: 8px;
-                }
-                .bookmark-edit-modal-preview-group label {
-                    display: block;
-                    margin-bottom: 8px;
-                    font-size: 12px;
-                    font-weight: 500;
-                    color: #6b7280;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-                .bookmark-edit-modal-preview-text {
-                    font-size: 14px;
-                    color: #374151;
-                    line-height: 1.5;
-                    max-height: 100px;
-                    overflow-y: auto;
-                }
-                .bookmark-edit-modal-footer {
-                    padding: 16px 24px;
-                    border-top: 1px solid #e5e7eb;
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 12px;
-                }
-                .bookmark-edit-modal-btn {
-                    padding: 10px 20px;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    border: none;
-                }
-                .bookmark-edit-modal-btn-cancel {
-                    background: #f3f4f6;
-                    color: #374151;
-                }
-                .bookmark-edit-modal-btn-cancel:hover {
-                    background: #e5e7eb;
-                }
-                .bookmark-edit-modal-btn-save {
-                    background: #3b82f6;
-                    color: white;
-                }
-                .bookmark-edit-modal-btn-save:hover {
-                    background: #2563eb;
-                }
-            </style>
-            <div class="bookmark-edit-modal-header">
-                <h2>📌 Save Bookmark</h2>
-                <button class="bookmark-edit-modal-close-btn" aria-label="Close">×</button>
-            </div>
-            <div class="bookmark-edit-modal-body">
-                <div class="bookmark-edit-modal-form-group">
-                    <label for="bookmark-title">Title</label>
-                    <input 
-                        type="text" 
-                        id="bookmark-title" 
-                        value="${this.escapeHtml(defaultTitle)}"
-                        placeholder="Enter bookmark title..."
-                    />
-                </div>
-                <div class="bookmark-edit-modal-form-group">
-                    <label for="bookmark-notes">Notes (Optional)</label>
-                    <textarea 
-                        id="bookmark-notes" 
-                        rows="3"
-                        placeholder="Add any notes about this bookmark..."
-                    ></textarea>
-                </div>
-                <div class="bookmark-edit-modal-preview-group">
-                    <label>User Message Preview</label>
-                    <div class="bookmark-edit-modal-preview-text">${this.escapeHtml(userMessage)}</div>
-                </div>
-            </div>
-            <div class="bookmark-edit-modal-footer">
-                <button class="bookmark-edit-modal-btn bookmark-edit-modal-btn-cancel">Cancel</button>
-                <button class="bookmark-edit-modal-btn bookmark-edit-modal-btn-save">Save Bookmark</button>
-            </div>
-        `;
-    this.bindEvents(modal);
-    return modal;
-  }
-  /**
-   * Bind event listeners
-   */
-  bindEvents(modal) {
-    modal.querySelector(".bookmark-edit-modal-close-btn")?.addEventListener("click", () => this.handleCancel());
-    modal.querySelector(".bookmark-edit-modal-btn-cancel")?.addEventListener("click", () => this.handleCancel());
-    modal.querySelector(".bookmark-edit-modal-btn-save")?.addEventListener("click", () => this.handleSave());
-    modal.querySelector("#bookmark-title")?.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") this.handleSave();
-    });
-  }
-  /**
-   * Handle save
-   */
-  handleSave() {
-    const titleInput = this.modal?.querySelector("#bookmark-title");
-    const notesTextarea = this.modal?.querySelector("#bookmark-notes");
-    const title = titleInput?.value.trim() || "";
-    const notes = notesTextarea?.value.trim() || "";
-    if (this.onSave) {
-      this.onSave(title, notes);
-    }
-    this.close();
-  }
-  /**
-   * Handle cancel
-   */
-  handleCancel() {
-    if (this.onCancel) {
-      this.onCancel();
-    }
-    this.close();
-  }
-  /**
-   * Close modal
-   */
-  close() {
-    if (this.escKeyHandler) {
-      document.removeEventListener("keydown", this.escKeyHandler);
-      this.escKeyHandler = null;
-    }
-    if (this.overlay) {
-      this.overlay.remove();
-      this.overlay = null;
-      this.modal = null;
-    }
-  }
-  /**
-   * Escape HTML to prevent XSS
-   */
-  escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-  }
-}
-const bookmarkEditModal = new BookmarkEditModal();
 
 class ContentScript {
   observer = null;
