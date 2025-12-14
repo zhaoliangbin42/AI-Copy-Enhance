@@ -31,8 +31,8 @@ class ContentScript {
     private navigationChecked: boolean = false;
 
     constructor() {
-        // Set log level (change to DEBUG for development)
-        logger.setLevel(LogLevel.DEBUG);
+        // Use INFO in production; switch to DEBUG locally when needed
+        logger.setLevel(LogLevel.INFO);
 
         // Initialize components
         this.markdownParser = new MarkdownParser();
@@ -354,6 +354,12 @@ class ContentScript {
             this.observer.stop();
             this.observer = null;
         }
+
+        if (this.deepResearchHandler) {
+            this.deepResearchHandler.disable();
+            this.deepResearchHandler = undefined;
+        }
+
         logger.info('Extension stopped');
     }
 }
@@ -364,7 +370,7 @@ function initExtension() {
     logger.debug('Document readyState:', document.readyState);
     logger.debug('Current URL:', window.location.href);
 
-    const contentScript = new ContentScript();
+    let contentScript: ContentScript | null = new ContentScript();
     contentScript.start();
 
     // Also listen for URL changes (for SPA navigation)
@@ -376,8 +382,9 @@ function initExtension() {
             logger.info('URL changed, reinitializing:', currentUrl);
             // Small delay to let the new page render
             setTimeout(() => {
-                const newScript = new ContentScript();
-                newScript.start();
+                contentScript?.stop();
+                contentScript = new ContentScript();
+                contentScript.start();
             }, 500);
         }
     }).observe(document.body, { subtree: true, childList: true });

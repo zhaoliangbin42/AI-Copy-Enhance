@@ -28,7 +28,8 @@ export class SimpleBookmarkStorage {
         aiResponse?: string,
         title?: string,
         platform?: 'ChatGPT' | 'Gemini',
-        timestamp?: number
+        timestamp?: number,
+        folderPath?: string
     ): Promise<void> {
         try {
             const key = this.getKey(url, position);
@@ -42,7 +43,8 @@ export class SimpleBookmarkStorage {
                 aiResponse,
                 timestamp: timestamp || Date.now(),
                 title: title || userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : ''),
-                platform
+                platform: platform || 'ChatGPT',
+                folderPath: folderPath || 'Import'
             };
 
             await chrome.storage.local.set({ [key]: value });
@@ -200,9 +202,9 @@ export class SimpleBookmarkStorage {
             typeof bookmark.userMessage === 'string' &&
             typeof bookmark.timestamp === 'number' &&
             (bookmark.aiResponse === undefined || typeof bookmark.aiResponse === 'string') &&
-            (bookmark.title === undefined || typeof bookmark.title === 'string') &&
-            (bookmark.notes === undefined || typeof bookmark.notes === 'string') &&
-            (bookmark.platform === undefined || bookmark.platform === 'ChatGPT' || bookmark.platform === 'Gemini')
+            typeof bookmark.title === 'string' &&
+            (bookmark.platform === 'ChatGPT' || bookmark.platform === 'Gemini') &&
+            typeof bookmark.folderPath === 'string'
         );
     }
 
@@ -233,9 +235,9 @@ export class SimpleBookmarkStorage {
                             userMessage: bookmark.userMessage || '',
                             aiResponse: bookmark.aiResponse,
                             timestamp: bookmark.timestamp || Date.now(),
-                            title: bookmark.title,
-                            notes: bookmark.notes,
-                            platform: bookmark.platform
+                            title: bookmark.title || bookmark.userMessage?.substring(0, 50) || 'Untitled',
+                            platform: bookmark.platform || 'ChatGPT',
+                            folderPath: bookmark.folderPath || 'Import'
                         };
 
                         if (this.validateBookmark(repairedBookmark)) {
@@ -259,6 +261,59 @@ export class SimpleBookmarkStorage {
         } catch (error) {
             logger.error('[SimpleBookmarkStorage] Failed to repair bookmarks:', error);
             return { repaired: 0, removed: 0 };
+        }
+    }
+
+    /**
+     * Get bookmarks by folder path
+     * 
+     * @param folderPath Folder path to filter by
+     * @param recursive Include bookmarks in subfolders
+     */
+    static async getBookmarksByFolder(folderPath: string, recursive: boolean = false): Promise<Bookmark[]> {
+        try {
+            const allBookmarks = await this.getAllBookmarks();
+
+            if (recursive) {
+                // Import PathUtils dynamically to avoid circular dependency
+                const { PathUtils } = await import('../utils/path-utils');
+                return allBookmarks.filter(b =>
+                    b.folderPath === folderPath ||
+                    PathUtils.isDescendantOf(b.folderPath, folderPath)
+                );
+            } else {
+                return allBookmarks.filter(b => b.folderPath === folderPath);
+            }
+        } catch (error) {
+            logger.error(`[SimpleBookmarkStorage] Failed to get bookmarks by folder: ${folderPath}`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Move bookmark to a different folder
+     * 
+     * @param url Bookmark URL
+     * @param position Bookmark position
+     * @param newFolderPath New folder path
+     */
+    static async moveToFolder(url: string, position: number, newFolderPath: string): Promise<void> {
+        try {
+            const key = this.getKey(url, position);
+            const result = await chrome.storage.local.get(key);
+            const bookmark = result[key] as Bookmark;
+
+            if (!bookmark) {
+                throw new Error(`Bookmark not found: ${url}:${position}`);
+            }
+
+            bookmark.folderPath = newFolderPath;
+            await chrome.storage.local.set({ [key]: bookmark });
+
+            logger.info(`[SimpleBookmarkStorage] Moved bookmark to folder: ${newFolderPath}`);
+        } catch (error) {
+            logger.error('[SimpleBookmarkStorage] Failed to move bookmark to folder:', error);
+            throw error;
         }
     }
 }
