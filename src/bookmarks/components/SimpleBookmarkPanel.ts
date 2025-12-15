@@ -8,6 +8,7 @@ import { FolderOperationsManager } from '../managers/FolderOperationsManager';
 import { TreeBuilder } from '../utils/tree-builder';
 import { PathUtils } from '../utils/path-utils';
 
+
 /**
  * Simple Bookmark Panel - AITimeline Pattern with Tabs
  * Displays bookmarks in a flex-based list with sidebar tabs
@@ -20,7 +21,9 @@ export class SimpleBookmarkPanel {
     private searchQuery: string = '';
     private platformFilter: string = '';
     private storageListener: ((changes: any, areaName: string) => void) | null = null;
-    private selectedBookmarks: Set<string> = new Set(); // For batch delete (stores "url:position")
+
+    // Selection state for batch operations (Gmail-style)
+    private selectedItems: Set<string> = new Set(); // Keys: "folder:path" or "url:position"
 
     // Folder tree properties
     private folders: Folder[] = [];
@@ -262,8 +265,8 @@ export class SimpleBookmarkPanel {
     }
 
     /**
-     * Render folder item with expand/collapse
-     * Reference: VS Code folder rendering
+     * Render folder item with expand/collapse (VSCode-style)
+     * Children are always rendered, CSS controls visibility
      */
     private renderFolderItem(node: FolderTreeNode, depth: number): string {
         const folder = node.folder;
@@ -296,20 +299,21 @@ export class SimpleBookmarkPanel {
             </div>
         `;
 
-        // Render children if expanded
-        if (node.isExpanded && node.children.length > 0) {
-            html += '<div class="folder-children">';
+        // Always render children container (CSS will hide if collapsed)
+        if (node.children.length > 0 || node.bookmarks.length > 0) {
+            html += `<div class="folder-children" data-parent="${this.escapeAttr(folder.path)}">`;
+
+            // Render child folders
             for (const child of node.children) {
                 html += this.renderTreeNode(child, depth + 1);
             }
-            html += '</div>';
-        }
 
-        // Render bookmarks in this folder
-        if (node.isExpanded && node.bookmarks.length > 0) {
+            // Render bookmarks in this folder
             for (const bookmark of node.bookmarks) {
                 html += this.renderBookmarkItemInTree(bookmark, depth + 1);
             }
+
+            html += '</div>';
         }
 
         return html;
@@ -324,7 +328,7 @@ export class SimpleBookmarkPanel {
         const indent = depth * 20;
         const timestamp = this.formatTimestamp(bookmark.timestamp);
         const key = `${bookmark.urlWithoutProtocol}:${bookmark.position}`;
-        const checked = this.selectedBookmarks.has(key) ? 'checked' : '';
+        const checked = this.selectedItems.has(key) ? 'checked' : '';
 
         return `
             <div class="tree-item bookmark-item"
@@ -474,8 +478,8 @@ export class SimpleBookmarkPanel {
                 header.textContent = `📌 Bookmarks (${this.bookmarks.length})`;
             }
 
-            // Update batch delete button state
-            this.updateBatchDeleteButton();
+            // Update batch actions bar state
+            this.updateBatchActionsBar();
         }
     }
 
@@ -611,12 +615,12 @@ export class SimpleBookmarkPanel {
                 if (!key) return;
 
                 if (target.checked) {
-                    this.selectedBookmarks.add(key);
+                    this.selectedItems.add(key);
                 } else {
-                    this.selectedBookmarks.delete(key);
+                    this.selectedItems.delete(key);
                 }
 
-                this.updateBatchDeleteButton();
+                this.updateBatchActionsBar();
             });
         });
     }
@@ -641,27 +645,42 @@ export class SimpleBookmarkPanel {
             });
         });
 
-        // Folder checkboxes - select all children recursively
+        // Folder checkboxes - Gmail-style selection (VSCode-style incremental update)
         this.shadowRoot?.querySelectorAll('.folder-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
                 const path = (e.target as HTMLInputElement).dataset.path!;
                 const checked = (e.target as HTMLInputElement).checked;
-                this.selectFolderRecursive(path, checked);
+                const key = `folder:${path}`;
+
+                if (checked) {
+                    this.selectItem(key);
+                } else {
+                    this.deselectItem(key);
+                }
+
+                // Incremental update - no full re-render
+                this.updateAffectedCheckboxes(key);
+                this.updateBatchActionsBar();
             });
         });
 
-        // Bookmark checkboxes - individual selection
+        // Bookmark checkboxes - Gmail-style selection (VSCode-style incremental update)
         this.shadowRoot?.querySelectorAll('.bookmark-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
                 const key = (e.target as HTMLInputElement).dataset.key!;
                 const checked = (e.target as HTMLInputElement).checked;
 
                 if (checked) {
-                    this.selectedBookmarks.add(key);
+                    this.selectItem(key);
                 } else {
-                    this.selectedBookmarks.delete(key);
+                    this.deselectItem(key);
                 }
-                this.updateBatchDeleteButton();
+
+                // Incremental update - no full re-render
+                this.updateAffectedCheckboxes(key);
+                this.updateBatchActionsBar();
             });
         });
 
@@ -742,37 +761,244 @@ export class SimpleBookmarkPanel {
     }
 
     /**
-     * Toggle folder expand/collapse
+     * Toggle folder expand/collapse (VSCode-style - no re-render)
      */
     private async toggleFolder(path: string): Promise<void> {
+        // 1. Update state
         this.folderState.toggleExpand(path);
         this.folderState.setSelectedPath(path);
         await this.folderState.saveLastSelected(path);
 
-        await this.refreshTreeView();
+        // 2. Get new state
+        const isExpanded = this.folderState.isExpanded(path);
+
+        // 3. Update DOM (no re-render!)
+        const folderElement = this.shadowRoot?.querySelector(
+            `.folder-item[data-path="${path}"]`
+        );
+
+        if (folderElement) {
+            // Update aria-expanded attribute
+            folderElement.setAttribute('aria-expanded', String(isExpanded));
+
+            // Update folder icon
+            const icon = folderElement.querySelector('.folder-icon');
+            if (icon) {
+                icon.textContent = isExpanded ? '📂' : '📁';
+            }
+
+            // Toggle expanded class
+            if (isExpanded) {
+                folderElement.classList.add('expanded');
+            } else {
+                folderElement.classList.remove('expanded');
+            }
+        }
     }
 
     /**
-     * Select folder and all children recursively
-     * Reference: VS Code folder selection
+     * Select item and all descendants (Gmail-style)
+     * When selecting a folder, all children are automatically selected
      */
-    private selectFolderRecursive(path: string, checked: boolean): void {
-        // Find all bookmarks in this folder and subfolders
-        const bookmarksInFolder = this.bookmarks.filter(b =>
-            b.folderPath === path || b.folderPath?.startsWith(path + '/')
-        );
+    private selectItem(key: string): void {
+        // 1. Add item itself
+        this.selectedItems.add(key);
 
-        bookmarksInFolder.forEach(bookmark => {
-            const key = `${bookmark.urlWithoutProtocol}:${bookmark.position}`;
-            if (checked) {
-                this.selectedBookmarks.add(key);
-            } else {
-                this.selectedBookmarks.delete(key);
+        // 2. If it's a folder, add all descendants
+        if (key.startsWith('folder:')) {
+            const path = key.replace('folder:', '');
+            const descendants = this.getAllDescendants(path);
+            descendants.forEach(d => this.selectedItems.add(d));
+        }
+
+        // 3. Update parent selection (upward sync)
+        this.updateParentSelection(key);
+    }
+
+    /**
+     * Deselect item and all descendants (Gmail-style)
+     * When deselecting a folder, all children are automatically deselected
+     */
+    private deselectItem(key: string): void {
+        // 1. Remove item itself
+        this.selectedItems.delete(key);
+
+        // 2. If it's a folder, remove all descendants
+        if (key.startsWith('folder:')) {
+            const path = key.replace('folder:', '');
+            const descendants = this.getAllDescendants(path);
+            descendants.forEach(d => this.selectedItems.delete(d));
+        }
+
+        // 3. Update parent selection (upward sync)
+        this.updateParentSelection(key);
+    }
+
+    /**
+     * Get all descendant keys (folders and bookmarks) for a folder path
+     * Used for Gmail-style selection
+     */
+    private getAllDescendants(path: string): string[] {
+        const keys: string[] = [];
+
+        // Add all subfolders
+        this.folders
+            .filter(f => f.path.startsWith(path + '/'))
+            .forEach(f => keys.push(`folder:${f.path}`));
+
+        // Add all bookmarks in this folder and subfolders
+        this.bookmarks
+            .filter(b => b.folderPath === path || b.folderPath?.startsWith(path + '/'))
+            .forEach(b => keys.push(`${b.urlWithoutProtocol}:${b.position}`));
+
+        return keys;
+    }
+
+    /**
+     * Get parent folder path
+     * T2.4: Helper method
+     */
+    private getParentPath(path: string): string | null {
+        const lastSlash = path.lastIndexOf('/');
+        if (lastSlash === -1) return null; // Root level folder
+        return path.substring(0, lastSlash);
+    }
+
+    /**
+     * Update parent folder selection based on children (Gmail-style upward sync)
+     * Automatically selects parent when all children are selected
+     */
+    private updateParentSelection(childKey: string): void {
+        // Get parent path from child key
+        let parentPath: string | null = null;
+
+        if (childKey.startsWith('folder:')) {
+            parentPath = this.getParentPath(childKey.replace('folder:', ''));
+        } else {
+            // It's a bookmark, find its folder
+            const bookmark = this.bookmarks.find(b =>
+                `${b.urlWithoutProtocol}:${b.position}` === childKey
+            );
+            if (bookmark && bookmark.folderPath) {
+                parentPath = bookmark.folderPath;
             }
-        });
+        }
 
-        this.updateBatchDeleteButton();
-        this.refreshTreeView();
+        if (!parentPath) return;
+
+        const parentKey = `folder:${parentPath}`;
+        const siblings = this.getAllDescendants(parentPath);
+
+        // Check if all siblings are selected
+        const allSelected = siblings.length > 0 && siblings.every(s => this.selectedItems.has(s));
+        const noneSelected = siblings.every(s => !this.selectedItems.has(s));
+
+        if (allSelected) {
+            // All children selected → auto-select parent
+            this.selectedItems.add(parentKey);
+        } else if (noneSelected) {
+            // No children selected → deselect parent
+            this.selectedItems.delete(parentKey);
+        } else {
+            // Some children selected → parent indeterminate (not in selectedItems)
+            this.selectedItems.delete(parentKey);
+        }
+
+        // Recursively update grandparent
+        this.updateParentSelection(parentKey);
+    }
+
+    /**
+     * Update affected checkboxes incrementally (VSCode-style)
+     * Only updates checkboxes that changed, no full re-render
+     */
+    private updateAffectedCheckboxes(changedKey: string): void {
+        // Update the changed item's checkbox
+        this.updateSingleCheckbox(changedKey);
+
+        // If it's a folder, update all descendant checkboxes
+        if (changedKey.startsWith('folder:')) {
+            const path = changedKey.replace('folder:', '');
+            const descendants = this.getAllDescendants(path);
+            descendants.forEach(descendantKey => {
+                this.updateSingleCheckbox(descendantKey);
+            });
+        }
+
+        // Update parent folder checkboxes (for indeterminate state)
+        this.updateParentCheckboxes(changedKey);
+    }
+
+    /**
+     * Update a single checkbox element
+     */
+    private updateSingleCheckbox(key: string): void {
+        let checkbox: HTMLInputElement | null = null;
+
+        if (key.startsWith('folder:')) {
+            const path = key.replace('folder:', '');
+            checkbox = this.shadowRoot?.querySelector(
+                `.folder-checkbox[data-path="${path}"]`
+            ) as HTMLInputElement;
+        } else {
+            checkbox = this.shadowRoot?.querySelector(
+                `.bookmark-checkbox[data-key="${key}"]`
+            ) as HTMLInputElement;
+        }
+
+        if (!checkbox) return;
+
+        // Update checkbox state
+        if (key.startsWith('folder:')) {
+            const path = key.replace('folder:', '');
+            // Check if folder itself is selected
+            if (this.selectedItems.has(key)) {
+                checkbox.checked = true;
+                checkbox.indeterminate = false;
+            } else {
+                // Check if any descendants are selected (indeterminate)
+                const descendants = this.getAllDescendants(path);
+                const anySelected = descendants.some(d => this.selectedItems.has(d));
+
+                if (anySelected) {
+                    checkbox.checked = false;
+                    checkbox.indeterminate = true;
+                } else {
+                    checkbox.checked = false;
+                    checkbox.indeterminate = false;
+                }
+            }
+        } else {
+            // Bookmark checkbox
+            checkbox.checked = this.selectedItems.has(key);
+        }
+    }
+
+    /**
+     * Update parent folder checkboxes recursively
+     */
+    private updateParentCheckboxes(childKey: string): void {
+        let parentPath: string | null = null;
+
+        if (childKey.startsWith('folder:')) {
+            parentPath = this.getParentPath(childKey.replace('folder:', ''));
+        } else {
+            // It's a bookmark, find its folder
+            const bookmark = this.bookmarks.find(b =>
+                `${b.urlWithoutProtocol}:${b.position}` === childKey
+            );
+            if (bookmark && bookmark.folderPath) {
+                parentPath = bookmark.folderPath;
+            }
+        }
+
+        if (!parentPath) return;
+
+        const parentKey = `folder:${parentPath}`;
+        this.updateSingleCheckbox(parentKey);
+
+        // Recursively update grandparent
+        this.updateParentCheckboxes(parentKey);
     }
 
     /**
@@ -833,17 +1059,61 @@ export class SimpleBookmarkPanel {
         }
     }
 
+    /**
+     * Expand folder (VSCode-style - no re-render)
+     */
     private async expandFolder(path: string): Promise<void> {
         if (!this.folderState.isExpanded(path)) {
+            // 1. Update state
             this.folderState.toggleExpand(path);
-            await this.refreshTreeView();
+
+            // 2. Update DOM (no re-render!)
+            const folderElement = this.shadowRoot?.querySelector(
+                `.folder-item[data-path="${path}"]`
+            );
+
+            if (folderElement) {
+                // Update aria-expanded attribute
+                folderElement.setAttribute('aria-expanded', 'true');
+
+                // Update folder icon (📁 → 📂)
+                const icon = folderElement.querySelector('.folder-icon');
+                if (icon) {
+                    icon.textContent = '📂';
+                }
+
+                // Add expanded class
+                folderElement.classList.add('expanded');
+            }
         }
     }
 
+    /**
+     * Collapse folder (VSCode-style - no re-render)
+     */
     private async collapseFolder(path: string): Promise<void> {
         if (this.folderState.isExpanded(path)) {
+            // 1. Update state
             this.folderState.toggleExpand(path);
-            await this.refreshTreeView();
+
+            // 2. Update DOM (no re-render!)
+            const folderElement = this.shadowRoot?.querySelector(
+                `.folder-item[data-path="${path}"]`
+            );
+
+            if (folderElement) {
+                // Update aria-expanded attribute
+                folderElement.setAttribute('aria-expanded', 'false');
+
+                // Update folder icon (📂 → 📁)
+                const icon = folderElement.querySelector('.folder-icon');
+                if (icon) {
+                    icon.textContent = '📁';
+                }
+
+                // Remove expanded class
+                folderElement.classList.remove('expanded');
+            }
         }
     }
 
@@ -855,7 +1125,45 @@ export class SimpleBookmarkPanel {
         if (content) {
             content.innerHTML = this.renderTreeView();
             this.bindTreeEventListeners();
+            this.applyCheckboxStates(); // T2.5: Apply checkbox states after rendering
         }
+    }
+
+    /**
+     * Apply checkbox states to DOM elements (Gmail-style)
+     * Directly checks selectedItems for accurate state
+     */
+    private applyCheckboxStates(): void {
+        // Apply folder checkbox states
+        this.shadowRoot?.querySelectorAll('.folder-checkbox').forEach(checkbox => {
+            const path = (checkbox as HTMLInputElement).dataset.path!;
+            const folderKey = `folder:${path}`;
+            const input = checkbox as HTMLInputElement;
+
+            // Check if folder itself is selected
+            if (this.selectedItems.has(folderKey)) {
+                input.checked = true;
+                input.indeterminate = false;
+            } else {
+                // Check if any descendants are selected (indeterminate)
+                const descendants = this.getAllDescendants(path);
+                const anySelected = descendants.some(d => this.selectedItems.has(d));
+
+                if (anySelected) {
+                    input.checked = false;
+                    input.indeterminate = true;
+                } else {
+                    input.checked = false;
+                    input.indeterminate = false;
+                }
+            }
+        });
+
+        // Apply bookmark checkbox states
+        this.shadowRoot?.querySelectorAll('.bookmark-checkbox').forEach(checkbox => {
+            const key = (checkbox as HTMLInputElement).dataset.key!;
+            (checkbox as HTMLInputElement).checked = this.selectedItems.has(key);
+        });
     }
 
     /**
@@ -1234,23 +1542,24 @@ export class SimpleBookmarkPanel {
     }
 
     /**
-     * Update batch delete button visibility and count
+     * Update batch actions bar visibility and count
+     * T3.3: Batch actions bar logic
      */
-    private updateBatchDeleteButton(): void {
-        const batchDeleteBtn = this.shadowRoot?.querySelector('.batch-delete-btn') as HTMLElement;
-        const selectedCountSpan = this.shadowRoot?.querySelector('.selected-count');
+    private updateBatchActionsBar(): void {
+        const bar = this.shadowRoot?.querySelector('.batch-actions-bar') as HTMLElement;
+        const countSpan = this.shadowRoot?.querySelector('.selected-count');
 
-        if (!batchDeleteBtn) return;
+        if (!bar) return;
 
-        const count = this.selectedBookmarks.size;
+        const count = this.selectedItems.size;
 
         if (count > 0) {
-            batchDeleteBtn.style.display = 'block';
-            if (selectedCountSpan) {
-                selectedCountSpan.textContent = count.toString();
+            bar.style.display = 'flex';
+            if (countSpan) {
+                countSpan.textContent = `${count} selected`;
             }
         } else {
-            batchDeleteBtn.style.display = 'none';
+            bar.style.display = 'none';
         }
     }
 
@@ -1258,11 +1567,11 @@ export class SimpleBookmarkPanel {
      * Handle batch delete
      */
     private async handleBatchDelete(): Promise<void> {
-        if (this.selectedBookmarks.size === 0) return;
+        if (this.selectedItems.size === 0) return;
 
         // Show confirmation dialog
         const confirmed = confirm(
-            `Delete ${this.selectedBookmarks.size} selected bookmark(s)?\\n\\n` +
+            `Delete ${this.selectedItems.size} selected bookmark(s)?\\n\\n` +
             `Tip: You can export your bookmarks first to create a backup.`
         );
 
@@ -1272,7 +1581,7 @@ export class SimpleBookmarkPanel {
             // Parse keys and delete each bookmark
             const deletePromises: Promise<void>[] = [];
 
-            for (const key of this.selectedBookmarks) {
+            for (const key of this.selectedItems) {
                 // Key format is "url:position", but url may contain "://"
                 // So we need to find the last ":" to split correctly
                 const lastColonIndex = key.lastIndexOf(':');
@@ -1289,10 +1598,10 @@ export class SimpleBookmarkPanel {
 
             await Promise.all(deletePromises);
 
-            logger.info(`[SimpleBookmarkPanel] Batch deleted ${this.selectedBookmarks.size} bookmarks`);
+            logger.info(`[SimpleBookmarkPanel] Batch deleted ${this.selectedItems.size} bookmarks`);
 
             // Clear selection
-            this.selectedBookmarks.clear();
+            this.selectedItems.clear();
 
             // Refresh panel
             await this.refresh();
@@ -1816,9 +2125,10 @@ export class SimpleBookmarkPanel {
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                width: 90%;
-                max-width: 900px;
-                max-height: 80vh;
+                width: min(800px, 90vw);
+                max-width: 800px;
+                height: min(800px, 80vh);
+                max-height: 800px;
                 background: white;
                 border-radius: 12px;
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -2506,6 +2816,22 @@ export class SimpleBookmarkPanel {
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
+
+            /* VSCode-style folder children visibility */
+            .folder-children {
+                overflow: hidden;
+            }
+
+            /* Hide children when folder is collapsed */
+            .folder-item[aria-expanded="false"] + .folder-children {
+                display: none;
+            }
+
+            /* Show children when folder is expanded */
+            .folder-item[aria-expanded="true"] + .folder-children {
+                display: block;
+            }
+
 
             /* Bookmark Styles */
             .bookmark-item {

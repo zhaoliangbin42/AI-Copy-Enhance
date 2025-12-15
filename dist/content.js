@@ -24813,8 +24813,9 @@ class SimpleBookmarkPanel {
   searchQuery = "";
   platformFilter = "";
   storageListener = null;
-  selectedBookmarks = /* @__PURE__ */ new Set();
-  // For batch delete (stores "url:position")
+  // Selection state for batch operations (Gmail-style)
+  selectedItems = /* @__PURE__ */ new Set();
+  // Keys: "folder:path" or "url:position"
   // Folder tree properties
   folders = [];
   folderState = new FolderState();
@@ -25005,8 +25006,8 @@ class SimpleBookmarkPanel {
     return "";
   }
   /**
-   * Render folder item with expand/collapse
-   * Reference: VS Code folder rendering
+   * Render folder item with expand/collapse (VSCode-style)
+   * Children are always rendered, CSS controls visibility
    */
   renderFolderItem(node, depth) {
     const folder = node.folder;
@@ -25037,17 +25038,15 @@ class SimpleBookmarkPanel {
                 </div>
             </div>
         `;
-    if (node.isExpanded && node.children.length > 0) {
-      html += '<div class="folder-children">';
+    if (node.children.length > 0 || node.bookmarks.length > 0) {
+      html += `<div class="folder-children" data-parent="${this.escapeAttr(folder.path)}">`;
       for (const child of node.children) {
         html += this.renderTreeNode(child, depth + 1);
       }
-      html += "</div>";
-    }
-    if (node.isExpanded && node.bookmarks.length > 0) {
       for (const bookmark of node.bookmarks) {
         html += this.renderBookmarkItemInTree(bookmark, depth + 1);
       }
+      html += "</div>";
     }
     return html;
   }
@@ -25060,7 +25059,7 @@ class SimpleBookmarkPanel {
     const indent = depth * 20;
     const timestamp = this.formatTimestamp(bookmark.timestamp);
     const key = `${bookmark.urlWithoutProtocol}:${bookmark.position}`;
-    const checked = this.selectedBookmarks.has(key) ? "checked" : "";
+    const checked = this.selectedItems.has(key) ? "checked" : "";
     return `
             <div class="tree-item bookmark-item"
                  data-url="${this.escapeAttr(bookmark.url)}"
@@ -25191,7 +25190,7 @@ class SimpleBookmarkPanel {
       if (header) {
         header.textContent = `📌 Bookmarks (${this.bookmarks.length})`;
       }
-      this.updateBatchDeleteButton();
+      this.updateBatchActionsBar();
     }
   }
   /**
@@ -25290,11 +25289,11 @@ class SimpleBookmarkPanel {
         const key = target.getAttribute("data-key");
         if (!key) return;
         if (target.checked) {
-          this.selectedBookmarks.add(key);
+          this.selectedItems.add(key);
         } else {
-          this.selectedBookmarks.delete(key);
+          this.selectedItems.delete(key);
         }
-        this.updateBatchDeleteButton();
+        this.updateBatchActionsBar();
       });
     });
   }
@@ -25315,21 +25314,31 @@ class SimpleBookmarkPanel {
     });
     this.shadowRoot?.querySelectorAll(".folder-checkbox").forEach((checkbox) => {
       checkbox.addEventListener("change", (e) => {
+        e.stopPropagation();
         const path = e.target.dataset.path;
         const checked = e.target.checked;
-        this.selectFolderRecursive(path, checked);
+        const key = `folder:${path}`;
+        if (checked) {
+          this.selectItem(key);
+        } else {
+          this.deselectItem(key);
+        }
+        this.updateAffectedCheckboxes(key);
+        this.updateBatchActionsBar();
       });
     });
     this.shadowRoot?.querySelectorAll(".bookmark-checkbox").forEach((checkbox) => {
       checkbox.addEventListener("change", (e) => {
+        e.stopPropagation();
         const key = e.target.dataset.key;
         const checked = e.target.checked;
         if (checked) {
-          this.selectedBookmarks.add(key);
+          this.selectItem(key);
         } else {
-          this.selectedBookmarks.delete(key);
+          this.deselectItem(key);
         }
-        this.updateBatchDeleteButton();
+        this.updateAffectedCheckboxes(key);
+        this.updateBatchActionsBar();
       });
     });
     this.shadowRoot?.querySelectorAll(".add-subfolder").forEach((btn) => {
@@ -25392,32 +25401,174 @@ class SimpleBookmarkPanel {
     });
   }
   /**
-   * Toggle folder expand/collapse
+   * Toggle folder expand/collapse (VSCode-style - no re-render)
    */
   async toggleFolder(path) {
     this.folderState.toggleExpand(path);
     this.folderState.setSelectedPath(path);
     await this.folderState.saveLastSelected(path);
-    await this.refreshTreeView();
+    const isExpanded = this.folderState.isExpanded(path);
+    const folderElement = this.shadowRoot?.querySelector(
+      `.folder-item[data-path="${path}"]`
+    );
+    if (folderElement) {
+      folderElement.setAttribute("aria-expanded", String(isExpanded));
+      const icon = folderElement.querySelector(".folder-icon");
+      if (icon) {
+        icon.textContent = isExpanded ? "📂" : "📁";
+      }
+      if (isExpanded) {
+        folderElement.classList.add("expanded");
+      } else {
+        folderElement.classList.remove("expanded");
+      }
+    }
   }
   /**
-   * Select folder and all children recursively
-   * Reference: VS Code folder selection
+   * Select item and all descendants (Gmail-style)
+   * When selecting a folder, all children are automatically selected
    */
-  selectFolderRecursive(path, checked) {
-    const bookmarksInFolder = this.bookmarks.filter(
-      (b) => b.folderPath === path || b.folderPath?.startsWith(path + "/")
-    );
-    bookmarksInFolder.forEach((bookmark) => {
-      const key = `${bookmark.urlWithoutProtocol}:${bookmark.position}`;
-      if (checked) {
-        this.selectedBookmarks.add(key);
-      } else {
-        this.selectedBookmarks.delete(key);
+  selectItem(key) {
+    this.selectedItems.add(key);
+    if (key.startsWith("folder:")) {
+      const path = key.replace("folder:", "");
+      const descendants = this.getAllDescendants(path);
+      descendants.forEach((d) => this.selectedItems.add(d));
+    }
+    this.updateParentSelection(key);
+  }
+  /**
+   * Deselect item and all descendants (Gmail-style)
+   * When deselecting a folder, all children are automatically deselected
+   */
+  deselectItem(key) {
+    this.selectedItems.delete(key);
+    if (key.startsWith("folder:")) {
+      const path = key.replace("folder:", "");
+      const descendants = this.getAllDescendants(path);
+      descendants.forEach((d) => this.selectedItems.delete(d));
+    }
+    this.updateParentSelection(key);
+  }
+  /**
+   * Get all descendant keys (folders and bookmarks) for a folder path
+   * Used for Gmail-style selection
+   */
+  getAllDescendants(path) {
+    const keys = [];
+    this.folders.filter((f) => f.path.startsWith(path + "/")).forEach((f) => keys.push(`folder:${f.path}`));
+    this.bookmarks.filter((b) => b.folderPath === path || b.folderPath?.startsWith(path + "/")).forEach((b) => keys.push(`${b.urlWithoutProtocol}:${b.position}`));
+    return keys;
+  }
+  /**
+   * Get parent folder path
+   * T2.4: Helper method
+   */
+  getParentPath(path) {
+    const lastSlash = path.lastIndexOf("/");
+    if (lastSlash === -1) return null;
+    return path.substring(0, lastSlash);
+  }
+  /**
+   * Update parent folder selection based on children (Gmail-style upward sync)
+   * Automatically selects parent when all children are selected
+   */
+  updateParentSelection(childKey) {
+    let parentPath = null;
+    if (childKey.startsWith("folder:")) {
+      parentPath = this.getParentPath(childKey.replace("folder:", ""));
+    } else {
+      const bookmark = this.bookmarks.find(
+        (b) => `${b.urlWithoutProtocol}:${b.position}` === childKey
+      );
+      if (bookmark && bookmark.folderPath) {
+        parentPath = bookmark.folderPath;
       }
-    });
-    this.updateBatchDeleteButton();
-    this.refreshTreeView();
+    }
+    if (!parentPath) return;
+    const parentKey = `folder:${parentPath}`;
+    const siblings = this.getAllDescendants(parentPath);
+    const allSelected = siblings.length > 0 && siblings.every((s) => this.selectedItems.has(s));
+    const noneSelected = siblings.every((s) => !this.selectedItems.has(s));
+    if (allSelected) {
+      this.selectedItems.add(parentKey);
+    } else if (noneSelected) {
+      this.selectedItems.delete(parentKey);
+    } else {
+      this.selectedItems.delete(parentKey);
+    }
+    this.updateParentSelection(parentKey);
+  }
+  /**
+   * Update affected checkboxes incrementally (VSCode-style)
+   * Only updates checkboxes that changed, no full re-render
+   */
+  updateAffectedCheckboxes(changedKey) {
+    this.updateSingleCheckbox(changedKey);
+    if (changedKey.startsWith("folder:")) {
+      const path = changedKey.replace("folder:", "");
+      const descendants = this.getAllDescendants(path);
+      descendants.forEach((descendantKey) => {
+        this.updateSingleCheckbox(descendantKey);
+      });
+    }
+    this.updateParentCheckboxes(changedKey);
+  }
+  /**
+   * Update a single checkbox element
+   */
+  updateSingleCheckbox(key) {
+    let checkbox = null;
+    if (key.startsWith("folder:")) {
+      const path = key.replace("folder:", "");
+      checkbox = this.shadowRoot?.querySelector(
+        `.folder-checkbox[data-path="${path}"]`
+      );
+    } else {
+      checkbox = this.shadowRoot?.querySelector(
+        `.bookmark-checkbox[data-key="${key}"]`
+      );
+    }
+    if (!checkbox) return;
+    if (key.startsWith("folder:")) {
+      const path = key.replace("folder:", "");
+      if (this.selectedItems.has(key)) {
+        checkbox.checked = true;
+        checkbox.indeterminate = false;
+      } else {
+        const descendants = this.getAllDescendants(path);
+        const anySelected = descendants.some((d) => this.selectedItems.has(d));
+        if (anySelected) {
+          checkbox.checked = false;
+          checkbox.indeterminate = true;
+        } else {
+          checkbox.checked = false;
+          checkbox.indeterminate = false;
+        }
+      }
+    } else {
+      checkbox.checked = this.selectedItems.has(key);
+    }
+  }
+  /**
+   * Update parent folder checkboxes recursively
+   */
+  updateParentCheckboxes(childKey) {
+    let parentPath = null;
+    if (childKey.startsWith("folder:")) {
+      parentPath = this.getParentPath(childKey.replace("folder:", ""));
+    } else {
+      const bookmark = this.bookmarks.find(
+        (b) => `${b.urlWithoutProtocol}:${b.position}` === childKey
+      );
+      if (bookmark && bookmark.folderPath) {
+        parentPath = bookmark.folderPath;
+      }
+    }
+    if (!parentPath) return;
+    const parentKey = `folder:${parentPath}`;
+    this.updateSingleCheckbox(parentKey);
+    this.updateParentCheckboxes(parentKey);
   }
   /**
    * Setup keyboard navigation
@@ -25473,16 +25624,42 @@ class SimpleBookmarkPanel {
       items[currentIndex - 1].focus();
     }
   }
+  /**
+   * Expand folder (VSCode-style - no re-render)
+   */
   async expandFolder(path) {
     if (!this.folderState.isExpanded(path)) {
       this.folderState.toggleExpand(path);
-      await this.refreshTreeView();
+      const folderElement = this.shadowRoot?.querySelector(
+        `.folder-item[data-path="${path}"]`
+      );
+      if (folderElement) {
+        folderElement.setAttribute("aria-expanded", "true");
+        const icon = folderElement.querySelector(".folder-icon");
+        if (icon) {
+          icon.textContent = "📂";
+        }
+        folderElement.classList.add("expanded");
+      }
     }
   }
+  /**
+   * Collapse folder (VSCode-style - no re-render)
+   */
   async collapseFolder(path) {
     if (this.folderState.isExpanded(path)) {
       this.folderState.toggleExpand(path);
-      await this.refreshTreeView();
+      const folderElement = this.shadowRoot?.querySelector(
+        `.folder-item[data-path="${path}"]`
+      );
+      if (folderElement) {
+        folderElement.setAttribute("aria-expanded", "false");
+        const icon = folderElement.querySelector(".folder-icon");
+        if (icon) {
+          icon.textContent = "📁";
+        }
+        folderElement.classList.remove("expanded");
+      }
     }
   }
   /**
@@ -25493,7 +25670,37 @@ class SimpleBookmarkPanel {
     if (content) {
       content.innerHTML = this.renderTreeView();
       this.bindTreeEventListeners();
+      this.applyCheckboxStates();
     }
+  }
+  /**
+   * Apply checkbox states to DOM elements (Gmail-style)
+   * Directly checks selectedItems for accurate state
+   */
+  applyCheckboxStates() {
+    this.shadowRoot?.querySelectorAll(".folder-checkbox").forEach((checkbox) => {
+      const path = checkbox.dataset.path;
+      const folderKey = `folder:${path}`;
+      const input = checkbox;
+      if (this.selectedItems.has(folderKey)) {
+        input.checked = true;
+        input.indeterminate = false;
+      } else {
+        const descendants = this.getAllDescendants(path);
+        const anySelected = descendants.some((d) => this.selectedItems.has(d));
+        if (anySelected) {
+          input.checked = false;
+          input.indeterminate = true;
+        } else {
+          input.checked = false;
+          input.indeterminate = false;
+        }
+      }
+    });
+    this.shadowRoot?.querySelectorAll(".bookmark-checkbox").forEach((checkbox) => {
+      const key = checkbox.dataset.key;
+      checkbox.checked = this.selectedItems.has(key);
+    });
   }
   /**
    * Show inline editing for new folder creation
@@ -25787,34 +25994,35 @@ Tip: You can export your bookmarks first to create a backup.`
     }
   }
   /**
-   * Update batch delete button visibility and count
+   * Update batch actions bar visibility and count
+   * T3.3: Batch actions bar logic
    */
-  updateBatchDeleteButton() {
-    const batchDeleteBtn = this.shadowRoot?.querySelector(".batch-delete-btn");
-    const selectedCountSpan = this.shadowRoot?.querySelector(".selected-count");
-    if (!batchDeleteBtn) return;
-    const count = this.selectedBookmarks.size;
+  updateBatchActionsBar() {
+    const bar = this.shadowRoot?.querySelector(".batch-actions-bar");
+    const countSpan = this.shadowRoot?.querySelector(".selected-count");
+    if (!bar) return;
+    const count = this.selectedItems.size;
     if (count > 0) {
-      batchDeleteBtn.style.display = "block";
-      if (selectedCountSpan) {
-        selectedCountSpan.textContent = count.toString();
+      bar.style.display = "flex";
+      if (countSpan) {
+        countSpan.textContent = `${count} selected`;
       }
     } else {
-      batchDeleteBtn.style.display = "none";
+      bar.style.display = "none";
     }
   }
   /**
    * Handle batch delete
    */
   async handleBatchDelete() {
-    if (this.selectedBookmarks.size === 0) return;
+    if (this.selectedItems.size === 0) return;
     const confirmed = confirm(
-      `Delete ${this.selectedBookmarks.size} selected bookmark(s)?\\n\\nTip: You can export your bookmarks first to create a backup.`
+      `Delete ${this.selectedItems.size} selected bookmark(s)?\\n\\nTip: You can export your bookmarks first to create a backup.`
     );
     if (!confirmed) return;
     try {
       const deletePromises = [];
-      for (const key of this.selectedBookmarks) {
+      for (const key of this.selectedItems) {
         const lastColonIndex = key.lastIndexOf(":");
         if (lastColonIndex === -1) continue;
         const url = key.substring(0, lastColonIndex);
@@ -25825,8 +26033,8 @@ Tip: You can export your bookmarks first to create a backup.`
         }
       }
       await Promise.all(deletePromises);
-      logger$1.info(`[SimpleBookmarkPanel] Batch deleted ${this.selectedBookmarks.size} bookmarks`);
-      this.selectedBookmarks.clear();
+      logger$1.info(`[SimpleBookmarkPanel] Batch deleted ${this.selectedItems.size} bookmarks`);
+      this.selectedItems.clear();
       await this.refresh();
     } catch (error) {
       logger$1.error("[SimpleBookmarkPanel] Failed to batch delete bookmarks:", error);
@@ -26237,9 +26445,10 @@ Tip: You can export your bookmarks first to create a backup.`
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                width: 90%;
-                max-width: 900px;
-                max-height: 80vh;
+                width: min(800px, 90vw);
+                max-width: 800px;
+                height: min(800px, 80vh);
+                max-height: 800px;
                 background: white;
                 border-radius: 12px;
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -26927,6 +27136,22 @@ Tip: You can export your bookmarks first to create a backup.`
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
+
+            /* VSCode-style folder children visibility */
+            .folder-children {
+                overflow: hidden;
+            }
+
+            /* Hide children when folder is collapsed */
+            .folder-item[aria-expanded="false"] + .folder-children {
+                display: none;
+            }
+
+            /* Show children when folder is expanded */
+            .folder-item[aria-expanded="true"] + .folder-children {
+                display: block;
+            }
+
 
             /* Bookmark Styles */
             .bookmark-item {

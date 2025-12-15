@@ -51,7 +51,7 @@ export class BookmarkSaveModal {
             this.expandPathToFolder(this.selectedPath);
         }
 
-        // Create overlay (following BookmarkEditModal pattern - NO Shadow DOM)
+        // Create overlay (NO Shadow DOM for better compatibility)
         this.overlay = document.createElement('div');
         this.overlay.className = 'bookmark-save-modal-overlay';
         this.overlay.style.cssText = `
