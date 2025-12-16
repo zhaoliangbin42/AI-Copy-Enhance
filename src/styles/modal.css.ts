@@ -1,9 +1,14 @@
 /**
  * Modal styles for Shadow DOM
+ * Updated to use design tokens
  */
+
+// Import design tokens
+import './design-tokens.css';
+
 export const modalStyles = `
 :host {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .modal-overlay {
@@ -16,14 +21,14 @@ export const modalStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999999;
-  backdrop-filter: blur(2px);
+  z-index: var(--z-modal-backdrop);
+  backdrop-filter: blur(4px);
 }
 
 .modal-container {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2xl);
   max-width: 800px;
   width: 90%;
   max-height: 80vh;
@@ -33,90 +38,90 @@ export const modalStyles = `
 }
 
 .modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--gray-200);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--gray-900);
   margin: 0;
 }
 
 .modal-close {
   background: none;
   border: none;
-  font-size: 24px;
-  color: #6b7280;
+  font-size: var(--text-2xl);
+  color: var(--gray-500);
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.15s;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-in-out);
 }
 
 .modal-close:hover {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--gray-100);
+  color: var(--gray-900);
 }
 
 .modal-body {
-  padding: 20px;
+  padding: var(--space-5);
   overflow-y: auto;
   flex: 1;
 }
 
 .modal-content {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.6;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-x: auto;
-  color: #111827;
+  color: var(--gray-900);
 }
 
 .modal-footer {
-  padding: 16px 20px;
-  border-top: 1px solid #e5e7eb;
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--gray-200);
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .modal-button {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-300);
   background: white;
-  color: #374151;
-  font-size: 14px;
-  font-weight: 500;
+  color: var(--gray-700);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast) var(--ease-in-out);
 }
 
 .modal-button:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+  background: var(--gray-100);
+  border-color: var(--gray-400);
 }
 
 .modal-button.primary {
-  background: #3b82f6;
+  background: var(--primary-600);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--primary-600);
 }
 
 .modal-button.primary:hover {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--primary-700);
+  border-color: var(--primary-700);
 }
 
 /* Dark mode support */

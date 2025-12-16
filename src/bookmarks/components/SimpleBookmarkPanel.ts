@@ -7,6 +7,8 @@ import { FolderState } from '../state/FolderState';
 import { FolderOperationsManager } from '../managers/FolderOperationsManager';
 import { TreeBuilder } from '../utils/tree-builder';
 import { PathUtils } from '../utils/path-utils';
+import { Icons } from '../../assets/icons';
+
 
 
 /**
@@ -58,6 +60,20 @@ export class SimpleBookmarkPanel {
         // Create overlay
         this.overlay = document.createElement('div');
         this.overlay.className = 'simple-bookmark-panel-overlay';
+
+        // CRITICAL: Set z-index on the overlay element itself (not in Shadow DOM)
+        // This ensures it appears above all page content
+        this.overlay.style.position = 'fixed';
+        this.overlay.style.top = '0';
+        this.overlay.style.left = '0';
+        this.overlay.style.right = '0';
+        this.overlay.style.bottom = '0';
+        this.overlay.style.zIndex = '2147483647'; // Maximum z-index
+        this.overlay.style.display = 'flex';
+        this.overlay.style.alignItems = 'center';
+        this.overlay.style.justifyContent = 'center';
+        this.overlay.style.background = 'rgba(0, 0, 0, 0.5)';
+
         this.shadowRoot = this.overlay.attachShadow({ mode: 'open' });
 
         // Add styles
@@ -169,37 +185,40 @@ export class SimpleBookmarkPanel {
         panel.innerHTML = `
             <div class="sidebar">
                 <button class="tab-btn active" data-tab="bookmarks">
-                    <span class="tab-icon">📌</span>
+                    <span class="tab-icon">${Icons.bookmark}</span>
                     <span class="tab-label">Bookmarks</span>
                 </button>
                 <button class="tab-btn" data-tab="settings">
-                    <span class="tab-icon">⚙️</span>
+                    <span class="tab-icon">${Icons.settings}</span>
                     <span class="tab-label">Settings</span>
                 </button>
                 <button class="tab-btn" data-tab="support">
-                    <span class="tab-icon">☕</span>
+                    <span class="tab-icon">${Icons.coffee}</span>
                     <span class="tab-label">Buy Me a Coffee</span>
                 </button>
             </div>
 
             <div class="main">
                 <div class="header">
-                    <h2>📌 Bookmarks (${this.bookmarks.length})</h2>
+                    <h2>${Icons.bookmark} Bookmarks (${this.bookmarks.length})</h2>
                     <button class="close-btn" aria-label="Close">×</button>
                 </div>
 
                 <div class="tab-content bookmarks-tab active">
                     <div class="toolbar">
-                        <input type="text" class="search-input" placeholder="🔍 Search...">
+                        <div class="search-wrapper">
+                            <span class="search-icon">${Icons.search}</span>
+                            <input type="text" class="search-input" placeholder="Search...">
+                        </div>
                         <select class="platform-filter">
                             <option value="">All Platforms</option>
                             <option value="ChatGPT">ChatGPT</option>
                             <option value="Gemini">Gemini</option>
                         </select>
-                        <button class="new-folder-btn" title="Create new folder">➕ New Folder</button>
+                        <button class="new-folder-btn" title="Create new folder">${Icons.plus} New Folder</button>
                         <div class="toolbar-divider"></div>
-                        <button class="export-btn" title="Export bookmarks">📥 Export</button>
-                        <button class="import-btn" title="Import bookmarks">📤 Import</button>
+                        <button class="toolbar-icon-btn export-btn" title="Export bookmarks" aria-label="Export bookmarks">${Icons.download}</button>
+                        <button class="toolbar-icon-btn import-btn" title="Import bookmarks" aria-label="Import bookmarks">${Icons.upload}</button>
                     </div>
                     <div class="content">
                         ${this.renderTreeView()}
@@ -212,10 +231,10 @@ export class SimpleBookmarkPanel {
                             <span class="selected-count">0 selected</span>
                         </div>
                         <div class="batch-buttons">
-                            <button class="batch-delete-btn" title="Delete selected items">🗑 Delete</button>
-                            <button class="batch-move-btn" title="Move selected items">📁 Move To</button>
-                            <button class="batch-export-btn" title="Export selected items">📤 Export</button>
-                            <button class="batch-clear-btn" title="Clear selection">✕ Clear</button>
+                            <button class="batch-delete-btn" title="Delete selected items">${Icons.trash} Delete</button>
+                            <button class="batch-move-btn" title="Move selected items">${Icons.folder} Move To</button>
+                            <button class="batch-export-btn" title="Export selected items">${Icons.download} Export</button>
+                            <button class="batch-clear-btn" title="Clear selection">${Icons.x} Clear</button>
                         </div>
                     </div>
                 </div>
@@ -229,7 +248,7 @@ export class SimpleBookmarkPanel {
 
                 <div class="tab-content support-tab">
                     <div class="support-content">
-                        <h3>☕ Buy Me a Coffee</h3>
+                        <h3>${Icons.coffee} Buy Me a Coffee</h3>
                         <p>If you find this extension helpful, consider supporting the development!</p>
                         <a href="https://www.buymeacoffee.com/yourusername" target="_blank" class="support-btn">
                             Support Development
@@ -283,7 +302,7 @@ export class SimpleBookmarkPanel {
      */
     private renderFolderItem(node: FolderTreeNode, depth: number): string {
         const folder = node.folder;
-        const icon = node.isExpanded ? '📂' : '📁';
+        const icon = node.isExpanded ? Icons.folderOpen : Icons.folder;
         const indent = depth * 20; // 20px per level (Linear spacing)
         // Show + button if folder can have subfolders (depth < MAX_DEPTH - 1)
         const showAddSubfolder = depth < PathUtils.MAX_DEPTH - 1;
@@ -307,9 +326,9 @@ export class SimpleBookmarkPanel {
                 <span class="folder-icon">${icon}</span>
                 <span class="folder-name">${this.escapeHtml(folder.name)} <span class="folder-count">(${TreeBuilder.getTotalBookmarkCount(node)})</span></span>
                 <div class="item-actions">
-                    ${showAddSubfolder ? `<button class="action-btn add-subfolder" data-path="${this.escapeAttr(folder.path)}" data-depth="${depth}" title="New Subfolder" aria-label="Create subfolder">➕</button>` : ''}
-                    <button class="action-btn rename-folder" title="Rename" aria-label="Rename folder">✏️</button>
-                    <button class="action-btn delete-folder" title="Delete" aria-label="Delete folder">🗑</button>
+                    ${showAddSubfolder ? `<button class="action-btn add-subfolder" data-path="${this.escapeAttr(folder.path)}" data-depth="${depth}" title="New Subfolder" aria-label="Create subfolder">${Icons.plus}</button>` : ''}
+                    <button class="action-btn rename-folder" title="Rename" aria-label="Rename folder">${Icons.edit}</button>
+                    <button class="action-btn delete-folder" title="Delete" aria-label="Delete folder">${Icons.trash}</button>
                 </div>
             </div>
         `;
@@ -363,9 +382,9 @@ export class SimpleBookmarkPanel {
                 <span class="bookmark-title">${this.escapeHtml(bookmark.title)}</span>
                 <span class="bookmark-timestamp">${timestamp}</span>
                 <div class="item-actions">
-                    <button class="action-btn jump-bookmark" title="Jump to Conversation" aria-label="Jump to conversation">🔗</button>
-                    <button class="action-btn edit-bookmark" title="Edit" aria-label="Edit bookmark">✏️</button>
-                    <button class="action-btn delete-bookmark" title="Delete" aria-label="Delete bookmark">🗑</button>
+                    <button class="action-btn preview-bookmark" title="Preview" aria-label="Preview bookmark">${Icons.eye}</button>
+                    <button class="action-btn edit-bookmark" title="Edit" aria-label="Edit bookmark">${Icons.edit}</button>
+                    <button class="action-btn delete-bookmark" title="Delete" aria-label="Delete bookmark">${Icons.trash}</button>
                 </div>
             </div>
         `;
@@ -378,11 +397,11 @@ export class SimpleBookmarkPanel {
     private renderEmptyState(): string {
         return `
             <div class="tree-empty">
-                <div class="empty-icon">📁</div>
+                <div class="empty-icon">${Icons.folder}</div>
                 <h3>No folders yet</h3>
                 <p>Create your first folder to organize bookmarks</p>
                 <button class="btn-primary create-first-folder">
-                    ➕ Create First Folder
+                    ${Icons.plus} Create First Folder
                 </button>
             </div>
         `;
@@ -401,11 +420,11 @@ export class SimpleBookmarkPanel {
     private getPlatformIcon(platform?: string): string {
         switch (platform) {
             case 'ChatGPT':
-                return '🤖';
+                return Icons.chatgpt;
             case 'Gemini':
-                return '✨';
+                return Icons.gemini;
             default:
-                return '🤖';
+                return Icons.chatgpt;
         }
     }
 
@@ -492,7 +511,7 @@ export class SimpleBookmarkPanel {
 
             const header = this.shadowRoot.querySelector('h2');
             if (header) {
-                header.textContent = `📌 Bookmarks (${this.bookmarks.length})`;
+                header.innerHTML = `${Icons.bookmark} Bookmarks (${this.bookmarks.length})`;
             }
 
             // Update batch actions bar state
@@ -768,8 +787,8 @@ export class SimpleBookmarkPanel {
             });
         });
 
-        // Jump to conversation
-        this.shadowRoot?.querySelectorAll('.jump-bookmark').forEach(btn => {
+        // Preview bookmark
+        this.shadowRoot?.querySelectorAll('.preview-bookmark').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const bookmarkItem = (e.target as HTMLElement).closest('.bookmark-item')!;
@@ -859,7 +878,7 @@ export class SimpleBookmarkPanel {
             // Update folder icon
             const icon = folderElement.querySelector('.folder-icon');
             if (icon) {
-                icon.textContent = isExpanded ? '📂' : '📁';
+                icon.innerHTML = isExpanded ? Icons.folderOpen : Icons.folder;
             }
 
             // Update toggle button
@@ -1193,7 +1212,7 @@ export class SimpleBookmarkPanel {
                 // Update folder icon (📂 → 📁)
                 const icon = folderElement.querySelector('.folder-icon');
                 if (icon) {
-                    icon.textContent = '📁';
+                    icon.innerHTML = Icons.folder;
                 }
 
                 // Remove expanded class
@@ -1339,12 +1358,12 @@ export class SimpleBookmarkPanel {
         input.style.cssText = `
             width: 100%;
             padding: 2px 6px;
-            border: 1px solid #3b82f6;
-            border-radius: 4px;
-            font-size: 14px;
+            border: 1px solid var(--primary-600);
+            border-radius: var(--radius-xs);
+            font-size: var(--text-base);
             font-family: inherit;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: var(--shadow-focus);
         `;
 
         // Replace name span with input
@@ -1926,10 +1945,8 @@ export class SimpleBookmarkPanel {
             const modal = document.createElement('div');
             modal.style.cssText = `
                 background: white;
-                border-radius: 8px;
-                box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
-                            0 24px 38px 3px rgba(0,0,0,0.14),
-                            0 9px 46px 8px rgba(0,0,0,0.12);
+                border-radius: var(--radius-md);
+                box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
             `;
@@ -1937,30 +1954,30 @@ export class SimpleBookmarkPanel {
             modal.innerHTML = `
                 <div style="padding: 24px 24px 20px;">
                     <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                        <span style="font-size: 24px;">⚠️</span>
-                        <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: #202124;">
+                        <span class="warning-icon">${Icons.alertTriangle}</span>
+                        <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: var(--gray-900);">
                             Delete Selected Items
                         </h3>
                     </div>
-                    <div style="color: #5f6368; font-size: 14px; line-height: 1.5;">
+                    <div style="color: var(--gray-500); font-size: 14px; line-height: 1.5;">
                         <p style="margin: 0 0 16px 0;">This will permanently delete:</p>
                         <ul style="margin: 0; padding-left: 24px;">
-                            ${analysis.folders.length > 0 ? `<li>📁 ${analysis.folders.length} root folder${analysis.folders.length > 1 ? 's' : ''}</li>` : ''}
-                            ${analysis.subfolders.length > 0 ? `<li>📁 ${analysis.subfolders.length} subfolder${analysis.subfolders.length > 1 ? 's' : ''}</li>` : ''}
-                            ${analysis.bookmarks.length > 0 ? `<li>🔖 ${analysis.bookmarks.length} bookmark${analysis.bookmarks.length > 1 ? 's' : ''}</li>` : ''}
+                            ${analysis.folders.length > 0 ? `<li>${Icons.folder} ${analysis.folders.length} root folder${analysis.folders.length > 1 ? 's' : ''}</li>` : ''}
+                            ${analysis.subfolders.length > 0 ? `<li>${Icons.folder} ${analysis.subfolders.length} subfolder${analysis.subfolders.length > 1 ? 's' : ''}</li>` : ''}
+                            ${analysis.bookmarks.length > 0 ? `<li>${Icons.bookmark} ${analysis.bookmarks.length} bookmark${analysis.bookmarks.length > 1 ? 's' : ''}</li>` : ''}
                         </ul>
-                        <p style="margin: 16px 0 0 0; font-weight: 500; color: #d93025;">
+                        <p style="margin: 16px 0 0 0; font-weight: 500; color: var(--danger-600);">
                             This action cannot be undone.
                         </p>
                     </div>
                 </div>
-                <div style="padding: 8px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e8eaed;">
+                <div style="padding: 8px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--gray-200);">
                     <button class="cancel-btn" style="
                         padding: 8px 16px;
                         border: none;
                         border-radius: 4px;
                         background: transparent;
-                        color: #1a73e8;
+                        color: var(--primary-600);
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
@@ -1970,7 +1987,7 @@ export class SimpleBookmarkPanel {
                         padding: 8px 16px;
                         border: none;
                         border-radius: 4px;
-                        background: #d93025;
+                        background: var(--danger-600);
                         color: white;
                         font-size: 14px;
                         font-weight: 500;
@@ -1987,17 +2004,17 @@ export class SimpleBookmarkPanel {
             const deleteBtn = modal.querySelector('.delete-btn') as HTMLElement;
 
             cancelBtn.addEventListener('mouseenter', () => {
-                cancelBtn.style.background = '#f1f3f4';
+                cancelBtn.style.background = 'var(--gray-100)';
             });
             cancelBtn.addEventListener('mouseleave', () => {
                 cancelBtn.style.background = 'transparent';
             });
 
             deleteBtn.addEventListener('mouseenter', () => {
-                deleteBtn.style.background = '#c5221f';
+                deleteBtn.style.background = 'var(--danger-700)';
             });
             deleteBtn.addEventListener('mouseleave', () => {
-                deleteBtn.style.background = '#d93025';
+                deleteBtn.style.background = 'var(--danger-600)';
             });
 
             cancelBtn.addEventListener('click', () => {
@@ -2102,10 +2119,8 @@ export class SimpleBookmarkPanel {
         const modal = document.createElement('div');
         modal.style.cssText = `
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
-                        0 24px 38px 3px rgba(0,0,0,0.14),
-                        0 9px 46px 8px rgba(0,0,0,0.12);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-2xl);
             max-width: 500px;
             width: 90%;
             max-height: 80vh;
@@ -2116,19 +2131,19 @@ export class SimpleBookmarkPanel {
         modal.innerHTML = `
             <div style="padding: 24px 24px 20px;">
                 <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                    <span style="font-size: 24px;">⚠️</span>
-                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: #202124;">
+                    <span class="warning-icon">${Icons.alertTriangle}</span>
+                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: var(--gray-900);">
                         Deletion Completed with Errors
                     </h3>
                 </div>
-                <div style="color: #5f6368; font-size: 14px; line-height: 1.5;">
+                <div style="color: var(--gray-500); font-size: 14px; line-height: 1.5;">
                     <p style="margin: 0 0 12px 0;">
                         Completed with <strong>${errors.length}</strong> error${errors.length > 1 ? 's' : ''}:
                     </p>
                     <div style="
                         max-height: 300px;
                         overflow-y: auto;
-                        background: #f8f9fa;
+                        background: var(--gray-50);
                         border-radius: 4px;
                         padding: 12px;
                     ">
@@ -2138,12 +2153,12 @@ export class SimpleBookmarkPanel {
                     </div>
                 </div>
             </div>
-            <div style="padding: 8px; display: flex; justify-content: flex-end; border-top: 1px solid #e8eaed;">
+            <div style="padding: 8px; display: flex; justify-content: flex-end; border-top: 1px solid var(--gray-200);">
                 <button class="ok-btn" style="
                     padding: 8px 24px;
                     border: none;
                     border-radius: 4px;
-                    background: #1a73e8;
+                    background: var(--primary-600);
                     color: white;
                     font-size: 14px;
                     font-weight: 500;
@@ -2158,10 +2173,10 @@ export class SimpleBookmarkPanel {
 
         const okBtn = modal.querySelector('.ok-btn') as HTMLElement;
         okBtn.addEventListener('mouseenter', () => {
-            okBtn.style.background = '#1765cc';
+            okBtn.style.background = 'var(--primary-700)';
         });
         okBtn.addEventListener('mouseleave', () => {
-            okBtn.style.background = '#1a73e8';
+            okBtn.style.background = 'var(--primary-600)';
         });
 
         okBtn.addEventListener('click', () => {
@@ -2289,24 +2304,22 @@ export class SimpleBookmarkPanel {
             const modal = document.createElement('div');
             modal.style.cssText = `
                 background: white;
-                border-radius: 8px;
-                box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
-                            0 24px 38px 3px rgba(0,0,0,0.14),
-                            0 9px 46px 8px rgba(0,0,0,0.12);
+                border-radius: var(--radius-md);
+                box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
                 padding: 24px;
             `;
 
             modal.innerHTML = `
-                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: #202124;">
+                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: var(--gray-900);">
                     导出选项
                 </h3>
                 <div style="margin-bottom: 24px;">
                     <label style="display: flex; align-items: center; cursor: pointer; user-select: none;">
                         <input type="checkbox" id="preserve-structure" checked 
                                style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer;">
-                        <span style="font-size: 14px; color: #5f6368;">
+                        <span style="font-size: 14px; color: var(--gray-500);">
                             同时保留文件夹结构
                         </span>
                     </label>
@@ -2314,10 +2327,10 @@ export class SimpleBookmarkPanel {
                 <div style="display: flex; justify-content: flex-end; gap: 8px;">
                     <button class="cancel-btn" style="
                         padding: 8px 16px;
-                        border: 1px solid #ddd;
+                        border: 1px solid var(--gray-300);
                         border-radius: 4px;
                         background: white;
-                        color: #5f6368;
+                        color: var(--gray-500);
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
@@ -2327,7 +2340,7 @@ export class SimpleBookmarkPanel {
                         padding: 8px 16px;
                         border: none;
                         border-radius: 4px;
-                        background: #1a73e8;
+                        background: var(--primary-600);
                         color: white;
                         font-size: 14px;
                         font-weight: 500;
@@ -2346,17 +2359,17 @@ export class SimpleBookmarkPanel {
 
             // Hover effects
             cancelBtn.addEventListener('mouseenter', () => {
-                cancelBtn.style.background = '#f1f3f4';
+                cancelBtn.style.background = 'var(--gray-100)';
             });
             cancelBtn.addEventListener('mouseleave', () => {
                 cancelBtn.style.background = 'white';
             });
 
             exportBtn.addEventListener('mouseenter', () => {
-                exportBtn.style.background = '#1765cc';
+                exportBtn.style.background = 'var(--primary-700)';
             });
             exportBtn.addEventListener('mouseleave', () => {
-                exportBtn.style.background = '#1a73e8';
+                exportBtn.style.background = 'var(--primary-600)';
             });
 
             cancelBtn.addEventListener('click', () => {
@@ -2588,10 +2601,8 @@ export class SimpleBookmarkPanel {
             const modal = document.createElement('div');
             modal.style.cssText = `
                 background: white;
-                border-radius: 8px;
-                box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
-                            0 24px 38px 3px rgba(0,0,0,0.14),
-                            0 9px 46px 8px rgba(0,0,0,0.12);
+                border-radius: var(--radius-md);
+                box-shadow: var(--shadow-2xl);
                 max-width: 450px;
                 width: 90%;
                 padding: 24px;
@@ -2600,22 +2611,22 @@ export class SimpleBookmarkPanel {
             const totalIssues = analysis.noFolder.length + analysis.tooDeep.length;
 
             modal.innerHTML = `
-                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: #202124;">
+                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: var(--gray-900);">
                     📥 导入摘要
                 </h3>
-                <div style="font-size: 14px; color: #5f6368; line-height: 1.6;">
+                <div style="font-size: 14px; color: var(--gray-500); line-height: 1.6;">
                     <p style="margin: 0 0 12px 0;">
                         准备导入 <strong>${analysis.valid.length + analysis.noFolder.length + analysis.tooDeep.length}</strong> 个书签：
                     </p>
                     <ul style="margin: 0 0 16px 0; padding-left: 24px;">
-                        <li>✅ ${analysis.valid.length} 个书签将正常导入</li>
-                        ${analysis.noFolder.length > 0 ? `<li>📁 ${analysis.noFolder.length} 个书签无文件夹 → 将导入到 <strong>Import</strong> 文件夹</li>` : ''}
-                        ${analysis.tooDeep.length > 0 ? `<li>⚠️ ${analysis.tooDeep.length} 个书签文件夹层级过深 → 将导入到 <strong>Import</strong> 文件夹</li>` : ''}
+                        <li>${Icons.check} ${analysis.valid.length} 个书签将正常导入</li>
+                        ${analysis.noFolder.length > 0 ? `<li>${Icons.folder} ${analysis.noFolder.length} 个书签无文件夹 → 将导入到 <strong>Import</strong> 文件夹</li>` : ''}
+                        ${analysis.tooDeep.length > 0 ? `<li>${Icons.folder} ${analysis.tooDeep.length} 个书签文件夹层级过深 → 将导入到 <strong>Import</strong> 文件夹</li>` : ''}
                     </ul>
                     ${totalIssues > 0 ? `
-                        <div style="background: #fff3cd; border-left: 3px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
-                            <div style="font-weight: 500; color: #856404; margin-bottom: 4px;">ℹ️ 注意</div>
-                            <div style="color: #856404; font-size: 13px;">
+                        <div style="background: var(--warning-100); border-left: 3px solid var(--warning-500); padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                            <div style="font-weight: 500; color: var(--warning-800); margin-bottom: 4px;">ℹ️ 注意</div>
+                            <div style="color: var(--warning-800); font-size: 13px;">
                                 ${analysis.noFolder.length + analysis.tooDeep.length} 个书签将自动归类到 Import 文件夹
                             </div>
                         </div>
@@ -2624,10 +2635,10 @@ export class SimpleBookmarkPanel {
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
                     <button class="cancel-btn" style="
                         padding: 8px 16px;
-                        border: 1px solid #ddd;
+                        border: 1px solid var(--gray-300);
                         border-radius: 4px;
                         background: white;
-                        color: #5f6368;
+                        color: var(--gray-500);
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
@@ -2637,7 +2648,7 @@ export class SimpleBookmarkPanel {
                         padding: 8px 16px;
                         border: none;
                         border-radius: 4px;
-                        background: #1a73e8;
+                        background: var(--primary-600);
                         color: white;
                         font-size: 14px;
                         font-weight: 500;
@@ -2655,17 +2666,17 @@ export class SimpleBookmarkPanel {
 
             // Hover effects
             cancelBtn.addEventListener('mouseenter', () => {
-                cancelBtn.style.background = '#f1f3f4';
+                cancelBtn.style.background = 'var(--gray-100)';
             });
             cancelBtn.addEventListener('mouseleave', () => {
                 cancelBtn.style.background = 'white';
             });
 
             proceedBtn.addEventListener('mouseenter', () => {
-                proceedBtn.style.background = '#1765cc';
+                proceedBtn.style.background = 'var(--primary-700)';
             });
             proceedBtn.addEventListener('mouseleave', () => {
-                proceedBtn.style.background = '#1a73e8';
+                proceedBtn.style.background = 'var(--primary-600)';
             });
 
             cancelBtn.addEventListener('click', () => {
@@ -2779,13 +2790,13 @@ export class SimpleBookmarkPanel {
 
             modal.innerHTML = `
                 <div class="conflict-header">
-                    <h3>⚠️ Duplicate Bookmarks Detected</h3>
+                    <h3><span class="warning-icon">${Icons.alertTriangle}</span> Duplicate Bookmarks Detected</h3>
                 </div>
 
                 <div class="conflict-body">
                     <p>Found <strong>${conflicts.length}</strong> bookmark(s) that already exist.</p>
                     <p>Total bookmarks to import: <strong>${allBookmarks.length}</strong></p>
-                    <p style="margin-top: 16px; color: #6b7280;">Click <strong>Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
+                    <p style="margin-top: 16px; color: var(--gray-500);">Click <strong>Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
 
                     <div class="conflict-list">
                         ${conflicts.slice(0, 5).map(b => `
@@ -3143,8 +3154,182 @@ export class SimpleBookmarkPanel {
      */
     private getStyles(): string {
         return `
+            /* Design Tokens - Inlined for Shadow DOM Compatibility */
             :host {
-                all: initial;
+                /* NEUTRAL COLORS (Gray Scale) */
+                --gray-50: #F9FAFB;
+                --gray-100: #F3F4F6;
+                --gray-200: #E5E7EB;
+                --gray-300: #D1D5DB;
+                --gray-400: #9CA3AF;
+                --gray-500: #6B7280;
+                --gray-600: #4B5563;
+                --gray-700: #374151;
+                --gray-800: #1F2937;
+                --gray-900: #111827;
+
+                /* PRIMARY COLORS (Material Blue) */
+                --primary-50: #E3F2FD;
+                --primary-100: #BBDEFB;
+                --primary-200: #90CAF9;
+                --primary-300: #64B5F6;
+                --primary-400: #42A5F5;
+                --primary-500: #2196F3;
+                --primary-600: #1976D2;
+                --primary-700: #1565C0;
+                --primary-800: #0D47A1;
+
+                /* Material Design 3 - Surface Colors */
+                --md-surface: #FFFFFF;
+                --md-surface-variant: #F5F5F5;
+                --md-surface-container: #FAFAFA;
+                --md-surface-container-high: #EEEEEE;
+                --md-on-surface: #1C1B1F;
+                --md-on-surface-variant: #49454F;
+
+                /* Material Design 3 - Primary Container */
+                --md-primary-container: #E3F2FD;
+                --md-on-primary-container: #0D47A1;
+
+                /* Material Design 3 - Outline */
+                --md-outline: #E0E0E0;
+                --md-outline-variant: #EEEEEE;
+
+                /* SEMANTIC COLORS */
+                --success-50: #F0FDF4;
+                --success-100: #DCFCE7;
+                --success-500: #22C55E;
+                --success-600: #16A34A;
+                --success-700: #15803D;
+
+                --warning-50: #FFFBEB;
+                --warning-100: #FEF3C7;
+                --warning-500: #F59E0B;
+                --warning-600: #D97706;
+                --warning-700: #B45309;
+                --warning-800: #92400E;
+
+                --danger-50: #FEF2F2;
+                --danger-100: #FEE2E2;
+                --danger-500: #EF4444;
+                --danger-600: #DC2626;
+                --danger-700: #B91C1C;
+
+
+                /* PLATFORM COLORS */
+                --chatgpt-light: #D1FAE5;
+                --chatgpt-dark: #065F46;
+                --chatgpt-icon: #10A37F;
+                --gemini-light: #DBEAFE;
+                --gemini-dark: #1E40AF;
+                --gemini-icon: #4285F4;
+
+                /* SPACING */
+                --space-0: 0px;
+                --space-1: 4px;
+                --space-2: 8px;
+                --space-3: 12px;
+                --space-4: 16px;
+                --space-5: 20px;
+                --space-6: 24px;
+                --space-8: 32px;
+                --space-10: 40px;
+                --space-12: 48px;
+                --space-16: 64px;
+                --space-20: 80px;
+                --space-24: 96px;
+
+                /* TYPOGRAPHY */
+                --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+                --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", "Courier New", monospace;
+                --text-xs: 12px;
+                --text-sm: 13px;
+                --text-base: 14px;
+                --text-lg: 16px;
+                --text-xl: 18px;
+                --text-2xl: 20px;
+                --text-3xl: 24px;
+                --font-normal: 400;
+                --font-medium: 500;
+                --font-semibold: 600;
+                --font-bold: 700;
+                --leading-tight: 1.25;
+                --leading-normal: 1.5;
+                --leading-relaxed: 1.75;
+
+                /* BORDER RADIUS (Material Design 3) */
+                --radius-none: 0px;
+                --radius-extra-small: 4px;
+                --radius-small: 8px;
+                --radius-medium: 12px;
+                --radius-large: 16px;
+                --radius-extra-large: 28px;
+                --radius-full: 9999px;
+                --radius-xs: 4px;
+                --radius-sm: 8px;
+                --radius-md: 12px;
+                --radius-lg: 16px;
+                --radius-xl: 28px;
+
+                /* SHADOWS (Material Design 3 Elevation) */
+                --shadow-none: none;
+                --elevation-0: none;
+                --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.15);
+                --elevation-2: 0 1px 5px rgba(0, 0, 0, 0.2), 0 2px 2px rgba(0, 0, 0, 0.14);
+                --elevation-3: 0 3px 5px rgba(0, 0, 0, 0.2), 0 1px 18px rgba(0, 0, 0, 0.12);
+                --elevation-4: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 5px rgba(0, 0, 0, 0.14);
+                --elevation-5: 0 8px 10px rgba(0, 0, 0, 0.14), 0 3px 14px rgba(0, 0, 0, 0.12);
+                --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.15);
+                --shadow-sm: 0 1px 5px rgba(0, 0, 0, 0.2), 0 2px 2px rgba(0, 0, 0, 0.14);
+                --shadow-md: 0 3px 5px rgba(0, 0, 0, 0.2), 0 1px 18px rgba(0, 0, 0, 0.12);
+                --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 5px rgba(0, 0, 0, 0.14);
+                --shadow-xl: 0 8px 10px rgba(0, 0, 0, 0.14), 0 3px 14px rgba(0, 0, 0, 0.12);
+                --shadow-2xl: 0 24px 38px rgba(0, 0, 0, 0.14), 0 9px 46px rgba(0, 0, 0, 0.12);
+                --shadow-focus: 0 0 0 3px rgba(25, 118, 210, 0.1);
+
+                /* SVG图标垂直对齐 */
+                svg {
+                    display: inline-block;
+                    vertical-align: text-top;  /* 与文字顶部对齐,避免偏下 */
+                }
+                --icon-md: 20px;
+                --icon-lg: 24px;
+                --icon-xl: 32px;
+
+                /* ANIMATION & TRANSITIONS */
+                --duration-fast: 150ms;
+                --duration-base: 200ms;
+                --duration-slow: 300ms;
+                --duration-slower: 500ms;
+                --ease-in: cubic-bezier(0.4, 0, 1, 1);
+                --ease-out: cubic-bezier(0, 0, 0.2, 1);
+                --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+                --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+                /* Z-INDEX SCALE */
+                --z-dropdown: 1000;
+                --z-sticky: 1020;
+                --z-fixed: 1030;
+                --z-modal-backdrop: 2147483646;
+                --z-modal: 2147483647;
+                --z-popover: 2147483647;
+                --z-tooltip: 2147483647;
+
+                /* COMMON VALUES */
+                --white: #FFFFFF;
+                --black: #000000;
+
+                /* Overlay positioning */
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: var(--z-modal-backdrop);
             }
 
             * {
@@ -3156,16 +3341,16 @@ export class SimpleBookmarkPanel {
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                width: min(800px, 90vw);
-                max-width: 800px;
-                height: min(800px, 80vh);
-                max-height: 800px;
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                width: 90%;
+                max-width: 1000px;  /* 最大宽度800px */
+                height: 85vh;
+                max-height: 800px;  /* 最大高度600px */
+                background: var(--md-surface);
+                border-radius: var(--radius-large);  /* Material Design 16px */
+                box-shadow: var(--elevation-3);      /* Material Design elevation */
                 display: flex;
-                z-index: 2147483647;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                z-index: var(--z-modal);
+                font-family: var(--font-sans);
                 overflow: hidden;
             }
 
@@ -3173,8 +3358,8 @@ export class SimpleBookmarkPanel {
                 display: flex;
                 gap: 8px;
                 padding: 12px;
-                background: #f9fafb;
-                border-bottom: 1px solid #e5e7eb;
+                background: var(--gray-50);
+                border-bottom: 1px solid var(--gray-200);
                 align-items: center;
                 flex-wrap: wrap;
             }
@@ -3182,7 +3367,7 @@ export class SimpleBookmarkPanel {
             .toolbar-divider {
                 width: 1px;
                 height: 24px;
-                background: #d1d5db;
+                background: var(--gray-300);
                 margin: 0 4px;
             }
 
@@ -3190,8 +3375,8 @@ export class SimpleBookmarkPanel {
             .export-btn,
             .import-btn {
                 padding: 6px 12px;
-                border: 1px solid #d1d5db;
-                background: white;
+                border: 1px solid var(--gray-300);
+                background: var(--white);
                 border-radius: 6px;
                 font-size: 13px;
                 cursor: pointer;
@@ -3202,53 +3387,58 @@ export class SimpleBookmarkPanel {
             .new-folder-btn:hover,
             .export-btn:hover,
             .import-btn:hover {
-                background: #f3f4f6;
-                border-color: #9ca3af;
+                background: var(--gray-100);
+                border-color: var(--gray-400);
             }
 
             .new-folder-btn {
                 font-weight: 500;
-                color: #3b82f6;
-                border-color: #3b82f6;
+                color: var(--primary-600);
+                border-color: var(--primary-600);
             }
 
             .new-folder-btn:hover {
-                background: #eff6ff;
+                background: var(--primary-50);
             }
 
             /* Sidebar */
             .sidebar {
-                width: 120px;
-                background: #f9fafb;
-                border-right: 1px solid #e5e7eb;
+                width: 140px;  /* 减小宽度 */
+                background: var(--md-surface-variant);
+                border-right: 1px solid var(--md-outline);
                 display: flex;
                 flex-direction: column;
-                padding: 16px 0;
+                padding: var(--space-4) var(--space-2);
+                gap: var(--space-2);
             }
 
             .tab-btn {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 8px;
-                padding: 16px 12px;
+                gap: var(--space-2);
+                padding: var(--space-4) var(--space-3);
                 border: none;
+                border-left: 3px solid transparent;
                 background: transparent;
                 cursor: pointer;
-                transition: all 0.2s;
-                color: #6b7280;
-                font-size: 12px;
+                transition: all var(--duration-base);
+                color: var(--md-on-surface-variant);
+                font-size: var(--text-xs);
+                border-radius: var(--radius-small);
             }
 
             .tab-btn:hover {
-                background: #f3f4f6;
-                color: #111827;
+                background: var(--md-surface-container-high);  /* 更明显的灰色 #EEEEEE */
+                color: var(--md-on-surface);
             }
 
             .tab-btn.active {
-                background: white;
-                color: #3b82f6;
-                font-weight: 500;
+                background: var(--md-primary-container);
+                color: var(--primary-600);
+                font-weight: var(--font-medium);
+                border-left-color: var(--primary-600);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.08);  /* 微妙的阴影 */
             }
 
             .tab-icon {
@@ -3270,7 +3460,7 @@ export class SimpleBookmarkPanel {
 
             .header {
                 padding: 20px 24px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--gray-200);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -3280,14 +3470,14 @@ export class SimpleBookmarkPanel {
                 margin: 0;
                 font-size: 20px;
                 font-weight: 600;
-                color: #111827;
+                color: var(--gray-900);
             }
 
             .close-btn {
                 background: none;
                 border: none;
                 font-size: 28px;
-                color: #6b7280;
+                color: var(--gray-500);
                 cursor: pointer;
                 padding: 0;
                 width: 32px;
@@ -3300,8 +3490,28 @@ export class SimpleBookmarkPanel {
             }
 
             .close-btn:hover {
-                background: #f3f4f6;
-                color: #111827;
+                background: var(--gray-100);
+                color: var(--gray-900);
+            }
+
+            .tree-item {
+                display: flex;
+                align-items: center;
+                gap: var(--space-2);
+                padding: var(--space-2) var(--space-3);
+                margin-bottom: var(--space-1);
+                cursor: pointer;
+                border-radius: var(--radius-small);
+                transition: all var(--duration-base) var(--ease-out);
+                background: var(--primary-50);  /* 文件夹浅蓝色背景 */
+                border: none;  /* 移除边框 */
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);  /* 微妙阴影 */
+                position: relative;  /* 为actions的absolute定位提供参考 */
+            }
+
+            .tree-item:hover {
+                background: var(--primary-100);  /* 浅蓝色高亮 */
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             }
 
             /* Tab content */
@@ -3319,40 +3529,63 @@ export class SimpleBookmarkPanel {
             /* Toolbar */
             .toolbar {
                 padding: 12px 24px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--gray-200);
                 display: flex;
                 gap: 12px;
                 align-items: center;
             }
 
-            .search-input {
+            .search-wrapper {
+                position: relative;
+                display: flex;
+                align-items: center;  /* 确保内容垂直居中 */
                 flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 14px;
-                font-family: inherit;
+            }
+
+            .search-icon {
+                position: absolute;
+                left: 12px;
+                display: flex;
+                align-items: center;  /* 图标垂直居中 */
+                pointer-events: none;
+                color: var(--gray-500);
+            }
+
+            .search-icon svg {
+                display: block;  /* 移除inline默认的baseline对齐 */
+            }
+
+            .search-input {
+                flex: 1;  /* 拉宽搜索框 */
+                padding: var(--space-3) var(--space-4) var(--space-3) var(--space-10);  /* 左侧留出图标空间 */
+                border: 1px solid var(--md-outline);
+                border-radius: var(--radius-medium);  /* Material Design 12px */
+                background: var(--md-surface-container);
+                font-size: var(--text-sm);
+                color: var(--md-on-surface);
+                transition: all var(--duration-base);
             }
 
             .search-input:focus {
                 outline: none;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                border-color: var(--primary-600);
+                box-shadow: var(--shadow-focus);  /* Material Design focus ring */
+                background: var(--md-surface);
             }
 
             .platform-filter {
                 padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 14px;
-                background: white;
+                border: 1px solid var(--gray-300);
+                border-radius: var(--radius-sm);
+                font-size: var(--text-base);
+                background: var(--white);
                 cursor: pointer;
             }
 
             .export-btn {
                 padding: 8px 16px;
-                background: #3b82f6;
-                color: white;
+                background: var(--primary-600);
+                color: var(--white);
                 border: none;
                 border-radius: 6px;
                 font-size: 14px;
@@ -3361,7 +3594,7 @@ export class SimpleBookmarkPanel {
             }
 
             .export-btn:hover {
-                background: #2563eb;
+                background: var(--primary-700);
             }
 
             /* Content */
@@ -3374,7 +3607,7 @@ export class SimpleBookmarkPanel {
             .empty {
                 text-align: center;
                 padding: 60px 20px;
-                color: #6b7280;
+                color: var(--gray-500);
                 font-size: 15px;
             }
 
@@ -3386,20 +3619,23 @@ export class SimpleBookmarkPanel {
             }
 
             .bookmark-item {
+                padding: var(--space-3) var(--space-4);
+                margin: var(--space-1) 3px;
+                border: none;  /* 移除边框 */
+                border-radius: var(--radius-small);
+                background: var(--md-surface);  /* 书签白色背景 */
+                cursor: pointer;
+                transition: all var(--duration-base) var(--ease-out);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);  /* 纯阴影 */
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                padding: 10px 16px;
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                transition: all 0.2s ease;
-                cursor: pointer;
+                position: relative;  /* 为actions的absolute定位提供参考 */
             }
 
             .bookmark-item:hover {
-                background: #f3f4f6;
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+                background: var(--primary-50);  /* 浅蓝色高亮 */
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.08);
             }
 
             .platform-badge {
@@ -3413,20 +3649,20 @@ export class SimpleBookmarkPanel {
             }
 
             .platform-badge.chatgpt {
-                background: #d1fae5;
-                color: #065f46;
+                background: var(--success-100);
+                color: var(--success-800);
             }
 
             .platform-badge.gemini {
-                background: #dbeafe;
-                color: #1e40af;
+                background: var(--primary-100);
+                color: var(--primary-800);
             }
 
             .title {
                 flex: 2;
                 font-size: 14px;
                 font-weight: 500;
-                color: #111827;
+                color: var(--gray-900);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -3435,7 +3671,7 @@ export class SimpleBookmarkPanel {
             .response {
                 flex: 3;
                 font-size: 13px;
-                color: #6b7280;
+                color: var(--gray-500);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -3444,7 +3680,7 @@ export class SimpleBookmarkPanel {
             .notes {
                 flex: 1;
                 font-size: 13px;
-                color: #9ca3af;
+                color: var(--gray-400);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -3453,7 +3689,7 @@ export class SimpleBookmarkPanel {
             .time {
                 flex-shrink: 0;
                 font-size: 12px;
-                color: #9ca3af;
+                color: var(--gray-400);
                 min-width: 40px;
             }
 
@@ -3478,12 +3714,12 @@ export class SimpleBookmarkPanel {
             }
 
             .action-btn:hover {
-                background: rgba(0, 0, 0, 0.05);
+                background: var(--gray-100);
                 transform: scale(1.1);
             }
 
             .delete-btn:hover {
-                background: rgba(220, 38, 38, 0.1);
+                background: var(--danger-100);
             }
 
             /* Settings content */
@@ -3497,28 +3733,31 @@ export class SimpleBookmarkPanel {
             .support-content h3 {
                 margin: 0 0 16px 0;
                 font-size: 18px;
-                color: #111827;
+                color: var(--gray-900);
             }
 
             .settings-content p,
             .support-content p {
-                color: #6b7280;
+                color: var(--gray-500);
                 margin: 0 0 24px 0;
             }
             /* Support button */
             .support-btn {
                 display: inline-block;
-                padding: 12px 24px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
+                padding: var(--space-3) var(--space-6);
+                background: var(--primary-600);
+                color: var(--white);
                 text-decoration: none;
-                border-radius: 8px;
-                font-weight: 500;
-                transition: transform 0.2s ease;
+                border-radius: var(--radius-small);  /* Material Design 8px */
+                font-weight: var(--font-medium);
+                transition: all var(--duration-base);
+                box-shadow: var(--elevation-1);  /* Material Design elevation */
             }
 
             .support-btn:hover {
-                transform: translateY(-2px);
+                background: var(--primary-700);
+                box-shadow: var(--elevation-2);  /* Material Design hover elevation */
+                transform: translateY(-1px);
             }
 
             /* Conflict Dialog Styles */
@@ -3532,13 +3771,13 @@ export class SimpleBookmarkPanel {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 2147483648;
+                z-index: var(--z-modal-backdrop);
             }
 
             .conflict-dialog {
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                background: var(--white);
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-2xl);
                 max-width: 500px;
                 width: 90%;
                 max-height: 80vh;
@@ -3549,15 +3788,15 @@ export class SimpleBookmarkPanel {
 
             .conflict-header {
                 padding: 20px 24px;
-                border-bottom: 1px solid #e5e7eb;
-                background: #fef3c7;
+                border-bottom: 1px solid var(--gray-200);
+                background: var(--warning-100);
             }
 
             .conflict-header h3 {
                 margin: 0;
                 font-size: 18px;
                 font-weight: 600;
-                color: #92400e;
+                color: var(--warning-800);
             }
 
             .conflict-body {
@@ -3568,20 +3807,20 @@ export class SimpleBookmarkPanel {
 
             .conflict-body p {
                 margin: 0 0 16px 0;
-                color: #374151;
+                color: var(--gray-700);
                 font-size: 14px;
             }
 
             .conflict-list {
                 margin-top: 16px;
-                border: 1px solid #e5e7eb;
+                border: 1px solid var(--gray-200);
                 border-radius: 8px;
                 overflow: hidden;
             }
 
             .conflict-item {
                 padding: 12px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--gray-200);
                 display: flex;
                 align-items: center;
                 gap: 12px;
@@ -3594,7 +3833,7 @@ export class SimpleBookmarkPanel {
             .conflict-title {
                 flex: 1;
                 font-size: 13px;
-                color: #374151;
+                color: var(--gray-700);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -3604,23 +3843,23 @@ export class SimpleBookmarkPanel {
                 padding: 12px;
                 text-align: center;
                 font-size: 13px;
-                color: #6b7280;
+                color: var(--gray-500);
                 font-style: italic;
             }
 
             .conflict-footer {
                 padding: 16px 24px;
-                border-top: 1px solid #e5e7eb;
+                border-top: 1px solid var(--gray-200);
                 display: flex;
                 gap: 12px;
                 justify-content: flex-end;
-                background: #f9fafb;
+                background: var(--gray-50);
             }
 
             .toolbar button {
                 padding: 8px 12px;
-                border: 1px solid #e5e7eb;
-                background: #f3f4f6;
+                border: 1px solid var(--gray-200);
+                background: var(--gray-100);
                 border-radius: 6px;
                 font-size: 14px;
                 cursor: pointer;
@@ -3628,13 +3867,13 @@ export class SimpleBookmarkPanel {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                color: #6b7280;
+                color: var(--gray-500);
             }
 
             .toolbar button:hover {
-                background: #e5e7eb;
-                border-color: #9ca3af;
-                color: #374151;
+                background: var(--gray-200);
+                border-color: var(--gray-400);
+                color: var(--gray-700);
             }
 
             .toolbar button svg {
@@ -3642,21 +3881,21 @@ export class SimpleBookmarkPanel {
             }
 
             .merge-btn {
-                background: #3b82f6;
-                color: white;
+                background: var(--primary-600);
+                color: var(--white);
             }
 
             .merge-btn:hover {
-                background: #2563eb;
+                background: var(--primary-700);
             }
 
             .cancel-btn {
-                background: #e5e7eb;
-                color: #374151;
+                background: var(--gray-200);
+                color: var(--gray-700);
             }
 
             .cancel-btn:hover {
-                background: #d1d5db;
+                background: var(--gray-300);
             }
 
             /* Detail Modal */
@@ -3670,23 +3909,23 @@ export class SimpleBookmarkPanel {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 2147483648;
+                z-index: var(--z-modal-backdrop);
             }
 
             .detail-modal {
-                background: white;
-                border-radius: 12px;
+                background: var(--white);
+                border-radius: var(--radius-lg);
                 width: 90%;
                 max-width: 700px;
                 max-height: 80vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                box-shadow: var(--shadow-2xl);
             }
 
             .detail-header {
                 padding: 20px 24px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--gray-200);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -3696,12 +3935,12 @@ export class SimpleBookmarkPanel {
                 margin: 0;
                 font-size: 18px;
                 font-weight: 600;
-                color: #111827;
+                color: var(--gray-900);
             }
 
             .detail-meta {
                 padding: 12px 24px;
-                background: #f9fafb;
+                background: var(--gray-50);
                 display: flex;
                 gap: 16px;
                 align-items: center;
@@ -3710,11 +3949,11 @@ export class SimpleBookmarkPanel {
             .detail-url {
                 padding: 12px 24px;
                 font-size: 13px;
-                color: #6b7280;
+                color: var(--gray-500);
             }
 
             .detail-url a {
-                color: #3b82f6;
+                color: var(--primary-600);
                 text-decoration: none;
             }
 
@@ -3732,27 +3971,27 @@ export class SimpleBookmarkPanel {
                 margin: 0 0 12px 0;
                 font-size: 14px;
                 font-weight: 600;
-                color: #374151;
+                color: var(--gray-700);
             }
 
             .detail-text {
                 line-height: 1.6;
-                color: #111827;
+                color: var(--gray-900);
                 white-space: pre-wrap;
                 word-break: break-word;
             }
 
             .detail-footer {
                 padding: 16px 24px;
-                border-top: 1px solid #e5e7eb;
+                border-top: 1px solid var(--gray-200);
                 display: flex;
                 justify-content: flex-end;
             }
 
             .open-conversation-btn {
                 padding: 10px 20px;
-                background: #3b82f6;
-                color: white;
+                background: var(--primary-600);
+                color: var(--white);
                 border: none;
                 border-radius: 6px;
                 font-size: 14px;
@@ -3762,7 +4001,7 @@ export class SimpleBookmarkPanel {
             }
 
             .open-conversation-btn:hover {
-                background: #2563eb;
+                background: var(--primary-700);
             }
 
             /* ============================================================================
@@ -3772,18 +4011,17 @@ export class SimpleBookmarkPanel {
             .batch-actions-bar {
                 position: fixed;
                 bottom: 0;
-                left: 80px;
+                left: 140px;  /* Sidebar宽度 */
                 right: 0;
-                z-index: 100;
-                
-                background: #fff3cd;
-                border-top: 1px solid #ffc107;
-                box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-                
+                background: var(--warning-100);  /* 淡黄色背景 */
+                border-top: 1px solid var(--warning-500);
+                border-radius: var(--radius-medium) var(--radius-medium) 0 0;  /* 上方圆角 */
+                padding: var(--space-3) var(--space-6);
                 display: flex;
-                justify-content: space-between;
                 align-items: center;
-                padding: 12px 24px;
+                justify-content: space-between;
+                box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+                z-index: var(--z-sticky);
                 
                 transform: translateY(100%);
                 transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
@@ -3813,7 +4051,7 @@ export class SimpleBookmarkPanel {
             .batch-actions-bar .selected-count {
                 font-size: 14px;
                 font-weight: 500;
-                color: #333;
+                color: var(--gray-900);
             }
             
             .batch-buttons {
@@ -3823,9 +4061,9 @@ export class SimpleBookmarkPanel {
             
             .batch-buttons button {
                 padding: 8px 16px;
-                border: 1px solid #ddd;
-                border-radius: 6px;
-                background: white;
+                border: 1px solid var(--gray-300);
+                border-radius: var(--radius-sm);
+                background: var(--white);
                 cursor: pointer;
                 font-size: 13px;
                 font-weight: 500;
@@ -3833,31 +4071,31 @@ export class SimpleBookmarkPanel {
             }
             
             .batch-buttons button:hover {
-                background: #f0f0f0;
+                background: var(--gray-100);
             }
             
             .batch-delete-btn:hover {
-                background: #dc3545 !important;
-                color: white !important;
-                border-color: #dc3545 !important;
+                background: var(--danger-600) !important;
+                color: var(--white) !important;
+                border-color: var(--danger-600) !important;
             }
             
             .batch-move-btn:hover {
-                background: #007bff !important;
-                color: white !important;
-                border-color: #007bff !important;
+                background: var(--primary-600) !important;
+                color: var(--white) !important;
+                border-color: var(--primary-600) !important;
             }
             
             .batch-export-btn:hover {
-                background: #28a745 !important;
-                color: white !important;
-                border-color: #28a745 !important;
+                background: var(--success-600) !important;
+                color: var(--white) !important;
+                border-color: var(--success-600) !important;
             }
             
             .batch-clear-btn:hover {
-                background: #6c757d !important;
-                color: white !important;
-                border-color: #6c757d !important;
+                background: var(--gray-600) !important;
+                color: var(--white) !important;
+                border-color: var(--gray-600) !important;
             }
             
             .bookmarks-tab .content {
@@ -3869,11 +4107,18 @@ export class SimpleBookmarkPanel {
                ============================================================================ */
 
             /* Tree Container */
+            .content {
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding: var(--space-2);  /* 添加padding避免阴影被截断 */
+            }
+
             .tree-view {
                 flex: 1;
                 overflow-y: auto;
                 overflow-x: hidden;
-                background: white;
+                background: var(--white);
             }
 
             /* Custom Scrollbar (macOS-style) */
@@ -3886,12 +4131,12 @@ export class SimpleBookmarkPanel {
             }
 
             .tree-view::-webkit-scrollbar-thumb {
-                background: #d1d5db;
+                background: var(--gray-300);
                 border-radius: 4px;
             }
 
             .tree-view::-webkit-scrollbar-thumb:hover {
-                background: #9ca3af;
+                background: var(--gray-400);
             }
 
             /* Tree Item Base */
@@ -3900,19 +4145,39 @@ export class SimpleBookmarkPanel {
                 align-items: center;
                 min-height: 36px;
                 padding: 6px 12px;
-                border-bottom: 1px solid #f3f4f6;
+                border-bottom: 1px solid var(--gray-100);
                 position: relative;
                 cursor: pointer;
                 transition: background-color 0.15s ease;
                 user-select: none;
             }
 
+            .batch-action-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-2);
+                padding: var(--space-2) var(--space-4);
+                background: var(--md-surface);
+                border: 1px solid var(--md-outline);
+                border-radius: var(--radius-small);
+                cursor: pointer;
+                transition: all var(--duration-base);
+                font-size: var(--text-sm);
+                color: var(--md-on-surface);
+                line-height: 1;  /* 移除额外的行高 */
+            }
+
+            .batch-action-btn svg {
+                flex-shrink: 0;  /* 防止图标被压缩 */
+            }
+
             .tree-item:hover {
-                background: #f9fafb;
+                background: var(--gray-50);
             }
 
             .tree-item:focus {
-                outline: 2px solid #3b82f6;
+                outline: 2px solid var(--primary-600);
                 outline-offset: -2px;
                 z-index: 1;
             }
@@ -3924,12 +4189,12 @@ export class SimpleBookmarkPanel {
             /* Folder Styles */
             .folder-item {
                 font-weight: 500;
-                background: #fafafa;
+                background: var(--gray-50);
             }
 
             .folder-item.selected {
-                background: #eff6ff;
-                border-left: 3px solid #3b82f6;
+                background: var(--primary-50);
+                border-left: 3px solid var(--primary-600);
             }
 
             .folder-toggle {
@@ -3940,7 +4205,7 @@ export class SimpleBookmarkPanel {
                 height: 16px;
                 margin-right: 4px;
                 font-size: 10px;
-                color: #5f6368;
+                color: var(--gray-500);
                 cursor: pointer;
                 user-select: none;
                 flex-shrink: 0;
@@ -3953,7 +4218,7 @@ export class SimpleBookmarkPanel {
             }
 
             .folder-toggle:hover {
-                color: #202124;
+                color: var(--gray-900);
             }
 
             .folder-icon {
@@ -3965,7 +4230,7 @@ export class SimpleBookmarkPanel {
             .folder-name {
                 flex: 1;
                 font-weight: 500;
-                color: #202124;
+                color: var(--gray-900);
                 user-select: none;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -3975,7 +4240,7 @@ export class SimpleBookmarkPanel {
             .folder-count {
                 margin-left: 6px;
                 font-size: 12px;
-                color: #5f6368;
+                color: var(--gray-500);
                 font-weight: 400;
                 user-select: none;
             }
@@ -3998,7 +4263,7 @@ export class SimpleBookmarkPanel {
 
             /* Bookmark Styles */
             .bookmark-item {
-                background: white;
+                background: var(--white);
             }
 
             .platform-icon {
@@ -4010,7 +4275,7 @@ export class SimpleBookmarkPanel {
             .bookmark-title {
                 flex: 1;
                 font-size: 13px;
-                color: #374151;
+                color: var(--gray-700);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -4021,7 +4286,7 @@ export class SimpleBookmarkPanel {
                 position: absolute;
                 right: 120px; /* Space for action buttons */
                 font-size: 11px;
-                color: #9ca3af;
+                color: var(--gray-400);
                 pointer-events: none;
                 white-space: nowrap;
             }
@@ -4036,16 +4301,19 @@ export class SimpleBookmarkPanel {
             }
 
             .item-checkbox:focus {
-                outline: 2px solid #3b82f6;
+                outline: 2px solid var(--primary-600);
                 outline-offset: 2px;
             }
 
             /* Action Buttons */
             .item-actions {
-                display: none;
-                gap: 4px;
-                margin-left: auto;
-                flex-shrink: 0;
+                display: none;  /* 默认隐藏 */
+                position: absolute;  /* 绝对定位,不影响高度 */
+                right: var(--space-3);
+                top: 50%;
+                transform: translateY(-50%);
+                gap: var(--space-1);
+                align-items: center;
             }
 
             .tree-item:hover .item-actions {
@@ -4072,14 +4340,14 @@ export class SimpleBookmarkPanel {
             }
 
             .action-btn:focus {
-                outline: 2px solid #3b82f6;
+                outline: 2px solid var(--primary-600);
                 outline-offset: -2px;
             }
 
             .action-btn.delete-folder:hover,
             .action-btn.delete-bookmark:hover {
-                background: rgba(239, 68, 68, 0.1);
-                color: #ef4444;
+                background: var(--danger-100);
+                color: var(--danger-500);
             }
 
             /* Empty State */
@@ -4090,7 +4358,7 @@ export class SimpleBookmarkPanel {
                 justify-content: center;
                 padding: 64px 32px;
                 text-align: center;
-                color: #6b7280;
+                color: var(--gray-500);
             }
 
             .empty-icon {
@@ -4103,31 +4371,31 @@ export class SimpleBookmarkPanel {
                 margin: 0 0 8px 0;
                 font-size: 16px;
                 font-weight: 600;
-                color: #374151;
+                color: var(--gray-700);
             }
 
             .tree-empty p {
                 margin: 0 0 24px 0;
                 font-size: 14px;
                 color: #6b7280;
-            }
-
             .btn-primary,
             .create-first-folder {
-                padding: 10px 20px;
-                background: #3b82f6;
+                padding: var(--space-2) var(--space-5);
+                background: var(--primary-600);
                 color: white;
                 border: none;
-                border-radius: 6px;
-                font-size: 14px;
-                font-weight: 500;
+                border-radius: var(--radius-small);  /* Material Design 8px */
                 cursor: pointer;
-                transition: background 0.15s ease;
+                font-weight: var(--font-medium);
+                transition: all var(--duration-base);
+                box-shadow: var(--elevation-1);  /* Material Design elevation */
             }
 
             .btn-primary:hover,
             .create-first-folder:hover {
-                background: #2563eb;
+                background: var(--primary-700);
+                box-shadow: var(--elevation-2);  /* Material Design hover elevation */
+                transform: translateY(-1px);
             }
 
             /* Responsive & Accessibility */
@@ -4149,8 +4417,12 @@ export class SimpleBookmarkPanel {
                 }
                 
                 .tree-item.selected {
-                    border: 2px solid #3b82f6;
-                }
+                background: var(--md-primary-container);
+                color: var(--md-on-primary-container);
+                border-radius: var(--radius-small);
+                font-weight: var(--font-medium);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.08);  /* 与Tab选中一致的阴影 */
+            }    }
             }
 
             /* Loading State */
@@ -4192,86 +4464,86 @@ export class SimpleBookmarkPanel {
 
             @media (prefers-color-scheme: dark) {
                 .panel {
-                    background: #1f2937;
+                    background: var(--gray-800);
                 }
 
                 .sidebar {
-                    background: #111827;
-                    border-color: #374151;
+                    background: var(--gray-900);
+                    border-color: var(--gray-700);
                 }
 
                 .tab-btn.active {
-                    background: #1f2937;
+                    background: var(--gray-800);
                 }
 
                 .header {
-                    border-color: #374151;
+                    border-color: var(--gray-700);
                 }
 
                 .header h2 {
-                    color: #f9fafb;
+                    color: var(--gray-50);
                 }
 
                 .close-btn {
-                    color: #9ca3af;
+                    color: var(--gray-400);
                 }
 
                 .close-btn:hover {
-                    background: #374151;
-                    color: #f9fafb;
+                    background: var(--gray-700);
+                    color: var(--gray-50);
                 }
 
                 .toolbar {
-                    border-color: #374151;
+                    border-color: var(--gray-700);
                 }
 
                 .search-input,
                 .platform-filter {
-                    background: #111827;
-                    border-color: #374151;
-                    color: #f9fafb;
+                    background: var(--gray-900);
+                    border-color: var(--gray-700);
+                    color: var(--gray-50);
                 }
 
                 .bookmark-item {
-                    background: #111827;
-                    border-color: #374151;
+                    background: var(--gray-900);
+                    border-color: var(--gray-700);
                 }
 
                 .bookmark-item:hover {
-                    background: #1f2937;
-                    border-color: #4b5563;
+                    background: var(--gray-800);
+                    border-color: var(--gray-600);
                 }
 
                 .title {
-                    color: #f9fafb;
+                    color: var(--gray-50);
                 }
 
                 .response {
-                    color: #9ca3af;
+                    color: var(--gray-400);
                 }
 
                 .detail-modal {
-                    background: #1f2937;
+                    background: var(--gray-800);
                 }
 
                 .detail-header {
-                    border-color: #374151;
+                    border-color: var(--gray-700);
                 }
 
                 .detail-header h3 {
-                    color: #f9fafb;
+                    color: var(--gray-50);
                 }
 
                 .detail-meta {
-                    background: #111827;
+                    background: var(--gray-900);
                 }
 
                 .detail-text {
-                    color: #f9fafb;
+                    color: var(--gray-50);
                 }
 
                 .detail-footer {
-                    border-color: #374151;
+                    border-color: var(--gray-700);
                 }
             }
         `;

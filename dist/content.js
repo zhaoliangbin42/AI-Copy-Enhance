@@ -749,8 +749,8 @@ class ToolbarInjector {
 const toolbarStyles = `
 :host {
   display: block;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  margin-bottom: 8px;
+  font-family: var(--font-sans);
+  margin-bottom: var(--space-2);
   
   /* Light mode theme colors */
   --gradient-solid-from: #ad5389;
@@ -758,8 +758,6 @@ const toolbarStyles = `
   --gradient-light-from: rgba(173, 83, 137, 0.12);
   --gradient-light-to: rgba(60, 16, 83, 0.12);
   --theme-color: #ad5389;
-  --text-secondary: #6b7280;
-  --bg-secondary: rgba(0, 0, 0, 0.05);
 }
 
 /* Dark mode theme colors */
@@ -770,8 +768,6 @@ const toolbarStyles = `
     --gradient-light-from: rgba(224, 145, 208, 0.25);
     --gradient-light-to: rgba(192, 132, 179, 0.25);
     --theme-color: #e091d0;
-    --text-secondary: #9ca3af;
-    --bg-secondary: rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -779,13 +775,13 @@ const toolbarStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
 }
 
 .aicopy-button-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-1);  /* Reduced from 8px to 4px for more compact layout */
 }
 
 .aicopy-button {
@@ -796,12 +792,12 @@ const toolbarStyles = `
   width: 32px;
   height: 32px;
   padding: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--gray-500);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-in-out);
   user-select: none;
 }
 
@@ -836,17 +832,17 @@ const toolbarStyles = `
   position: absolute;
   bottom: 100%;
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  padding: 6px 10px;
-  background: rgba(0, 0, 0, 0.85);
+  transform: translateX(-50%) translateY(calc(-1 * var(--space-2)));
+  padding: var(--space-1) var(--space-2);
+  background: var(--gray-900);
   color: white;
-  font-size: 12px;
+  font-size: var(--text-xs);
   white-space: nowrap;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 1000;
+  transition: opacity var(--duration-base) var(--ease-in-out);
+  z-index: var(--z-tooltip);
 }
 
 .aicopy-button::before {
@@ -856,11 +852,11 @@ const toolbarStyles = `
   left: 50%;
   transform: translateX(-50%) translateY(-2px);
   border: 5px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.85);
+  border-top-color: var(--gray-900);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 1000;
+  transition: opacity var(--duration-base) var(--ease-in-out);
+  z-index: var(--z-tooltip);
 }
 
 .aicopy-button:hover::after,
@@ -1251,7 +1247,7 @@ class Toolbar {
 
 const modalStyles = `
 :host {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .modal-overlay {
@@ -1264,14 +1260,14 @@ const modalStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999999;
-  backdrop-filter: blur(2px);
+  z-index: var(--z-modal-backdrop);
+  backdrop-filter: blur(4px);
 }
 
 .modal-container {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2xl);
   max-width: 800px;
   width: 90%;
   max-height: 80vh;
@@ -1281,90 +1277,90 @@ const modalStyles = `
 }
 
 .modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--gray-200);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--gray-900);
   margin: 0;
 }
 
 .modal-close {
   background: none;
   border: none;
-  font-size: 24px;
-  color: #6b7280;
+  font-size: var(--text-2xl);
+  color: var(--gray-500);
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.15s;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-in-out);
 }
 
 .modal-close:hover {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--gray-100);
+  color: var(--gray-900);
 }
 
 .modal-body {
-  padding: 20px;
+  padding: var(--space-5);
   overflow-y: auto;
   flex: 1;
 }
 
 .modal-content {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.6;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-x: auto;
-  color: #111827;
+  color: var(--gray-900);
 }
 
 .modal-footer {
-  padding: 16px 20px;
-  border-top: 1px solid #e5e7eb;
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--gray-200);
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .modal-button {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-300);
   background: white;
-  color: #374151;
-  font-size: 14px;
-  font-weight: 500;
+  color: var(--gray-700);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast) var(--ease-in-out);
 }
 
 .modal-button:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+  background: var(--gray-100);
+  border-color: var(--gray-400);
 }
 
 .modal-button.primary {
-  background: #3b82f6;
+  background: var(--primary-600);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--primary-600);
 }
 
 .modal-button.primary:hover {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--primary-700);
+  border-color: var(--primary-700);
 }
 
 /* Dark mode support */
@@ -23763,6 +23759,154 @@ class TreeBuilder {
   }
 }
 
+const Icons = {
+  // ============================================
+  // GENERAL ICONS (from Lucide)
+  // ============================================
+  /**
+   * Bookmark icon
+   * Usage: Bookmark button, saved items
+   */
+  bookmark: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+  </svg>`,
+  /**
+   * Folder icon (closed)
+   * Usage: Collapsed folders
+   */
+  folder: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+  </svg>`,
+  /**
+   * Folder open icon
+   * Usage: Expanded folders
+   */
+  folderOpen: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>
+  </svg>`,
+  /**
+   * Search icon
+   * Usage: Search input
+   */
+  search: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="8"/>
+    <path d="m21 21-4.35-4.35"/>
+  </svg>`,
+  /**
+   * Plus icon
+   * Usage: Add/Create actions
+   */
+  plus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>`,
+  /**
+   * X icon
+   * Usage: Close buttons
+   */
+  x: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>`,
+  /**
+   * Trash icon
+   * Usage: Delete actions
+   */
+  trash: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6h18"/>
+    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+  </svg>`,
+  /**
+   * Edit icon
+   * Usage: Edit/Rename actions
+   */
+  edit: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+  </svg>`,
+  /**
+   * Eye icon
+   * Usage: Preview/View actions
+   */
+  eye: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>`,
+  /**
+   * Download icon
+   * Usage: Export/Download
+   */
+  download: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/>
+    <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>`,
+  /**
+   * Upload icon
+   * Usage: Import/Upload
+   */
+  upload: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="17 8 12 3 7 8"/>
+    <line x1="12" y1="3" x2="12" y2="15"/>
+  </svg>`,
+  /**
+   * Check icon
+   * Usage: Checkmark, success
+   */
+  check: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>`,
+  /**
+   * Settings icon
+   * Usage: Settings/Preferences
+   */
+  settings: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>`,
+  /**
+   * Coffee icon
+   * Usage: Buy me a coffee
+   */
+  coffee: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
+    <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
+    <line x1="6" y1="2" x2="6" y2="4"/>
+    <line x1="10" y1="2" x2="10" y2="4"/>
+    <line x1="14" y1="2" x2="14" y2="4"/>
+  </svg>`,
+  /**
+   * Alert triangle icon
+   * Usage: Warnings, alerts
+   */
+  alertTriangle: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/>
+    <line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>`,
+  // ============================================
+  // PLATFORM ICONS (Official Branding)
+  // ============================================
+  /**
+   * ChatGPT official icon
+   * Source: OpenAI official branding
+   * Color: Use with color: var(--chatgpt-icon)
+   */
+  chatgpt: `<svg width="16" height="16" viewBox="0 0 41 41" fill="none">
+    <path d="M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.676 8.68622C35.6126 6.83404 33.9882 5.3676 32.0373 4.4985C30.0864 3.62941 27.9098 3.40259 25.8215 3.85078C24.8796 2.7893 23.7219 1.94125 22.4257 1.36341C21.1295 0.785575 19.7249 0.491269 18.3058 0.500197C16.1708 0.495044 14.0893 1.16803 12.3614 2.42214C10.6335 3.67624 9.34853 5.44666 8.6917 7.47815C7.30085 7.76286 5.98686 8.3414 4.8377 9.17505C3.68854 10.0087 2.73073 11.0782 2.02839 12.312C0.956464 14.1591 0.498905 16.2988 0.721698 18.4228C0.944492 20.5467 1.83612 22.5449 3.268 24.1293C2.81966 25.4759 2.66413 26.9026 2.81182 28.3141C2.95951 29.7256 3.40701 31.0892 4.12437 32.3138C5.18791 34.1659 6.8123 35.6322 8.76321 36.5013C10.7141 37.3704 12.8907 37.5973 14.9789 37.1492C15.9208 38.2107 17.0786 39.0587 18.3747 39.6366C19.6709 40.2144 21.0755 40.5087 22.4946 40.4998C24.6307 40.5054 26.7133 39.8321 28.4418 38.5772C30.1704 37.3223 31.4556 35.5506 32.1119 33.5179C33.5027 33.2332 34.8167 32.6547 35.9659 31.821C37.115 30.9874 38.0728 29.9178 38.7752 28.684C39.8458 26.8371 40.3023 24.6979 40.0789 22.5748C39.8556 20.4517 38.9639 18.4544 37.5324 16.8707ZM22.4978 37.8849C20.7443 37.8874 19.0459 37.2733 17.6994 36.1501C17.7601 36.117 17.8666 36.0586 17.936 36.0161L25.9004 31.4156C26.1003 31.3019 26.2663 31.137 26.3813 30.9378C26.4964 30.7386 26.5563 30.5124 26.5549 30.2825V19.0542L29.9213 20.998C29.9389 21.0068 29.9541 21.0198 29.9656 21.0359C29.977 21.052 29.9842 21.0707 29.9867 21.0902V30.3889C29.9842 32.375 29.1946 34.2791 27.7909 35.6841C26.3872 37.0892 24.4838 37.8806 22.4978 37.8849ZM6.39227 31.0064C5.51397 29.4888 5.19742 27.7107 5.49804 25.9832C5.55718 26.0187 5.66048 26.0818 5.73461 26.1244L13.699 30.7248C13.8975 30.8408 14.1233 30.902 14.3532 30.902C14.583 30.902 14.8088 30.8408 15.0073 30.7248L24.731 25.1103V28.9979C24.7321 29.0177 24.7283 29.0376 24.7199 29.0556C24.7115 29.0736 24.6988 29.0893 24.6829 29.1012L16.6317 33.7497C14.9096 34.7416 12.8643 35.0097 10.9447 34.4954C9.02506 33.9811 7.38785 32.7263 6.39227 31.0064ZM4.29707 13.6194C5.17156 12.0998 6.55279 10.9364 8.19885 10.3327C8.19885 10.4013 8.19491 10.5228 8.19491 10.6071V19.808C8.19351 20.0378 8.25334 20.2638 8.36823 20.4629C8.48312 20.6619 8.64893 20.8267 8.84863 20.9404L18.5723 26.5542L15.206 28.4979C15.1894 28.5089 15.1703 28.5155 15.1505 28.5173C15.1307 28.5191 15.1107 28.516 15.0924 28.5082L7.04046 23.8557C5.32135 22.8601 4.06716 21.2235 3.55289 19.3046C3.03862 17.3858 3.30624 15.3413 4.29707 13.6194ZM31.955 20.0556L22.2312 14.4411L25.5976 12.4981C25.6142 12.4872 25.6333 12.4805 25.6531 12.4787C25.6729 12.4769 25.6928 12.4801 25.7111 12.4879L33.7631 17.1364C34.9967 17.849 36.0017 18.8982 36.6606 20.1613C37.3194 21.4244 37.6047 22.849 37.4832 24.2684C37.3617 25.6878 36.8382 27.0432 35.9743 28.1759C35.1103 29.3086 33.9415 30.1717 32.6047 30.6641C32.6047 30.5947 32.6047 30.4733 32.6047 30.3889V21.188C32.6066 20.9586 32.5474 20.7328 32.4332 20.5338C32.319 20.3348 32.154 20.1698 31.955 20.0556ZM35.3055 15.0128C35.2464 14.9765 35.1431 14.9142 35.069 14.8717L27.1045 10.2712C26.906 10.1554 26.6803 10.0943 26.4504 10.0943C26.2206 10.0943 25.9948 10.1554 25.7963 10.2712L16.0726 15.8858V11.9982C16.0715 11.9783 16.0753 11.9585 16.0837 11.9405C16.0921 11.9225 16.1048 11.9068 16.1207 11.8949L24.1719 7.25025C25.4053 6.53903 26.8158 6.19376 28.2383 6.25482C29.6608 6.31589 31.0364 6.78077 32.2044 7.59508C33.3723 8.40939 34.2842 9.53945 34.8334 10.8531C35.3826 12.1667 35.5464 13.6095 35.3055 15.0128ZM14.2424 21.9419L10.8752 19.9981C10.8576 19.9893 10.8423 19.9763 10.8309 19.9602C10.8195 19.9441 10.8122 19.9254 10.8098 19.9058V10.6071C10.8107 9.18295 11.2173 7.78848 11.9819 6.58696C12.7466 5.38544 13.8377 4.42659 15.1275 3.82264C16.4173 3.21869 17.8524 2.99464 19.2649 3.1767C20.6775 3.35876 22.0089 3.93941 23.1034 4.85067C23.0427 4.88379 22.937 4.94215 22.8668 4.98473L14.9024 9.58517C14.7025 9.69878 14.5366 9.86356 14.4215 10.0626C14.3065 10.2616 14.2466 10.4877 14.2479 10.7175L14.2424 21.9419ZM16.071 17.9991L20.4018 15.4978L24.7325 17.9975V22.9985L20.4018 25.4983L16.071 22.9985V17.9991Z" fill="currentColor"/>
+  </svg>`,
+  /**
+   * Gemini official icon
+   * Source: Google official branding
+   * Color: Use with color: var(--gemini-icon)
+   */
+  gemini: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" fill-opacity="0.9"/>
+    <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`
+};
+
 class BookmarkSaveModal {
   overlay = null;
   modal = null;
@@ -23903,21 +24047,21 @@ class BookmarkSaveModal {
                     align-items: center;
                     justify-content: space-between;
                     padding: 16px 20px;
-                    border-bottom: 1px solid #e5e7eb;
+                    border-bottom: 1px solid var(--gray-200);
                 }
 
                 .save-modal-header h2 {
                     margin: 0;
                     font-size: 16px;
                     font-weight: 600;
-                    color: #111827;
+                    color: var(--gray-900);
                 }
 
                 .save-modal-close-btn {
                     background: none;
                     border: none;
                     font-size: 24px;
-                    color: #6b7280;
+                    color: var(--gray-500);
                     cursor: pointer;
                     padding: 0;
                     width: 32px;
@@ -23930,8 +24074,8 @@ class BookmarkSaveModal {
                 }
 
                 .save-modal-close-btn:hover {
-                    background: #f3f4f6;
-                    color: #111827;
+                    background: var(--gray-100);
+                    color: var(--gray-900);
                 }
 
                 /* Body */
@@ -23950,14 +24094,14 @@ class BookmarkSaveModal {
                     display: block;
                     font-size: 14px;
                     font-weight: 500;
-                    color: #374151;
+                    color: var(--gray-700);
                     margin-bottom: 8px;
                 }
 
                 .title-input {
                     width: 100%;
                     padding: 10px 12px;
-                    border: 2px solid #e5e7eb;
+                    border: 2px solid var(--gray-200);
                     border-radius: 6px;
                     font-size: 14px;
                     transition: all 0.15s ease;
@@ -23965,15 +24109,15 @@ class BookmarkSaveModal {
                 }
 
                 .title-input:focus {
-                    border-color: #3b82f6;
+                    border-color: var(--primary-600);
                 }
 
                 .title-input.error {
-                    border-color: #ef4444;
+                    border-color: var(--danger-500);
                 }
 
                 .title-error {
-                    color: #ef4444;
+                    color: var(--danger-500);
                     font-size: 13px;
                     margin-top: 4px;
                     display: none;
@@ -23998,11 +24142,11 @@ class BookmarkSaveModal {
                 .folder-label {
                     font-size: 14px;
                     font-weight: 500;
-                    color: #374151;
+                    color: var(--gray-700);
                 }
 
                 .new-folder-btn {
-                    background: #3b82f6;
+                    background: var(--primary-600);
                     color: white;
                     border: none;
                     padding: 6px 12px;
@@ -24014,15 +24158,16 @@ class BookmarkSaveModal {
                 }
 
                 .new-folder-btn:hover {
-                    background: #2563eb;
+                    background: var(--primary-700);
                 }
 
                 .folder-tree-container {
-                    border: 1px solid #e5e7eb;
-                    border-radius: 6px;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--radius-sm);
                     height: 300px;
                     overflow-y: auto;
-                    background: #f9fafb;
+                    font-size: var(--text-base);
+                    background: var(--gray-50);
                 }
 
                 .folder-tree-body {
@@ -24040,15 +24185,15 @@ class BookmarkSaveModal {
                 }
 
                 .folder-item:hover {
-                    background: #f3f4f6;
+                    background: var(--gray-100);
                 }
 
                 .folder-item.selected {
-                    background: #dbeafe;
+                    background: var(--primary-100);
                 }
 
                 .folder-item.selected:hover {
-                    background: #bfdbfe;
+                    background: var(--primary-200);
                 }
 
                 .folder-icon {
@@ -24151,8 +24296,8 @@ class BookmarkSaveModal {
                 }
 
                 .save-modal-btn-cancel {
-                    background: #f3f4f6;
-                    color: #374151;
+                    background: var(--gray-100);
+                    color: var(--gray-700);
                 }
 
                 .save-modal-btn-cancel:hover {
@@ -24201,7 +24346,7 @@ class BookmarkSaveModal {
                     <div class="folder-tree-container">
                         <div class="folder-tree-body">
                             <div class="folder-empty">
-                                <div class="folder-empty-icon">📁</div>
+                                <div class="folder-empty-icon">${Icons.folder}</div>
                                 <div class="folder-empty-text">Loading folders...</div>
                             </div>
                         </div>
@@ -24286,7 +24431,7 @@ class BookmarkSaveModal {
     if (tree.length === 0) {
       treeBody.innerHTML = `
                 <div class="folder-empty">
-                    <div class="folder-empty-icon">📁</div>
+                    <div class="folder-empty-icon">${Icons.folder}</div>
                     <div class="folder-empty-text">No folders yet. Create one to get started!</div>
                 </div>
             `;
@@ -24303,7 +24448,7 @@ class BookmarkSaveModal {
     return nodes.map((node) => {
       const isExpanded = this.expandedPaths.has(node.folder.path);
       const isSelected = node.folder.path === this.selectedPath;
-      const icon = isExpanded ? "📂" : "📁";
+      const icon = isExpanded ? Icons.folderOpen : Icons.folder;
       const indent = depth * 20;
       const showAddButton = depth < PathUtils.MAX_DEPTH - 1;
       let html = `
@@ -24775,7 +24920,7 @@ class BookmarkSaveModal {
                         <div class="folder-tree-container">
                             <div class="folder-tree-body">
                                 <div class="folder-empty">
-                                    <div class="folder-empty-icon">📁</div>
+                                    <div class="folder-empty-icon">${Icons.folder}</div>
                                     <div class="folder-empty-text">Loading folders...</div>
                                 </div>
                             </div>
@@ -25250,6 +25395,16 @@ class SimpleBookmarkPanel {
     logger$1.info(`[SimpleBookmarkPanel] Loaded ${this.bookmarks.length} bookmarks, ${this.folders.length} folders`);
     this.overlay = document.createElement("div");
     this.overlay.className = "simple-bookmark-panel-overlay";
+    this.overlay.style.position = "fixed";
+    this.overlay.style.top = "0";
+    this.overlay.style.left = "0";
+    this.overlay.style.right = "0";
+    this.overlay.style.bottom = "0";
+    this.overlay.style.zIndex = "2147483647";
+    this.overlay.style.display = "flex";
+    this.overlay.style.alignItems = "center";
+    this.overlay.style.justifyContent = "center";
+    this.overlay.style.background = "rgba(0, 0, 0, 0.5)";
     this.shadowRoot = this.overlay.attachShadow({ mode: "open" });
     const styles = document.createElement("style");
     styles.textContent = this.getStyles();
@@ -25332,37 +25487,40 @@ class SimpleBookmarkPanel {
     panel.innerHTML = `
             <div class="sidebar">
                 <button class="tab-btn active" data-tab="bookmarks">
-                    <span class="tab-icon">📌</span>
+                    <span class="tab-icon">${Icons.bookmark}</span>
                     <span class="tab-label">Bookmarks</span>
                 </button>
                 <button class="tab-btn" data-tab="settings">
-                    <span class="tab-icon">⚙️</span>
+                    <span class="tab-icon">${Icons.settings}</span>
                     <span class="tab-label">Settings</span>
                 </button>
                 <button class="tab-btn" data-tab="support">
-                    <span class="tab-icon">☕</span>
+                    <span class="tab-icon">${Icons.coffee}</span>
                     <span class="tab-label">Buy Me a Coffee</span>
                 </button>
             </div>
 
             <div class="main">
                 <div class="header">
-                    <h2>📌 Bookmarks (${this.bookmarks.length})</h2>
+                    <h2>${Icons.bookmark} Bookmarks (${this.bookmarks.length})</h2>
                     <button class="close-btn" aria-label="Close">×</button>
                 </div>
 
                 <div class="tab-content bookmarks-tab active">
                     <div class="toolbar">
-                        <input type="text" class="search-input" placeholder="🔍 Search...">
+                        <div class="search-wrapper">
+                            <span class="search-icon">${Icons.search}</span>
+                            <input type="text" class="search-input" placeholder="Search...">
+                        </div>
                         <select class="platform-filter">
                             <option value="">All Platforms</option>
                             <option value="ChatGPT">ChatGPT</option>
                             <option value="Gemini">Gemini</option>
                         </select>
-                        <button class="new-folder-btn" title="Create new folder">➕ New Folder</button>
+                        <button class="new-folder-btn" title="Create new folder">${Icons.plus} New Folder</button>
                         <div class="toolbar-divider"></div>
-                        <button class="export-btn" title="Export bookmarks">📥 Export</button>
-                        <button class="import-btn" title="Import bookmarks">📤 Import</button>
+                        <button class="toolbar-icon-btn export-btn" title="Export bookmarks" aria-label="Export bookmarks">${Icons.download}</button>
+                        <button class="toolbar-icon-btn import-btn" title="Import bookmarks" aria-label="Import bookmarks">${Icons.upload}</button>
                     </div>
                     <div class="content">
                         ${this.renderTreeView()}
@@ -25375,10 +25533,10 @@ class SimpleBookmarkPanel {
                             <span class="selected-count">0 selected</span>
                         </div>
                         <div class="batch-buttons">
-                            <button class="batch-delete-btn" title="Delete selected items">🗑 Delete</button>
-                            <button class="batch-move-btn" title="Move selected items">📁 Move To</button>
-                            <button class="batch-export-btn" title="Export selected items">📤 Export</button>
-                            <button class="batch-clear-btn" title="Clear selection">✕ Clear</button>
+                            <button class="batch-delete-btn" title="Delete selected items">${Icons.trash} Delete</button>
+                            <button class="batch-move-btn" title="Move selected items">${Icons.folder} Move To</button>
+                            <button class="batch-export-btn" title="Export selected items">${Icons.download} Export</button>
+                            <button class="batch-clear-btn" title="Clear selection">${Icons.x} Clear</button>
                         </div>
                     </div>
                 </div>
@@ -25392,7 +25550,7 @@ class SimpleBookmarkPanel {
 
                 <div class="tab-content support-tab">
                     <div class="support-content">
-                        <h3>☕ Buy Me a Coffee</h3>
+                        <h3>${Icons.coffee} Buy Me a Coffee</h3>
                         <p>If you find this extension helpful, consider supporting the development!</p>
                         <a href="https://www.buymeacoffee.com/yourusername" target="_blank" class="support-btn">
                             Support Development
@@ -25438,7 +25596,7 @@ class SimpleBookmarkPanel {
    */
   renderFolderItem(node, depth) {
     const folder = node.folder;
-    const icon = node.isExpanded ? "📂" : "📁";
+    const icon = node.isExpanded ? Icons.folderOpen : Icons.folder;
     const indent = depth * 20;
     const showAddSubfolder = depth < PathUtils.MAX_DEPTH - 1;
     const selectedClass = node.isSelected ? "selected" : "";
@@ -25460,9 +25618,9 @@ class SimpleBookmarkPanel {
                 <span class="folder-icon">${icon}</span>
                 <span class="folder-name">${this.escapeHtml(folder.name)} <span class="folder-count">(${TreeBuilder.getTotalBookmarkCount(node)})</span></span>
                 <div class="item-actions">
-                    ${showAddSubfolder ? `<button class="action-btn add-subfolder" data-path="${this.escapeAttr(folder.path)}" data-depth="${depth}" title="New Subfolder" aria-label="Create subfolder">➕</button>` : ""}
-                    <button class="action-btn rename-folder" title="Rename" aria-label="Rename folder">✏️</button>
-                    <button class="action-btn delete-folder" title="Delete" aria-label="Delete folder">🗑</button>
+                    ${showAddSubfolder ? `<button class="action-btn add-subfolder" data-path="${this.escapeAttr(folder.path)}" data-depth="${depth}" title="New Subfolder" aria-label="Create subfolder">${Icons.plus}</button>` : ""}
+                    <button class="action-btn rename-folder" title="Rename" aria-label="Rename folder">${Icons.edit}</button>
+                    <button class="action-btn delete-folder" title="Delete" aria-label="Delete folder">${Icons.trash}</button>
                 </div>
             </div>
         `;
@@ -25506,9 +25664,9 @@ class SimpleBookmarkPanel {
                 <span class="bookmark-title">${this.escapeHtml(bookmark.title)}</span>
                 <span class="bookmark-timestamp">${timestamp}</span>
                 <div class="item-actions">
-                    <button class="action-btn jump-bookmark" title="Jump to Conversation" aria-label="Jump to conversation">🔗</button>
-                    <button class="action-btn edit-bookmark" title="Edit" aria-label="Edit bookmark">✏️</button>
-                    <button class="action-btn delete-bookmark" title="Delete" aria-label="Delete bookmark">🗑</button>
+                    <button class="action-btn preview-bookmark" title="Preview" aria-label="Preview bookmark">${Icons.eye}</button>
+                    <button class="action-btn edit-bookmark" title="Edit" aria-label="Edit bookmark">${Icons.edit}</button>
+                    <button class="action-btn delete-bookmark" title="Delete" aria-label="Delete bookmark">${Icons.trash}</button>
                 </div>
             </div>
         `;
@@ -25520,11 +25678,11 @@ class SimpleBookmarkPanel {
   renderEmptyState() {
     return `
             <div class="tree-empty">
-                <div class="empty-icon">📁</div>
+                <div class="empty-icon">${Icons.folder}</div>
                 <h3>No folders yet</h3>
                 <p>Create your first folder to organize bookmarks</p>
                 <button class="btn-primary create-first-folder">
-                    ➕ Create First Folder
+                    ${Icons.plus} Create First Folder
                 </button>
             </div>
         `;
@@ -25541,11 +25699,11 @@ class SimpleBookmarkPanel {
   getPlatformIcon(platform) {
     switch (platform) {
       case "ChatGPT":
-        return "🤖";
+        return Icons.chatgpt;
       case "Gemini":
-        return "✨";
+        return Icons.gemini;
       default:
-        return "🤖";
+        return Icons.chatgpt;
     }
   }
   /**
@@ -25617,7 +25775,7 @@ class SimpleBookmarkPanel {
       }
       const header = this.shadowRoot.querySelector("h2");
       if (header) {
-        header.textContent = `📌 Bookmarks (${this.bookmarks.length})`;
+        header.innerHTML = `${Icons.bookmark} Bookmarks (${this.bookmarks.length})`;
       }
       this.updateBatchActionsBar();
     }
@@ -25807,7 +25965,7 @@ Please create a new root folder or organize within existing folders.`);
         await this.handleDeleteFolder(path);
       });
     });
-    this.shadowRoot?.querySelectorAll(".jump-bookmark").forEach((btn) => {
+    this.shadowRoot?.querySelectorAll(".preview-bookmark").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const bookmarkItem = e.target.closest(".bookmark-item");
@@ -25870,7 +26028,7 @@ Please create a new root folder or organize within existing folders.`);
       folderElement.setAttribute("aria-expanded", String(isExpanded));
       const icon = folderElement.querySelector(".folder-icon");
       if (icon) {
-        icon.textContent = isExpanded ? "📂" : "📁";
+        icon.innerHTML = isExpanded ? Icons.folderOpen : Icons.folder;
       }
       const toggle = folderElement.querySelector(".folder-toggle");
       if (toggle) {
@@ -26119,7 +26277,7 @@ Please create a new root folder or organize within existing folders.`);
         folderElement.setAttribute("aria-expanded", "false");
         const icon = folderElement.querySelector(".folder-icon");
         if (icon) {
-          icon.textContent = "📁";
+          icon.innerHTML = Icons.folder;
         }
         folderElement.classList.remove("expanded");
       }
@@ -26232,12 +26390,12 @@ Please create a new root folder or organize within existing folders.`);
     input.style.cssText = `
             width: 100%;
             padding: 2px 6px;
-            border: 1px solid #3b82f6;
-            border-radius: 4px;
-            font-size: 14px;
+            border: 1px solid var(--primary-600);
+            border-radius: var(--radius-xs);
+            font-size: var(--text-base);
             font-family: inherit;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: var(--shadow-focus);
         `;
     const parent = nameSpan.parentElement;
     if (!parent) return;
@@ -26701,40 +26859,38 @@ Tip: You can export your bookmarks first to create a backup.`
       const modal = document.createElement("div");
       modal.style.cssText = `
                 background: white;
-                border-radius: 8px;
-                box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
-                            0 24px 38px 3px rgba(0,0,0,0.14),
-                            0 9px 46px 8px rgba(0,0,0,0.12);
+                border-radius: var(--radius-md);
+                box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
             `;
       modal.innerHTML = `
                 <div style="padding: 24px 24px 20px;">
                     <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                        <span style="font-size: 24px;">⚠️</span>
-                        <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: #202124;">
+                        <span class="warning-icon">${Icons.alertTriangle}</span>
+                        <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: var(--gray-900);">
                             Delete Selected Items
                         </h3>
                     </div>
-                    <div style="color: #5f6368; font-size: 14px; line-height: 1.5;">
+                    <div style="color: var(--gray-500); font-size: 14px; line-height: 1.5;">
                         <p style="margin: 0 0 16px 0;">This will permanently delete:</p>
                         <ul style="margin: 0; padding-left: 24px;">
-                            ${analysis.folders.length > 0 ? `<li>📁 ${analysis.folders.length} root folder${analysis.folders.length > 1 ? "s" : ""}</li>` : ""}
-                            ${analysis.subfolders.length > 0 ? `<li>📁 ${analysis.subfolders.length} subfolder${analysis.subfolders.length > 1 ? "s" : ""}</li>` : ""}
-                            ${analysis.bookmarks.length > 0 ? `<li>🔖 ${analysis.bookmarks.length} bookmark${analysis.bookmarks.length > 1 ? "s" : ""}</li>` : ""}
+                            ${analysis.folders.length > 0 ? `<li>${Icons.folder} ${analysis.folders.length} root folder${analysis.folders.length > 1 ? "s" : ""}</li>` : ""}
+                            ${analysis.subfolders.length > 0 ? `<li>${Icons.folder} ${analysis.subfolders.length} subfolder${analysis.subfolders.length > 1 ? "s" : ""}</li>` : ""}
+                            ${analysis.bookmarks.length > 0 ? `<li>${Icons.bookmark} ${analysis.bookmarks.length} bookmark${analysis.bookmarks.length > 1 ? "s" : ""}</li>` : ""}
                         </ul>
-                        <p style="margin: 16px 0 0 0; font-weight: 500; color: #d93025;">
+                        <p style="margin: 16px 0 0 0; font-weight: 500; color: var(--danger-600);">
                             This action cannot be undone.
                         </p>
                     </div>
                 </div>
-                <div style="padding: 8px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e8eaed;">
+                <div style="padding: 8px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--gray-200);">
                     <button class="cancel-btn" style="
                         padding: 8px 16px;
                         border: none;
                         border-radius: 4px;
                         background: transparent;
-                        color: #1a73e8;
+                        color: var(--primary-600);
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
@@ -26744,7 +26900,7 @@ Tip: You can export your bookmarks first to create a backup.`
                         padding: 8px 16px;
                         border: none;
                         border-radius: 4px;
-                        background: #d93025;
+                        background: var(--danger-600);
                         color: white;
                         font-size: 14px;
                         font-weight: 500;
@@ -26758,16 +26914,16 @@ Tip: You can export your bookmarks first to create a backup.`
       const cancelBtn = modal.querySelector(".cancel-btn");
       const deleteBtn = modal.querySelector(".delete-btn");
       cancelBtn.addEventListener("mouseenter", () => {
-        cancelBtn.style.background = "#f1f3f4";
+        cancelBtn.style.background = "var(--gray-100)";
       });
       cancelBtn.addEventListener("mouseleave", () => {
         cancelBtn.style.background = "transparent";
       });
       deleteBtn.addEventListener("mouseenter", () => {
-        deleteBtn.style.background = "#c5221f";
+        deleteBtn.style.background = "var(--danger-700)";
       });
       deleteBtn.addEventListener("mouseleave", () => {
-        deleteBtn.style.background = "#d93025";
+        deleteBtn.style.background = "var(--danger-600)";
       });
       cancelBtn.addEventListener("click", () => {
         overlay.remove();
@@ -26852,10 +27008,8 @@ Tip: You can export your bookmarks first to create a backup.`
     const modal = document.createElement("div");
     modal.style.cssText = `
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
-                        0 24px 38px 3px rgba(0,0,0,0.14),
-                        0 9px 46px 8px rgba(0,0,0,0.12);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-2xl);
             max-width: 500px;
             width: 90%;
             max-height: 80vh;
@@ -26865,19 +27019,19 @@ Tip: You can export your bookmarks first to create a backup.`
     modal.innerHTML = `
             <div style="padding: 24px 24px 20px;">
                 <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                    <span style="font-size: 24px;">⚠️</span>
-                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: #202124;">
+                    <span class="warning-icon">${Icons.alertTriangle}</span>
+                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: var(--gray-900);">
                         Deletion Completed with Errors
                     </h3>
                 </div>
-                <div style="color: #5f6368; font-size: 14px; line-height: 1.5;">
+                <div style="color: var(--gray-500); font-size: 14px; line-height: 1.5;">
                     <p style="margin: 0 0 12px 0;">
                         Completed with <strong>${errors.length}</strong> error${errors.length > 1 ? "s" : ""}:
                     </p>
                     <div style="
                         max-height: 300px;
                         overflow-y: auto;
-                        background: #f8f9fa;
+                        background: var(--gray-50);
                         border-radius: 4px;
                         padding: 12px;
                     ">
@@ -26887,12 +27041,12 @@ Tip: You can export your bookmarks first to create a backup.`
                     </div>
                 </div>
             </div>
-            <div style="padding: 8px; display: flex; justify-content: flex-end; border-top: 1px solid #e8eaed;">
+            <div style="padding: 8px; display: flex; justify-content: flex-end; border-top: 1px solid var(--gray-200);">
                 <button class="ok-btn" style="
                     padding: 8px 24px;
                     border: none;
                     border-radius: 4px;
-                    background: #1a73e8;
+                    background: var(--primary-600);
                     color: white;
                     font-size: 14px;
                     font-weight: 500;
@@ -26905,10 +27059,10 @@ Tip: You can export your bookmarks first to create a backup.`
     document.body.appendChild(overlay);
     const okBtn = modal.querySelector(".ok-btn");
     okBtn.addEventListener("mouseenter", () => {
-      okBtn.style.background = "#1765cc";
+      okBtn.style.background = "var(--primary-700)";
     });
     okBtn.addEventListener("mouseleave", () => {
-      okBtn.style.background = "#1a73e8";
+      okBtn.style.background = "var(--primary-600)";
     });
     okBtn.addEventListener("click", () => {
       overlay.remove();
@@ -27011,23 +27165,21 @@ Tip: You can export your bookmarks first to create a backup.`
       const modal = document.createElement("div");
       modal.style.cssText = `
                 background: white;
-                border-radius: 8px;
-                box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
-                            0 24px 38px 3px rgba(0,0,0,0.14),
-                            0 9px 46px 8px rgba(0,0,0,0.12);
+                border-radius: var(--radius-md);
+                box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
                 padding: 24px;
             `;
       modal.innerHTML = `
-                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: #202124;">
+                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: var(--gray-900);">
                     导出选项
                 </h3>
                 <div style="margin-bottom: 24px;">
                     <label style="display: flex; align-items: center; cursor: pointer; user-select: none;">
                         <input type="checkbox" id="preserve-structure" checked 
                                style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer;">
-                        <span style="font-size: 14px; color: #5f6368;">
+                        <span style="font-size: 14px; color: var(--gray-500);">
                             同时保留文件夹结构
                         </span>
                     </label>
@@ -27035,10 +27187,10 @@ Tip: You can export your bookmarks first to create a backup.`
                 <div style="display: flex; justify-content: flex-end; gap: 8px;">
                     <button class="cancel-btn" style="
                         padding: 8px 16px;
-                        border: 1px solid #ddd;
+                        border: 1px solid var(--gray-300);
                         border-radius: 4px;
                         background: white;
-                        color: #5f6368;
+                        color: var(--gray-500);
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
@@ -27048,7 +27200,7 @@ Tip: You can export your bookmarks first to create a backup.`
                         padding: 8px 16px;
                         border: none;
                         border-radius: 4px;
-                        background: #1a73e8;
+                        background: var(--primary-600);
                         color: white;
                         font-size: 14px;
                         font-weight: 500;
@@ -27063,16 +27215,16 @@ Tip: You can export your bookmarks first to create a backup.`
       const cancelBtn = modal.querySelector(".cancel-btn");
       const exportBtn = modal.querySelector(".export-btn");
       cancelBtn.addEventListener("mouseenter", () => {
-        cancelBtn.style.background = "#f1f3f4";
+        cancelBtn.style.background = "var(--gray-100)";
       });
       cancelBtn.addEventListener("mouseleave", () => {
         cancelBtn.style.background = "white";
       });
       exportBtn.addEventListener("mouseenter", () => {
-        exportBtn.style.background = "#1765cc";
+        exportBtn.style.background = "var(--primary-700)";
       });
       exportBtn.addEventListener("mouseleave", () => {
-        exportBtn.style.background = "#1a73e8";
+        exportBtn.style.background = "var(--primary-600)";
       });
       cancelBtn.addEventListener("click", () => {
         overlay.remove();
@@ -27240,32 +27392,30 @@ Tip: You can export your bookmarks first to create a backup.`
       const modal = document.createElement("div");
       modal.style.cssText = `
                 background: white;
-                border-radius: 8px;
-                box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
-                            0 24px 38px 3px rgba(0,0,0,0.14),
-                            0 9px 46px 8px rgba(0,0,0,0.12);
+                border-radius: var(--radius-md);
+                box-shadow: var(--shadow-2xl);
                 max-width: 450px;
                 width: 90%;
                 padding: 24px;
             `;
       const totalIssues = analysis.noFolder.length + analysis.tooDeep.length;
       modal.innerHTML = `
-                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: #202124;">
+                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: var(--gray-900);">
                     📥 导入摘要
                 </h3>
-                <div style="font-size: 14px; color: #5f6368; line-height: 1.6;">
+                <div style="font-size: 14px; color: var(--gray-500); line-height: 1.6;">
                     <p style="margin: 0 0 12px 0;">
                         准备导入 <strong>${analysis.valid.length + analysis.noFolder.length + analysis.tooDeep.length}</strong> 个书签：
                     </p>
                     <ul style="margin: 0 0 16px 0; padding-left: 24px;">
-                        <li>✅ ${analysis.valid.length} 个书签将正常导入</li>
-                        ${analysis.noFolder.length > 0 ? `<li>📁 ${analysis.noFolder.length} 个书签无文件夹 → 将导入到 <strong>Import</strong> 文件夹</li>` : ""}
-                        ${analysis.tooDeep.length > 0 ? `<li>⚠️ ${analysis.tooDeep.length} 个书签文件夹层级过深 → 将导入到 <strong>Import</strong> 文件夹</li>` : ""}
+                        <li>${Icons.check} ${analysis.valid.length} 个书签将正常导入</li>
+                        ${analysis.noFolder.length > 0 ? `<li>${Icons.folder} ${analysis.noFolder.length} 个书签无文件夹 → 将导入到 <strong>Import</strong> 文件夹</li>` : ""}
+                        ${analysis.tooDeep.length > 0 ? `<li>${Icons.folder} ${analysis.tooDeep.length} 个书签文件夹层级过深 → 将导入到 <strong>Import</strong> 文件夹</li>` : ""}
                     </ul>
                     ${totalIssues > 0 ? `
-                        <div style="background: #fff3cd; border-left: 3px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
-                            <div style="font-weight: 500; color: #856404; margin-bottom: 4px;">ℹ️ 注意</div>
-                            <div style="color: #856404; font-size: 13px;">
+                        <div style="background: var(--warning-100); border-left: 3px solid var(--warning-500); padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                            <div style="font-weight: 500; color: var(--warning-800); margin-bottom: 4px;">ℹ️ 注意</div>
+                            <div style="color: var(--warning-800); font-size: 13px;">
                                 ${analysis.noFolder.length + analysis.tooDeep.length} 个书签将自动归类到 Import 文件夹
                             </div>
                         </div>
@@ -27274,10 +27424,10 @@ Tip: You can export your bookmarks first to create a backup.`
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
                     <button class="cancel-btn" style="
                         padding: 8px 16px;
-                        border: 1px solid #ddd;
+                        border: 1px solid var(--gray-300);
                         border-radius: 4px;
                         background: white;
-                        color: #5f6368;
+                        color: var(--gray-500);
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
@@ -27287,7 +27437,7 @@ Tip: You can export your bookmarks first to create a backup.`
                         padding: 8px 16px;
                         border: none;
                         border-radius: 4px;
-                        background: #1a73e8;
+                        background: var(--primary-600);
                         color: white;
                         font-size: 14px;
                         font-weight: 500;
@@ -27301,16 +27451,16 @@ Tip: You can export your bookmarks first to create a backup.`
       const cancelBtn = modal.querySelector(".cancel-btn");
       const proceedBtn = modal.querySelector(".proceed-btn");
       cancelBtn.addEventListener("mouseenter", () => {
-        cancelBtn.style.background = "#f1f3f4";
+        cancelBtn.style.background = "var(--gray-100)";
       });
       cancelBtn.addEventListener("mouseleave", () => {
         cancelBtn.style.background = "white";
       });
       proceedBtn.addEventListener("mouseenter", () => {
-        proceedBtn.style.background = "#1765cc";
+        proceedBtn.style.background = "var(--primary-700)";
       });
       proceedBtn.addEventListener("mouseleave", () => {
-        proceedBtn.style.background = "#1a73e8";
+        proceedBtn.style.background = "var(--primary-600)";
       });
       cancelBtn.addEventListener("click", () => {
         overlay.remove();
@@ -27398,13 +27548,13 @@ Tip: You can export your bookmarks first to create a backup.`
       modal.className = "conflict-dialog";
       modal.innerHTML = `
                 <div class="conflict-header">
-                    <h3>⚠️ Duplicate Bookmarks Detected</h3>
+                    <h3><span class="warning-icon">${Icons.alertTriangle}</span> Duplicate Bookmarks Detected</h3>
                 </div>
 
                 <div class="conflict-body">
                     <p>Found <strong>${conflicts.length}</strong> bookmark(s) that already exist.</p>
                     <p>Total bookmarks to import: <strong>${allBookmarks.length}</strong></p>
-                    <p style="margin-top: 16px; color: #6b7280;">Click <strong>Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
+                    <p style="margin-top: 16px; color: var(--gray-500);">Click <strong>Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
 
                     <div class="conflict-list">
                         ${conflicts.slice(0, 5).map((b) => `
@@ -27688,8 +27838,182 @@ Tip: You can export your bookmarks first to create a backup.`
    */
   getStyles() {
     return `
+            /* Design Tokens - Inlined for Shadow DOM Compatibility */
             :host {
-                all: initial;
+                /* NEUTRAL COLORS (Gray Scale) */
+                --gray-50: #F9FAFB;
+                --gray-100: #F3F4F6;
+                --gray-200: #E5E7EB;
+                --gray-300: #D1D5DB;
+                --gray-400: #9CA3AF;
+                --gray-500: #6B7280;
+                --gray-600: #4B5563;
+                --gray-700: #374151;
+                --gray-800: #1F2937;
+                --gray-900: #111827;
+
+                /* PRIMARY COLORS (Material Blue) */
+                --primary-50: #E3F2FD;
+                --primary-100: #BBDEFB;
+                --primary-200: #90CAF9;
+                --primary-300: #64B5F6;
+                --primary-400: #42A5F5;
+                --primary-500: #2196F3;
+                --primary-600: #1976D2;
+                --primary-700: #1565C0;
+                --primary-800: #0D47A1;
+
+                /* Material Design 3 - Surface Colors */
+                --md-surface: #FFFFFF;
+                --md-surface-variant: #F5F5F5;
+                --md-surface-container: #FAFAFA;
+                --md-surface-container-high: #EEEEEE;
+                --md-on-surface: #1C1B1F;
+                --md-on-surface-variant: #49454F;
+
+                /* Material Design 3 - Primary Container */
+                --md-primary-container: #E3F2FD;
+                --md-on-primary-container: #0D47A1;
+
+                /* Material Design 3 - Outline */
+                --md-outline: #E0E0E0;
+                --md-outline-variant: #EEEEEE;
+
+                /* SEMANTIC COLORS */
+                --success-50: #F0FDF4;
+                --success-100: #DCFCE7;
+                --success-500: #22C55E;
+                --success-600: #16A34A;
+                --success-700: #15803D;
+
+                --warning-50: #FFFBEB;
+                --warning-100: #FEF3C7;
+                --warning-500: #F59E0B;
+                --warning-600: #D97706;
+                --warning-700: #B45309;
+                --warning-800: #92400E;
+
+                --danger-50: #FEF2F2;
+                --danger-100: #FEE2E2;
+                --danger-500: #EF4444;
+                --danger-600: #DC2626;
+                --danger-700: #B91C1C;
+
+
+                /* PLATFORM COLORS */
+                --chatgpt-light: #D1FAE5;
+                --chatgpt-dark: #065F46;
+                --chatgpt-icon: #10A37F;
+                --gemini-light: #DBEAFE;
+                --gemini-dark: #1E40AF;
+                --gemini-icon: #4285F4;
+
+                /* SPACING */
+                --space-0: 0px;
+                --space-1: 4px;
+                --space-2: 8px;
+                --space-3: 12px;
+                --space-4: 16px;
+                --space-5: 20px;
+                --space-6: 24px;
+                --space-8: 32px;
+                --space-10: 40px;
+                --space-12: 48px;
+                --space-16: 64px;
+                --space-20: 80px;
+                --space-24: 96px;
+
+                /* TYPOGRAPHY */
+                --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+                --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", "Courier New", monospace;
+                --text-xs: 12px;
+                --text-sm: 13px;
+                --text-base: 14px;
+                --text-lg: 16px;
+                --text-xl: 18px;
+                --text-2xl: 20px;
+                --text-3xl: 24px;
+                --font-normal: 400;
+                --font-medium: 500;
+                --font-semibold: 600;
+                --font-bold: 700;
+                --leading-tight: 1.25;
+                --leading-normal: 1.5;
+                --leading-relaxed: 1.75;
+
+                /* BORDER RADIUS (Material Design 3) */
+                --radius-none: 0px;
+                --radius-extra-small: 4px;
+                --radius-small: 8px;
+                --radius-medium: 12px;
+                --radius-large: 16px;
+                --radius-extra-large: 28px;
+                --radius-full: 9999px;
+                --radius-xs: 4px;
+                --radius-sm: 8px;
+                --radius-md: 12px;
+                --radius-lg: 16px;
+                --radius-xl: 28px;
+
+                /* SHADOWS (Material Design 3 Elevation) */
+                --shadow-none: none;
+                --elevation-0: none;
+                --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.15);
+                --elevation-2: 0 1px 5px rgba(0, 0, 0, 0.2), 0 2px 2px rgba(0, 0, 0, 0.14);
+                --elevation-3: 0 3px 5px rgba(0, 0, 0, 0.2), 0 1px 18px rgba(0, 0, 0, 0.12);
+                --elevation-4: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 5px rgba(0, 0, 0, 0.14);
+                --elevation-5: 0 8px 10px rgba(0, 0, 0, 0.14), 0 3px 14px rgba(0, 0, 0, 0.12);
+                --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.15);
+                --shadow-sm: 0 1px 5px rgba(0, 0, 0, 0.2), 0 2px 2px rgba(0, 0, 0, 0.14);
+                --shadow-md: 0 3px 5px rgba(0, 0, 0, 0.2), 0 1px 18px rgba(0, 0, 0, 0.12);
+                --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 5px rgba(0, 0, 0, 0.14);
+                --shadow-xl: 0 8px 10px rgba(0, 0, 0, 0.14), 0 3px 14px rgba(0, 0, 0, 0.12);
+                --shadow-2xl: 0 24px 38px rgba(0, 0, 0, 0.14), 0 9px 46px rgba(0, 0, 0, 0.12);
+                --shadow-focus: 0 0 0 3px rgba(25, 118, 210, 0.1);
+
+                /* SVG图标垂直对齐 */
+                svg {
+                    display: inline-block;
+                    vertical-align: text-top;  /* 与文字顶部对齐,避免偏下 */
+                }
+                --icon-md: 20px;
+                --icon-lg: 24px;
+                --icon-xl: 32px;
+
+                /* ANIMATION & TRANSITIONS */
+                --duration-fast: 150ms;
+                --duration-base: 200ms;
+                --duration-slow: 300ms;
+                --duration-slower: 500ms;
+                --ease-in: cubic-bezier(0.4, 0, 1, 1);
+                --ease-out: cubic-bezier(0, 0, 0.2, 1);
+                --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+                --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+                /* Z-INDEX SCALE */
+                --z-dropdown: 1000;
+                --z-sticky: 1020;
+                --z-fixed: 1030;
+                --z-modal-backdrop: 2147483646;
+                --z-modal: 2147483647;
+                --z-popover: 2147483647;
+                --z-tooltip: 2147483647;
+
+                /* COMMON VALUES */
+                --white: #FFFFFF;
+                --black: #000000;
+
+                /* Overlay positioning */
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: var(--z-modal-backdrop);
             }
 
             * {
@@ -27701,16 +28025,16 @@ Tip: You can export your bookmarks first to create a backup.`
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                width: min(800px, 90vw);
-                max-width: 800px;
-                height: min(800px, 80vh);
-                max-height: 800px;
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                width: 90%;
+                max-width: 800px;  /* 最大宽度800px */
+                height: 85vh;
+                max-height: 600px;  /* 最大高度600px */
+                background: var(--md-surface);
+                border-radius: var(--radius-large);  /* Material Design 16px */
+                box-shadow: var(--elevation-3);      /* Material Design elevation */
                 display: flex;
-                z-index: 2147483647;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                z-index: var(--z-modal);
+                font-family: var(--font-sans);
                 overflow: hidden;
             }
 
@@ -27718,8 +28042,8 @@ Tip: You can export your bookmarks first to create a backup.`
                 display: flex;
                 gap: 8px;
                 padding: 12px;
-                background: #f9fafb;
-                border-bottom: 1px solid #e5e7eb;
+                background: var(--gray-50);
+                border-bottom: 1px solid var(--gray-200);
                 align-items: center;
                 flex-wrap: wrap;
             }
@@ -27727,7 +28051,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .toolbar-divider {
                 width: 1px;
                 height: 24px;
-                background: #d1d5db;
+                background: var(--gray-300);
                 margin: 0 4px;
             }
 
@@ -27735,8 +28059,8 @@ Tip: You can export your bookmarks first to create a backup.`
             .export-btn,
             .import-btn {
                 padding: 6px 12px;
-                border: 1px solid #d1d5db;
-                background: white;
+                border: 1px solid var(--gray-300);
+                background: var(--white);
                 border-radius: 6px;
                 font-size: 13px;
                 cursor: pointer;
@@ -27747,53 +28071,58 @@ Tip: You can export your bookmarks first to create a backup.`
             .new-folder-btn:hover,
             .export-btn:hover,
             .import-btn:hover {
-                background: #f3f4f6;
-                border-color: #9ca3af;
+                background: var(--gray-100);
+                border-color: var(--gray-400);
             }
 
             .new-folder-btn {
                 font-weight: 500;
-                color: #3b82f6;
-                border-color: #3b82f6;
+                color: var(--primary-600);
+                border-color: var(--primary-600);
             }
 
             .new-folder-btn:hover {
-                background: #eff6ff;
+                background: var(--primary-50);
             }
 
             /* Sidebar */
             .sidebar {
-                width: 120px;
-                background: #f9fafb;
-                border-right: 1px solid #e5e7eb;
+                width: 140px;  /* 减小宽度 */
+                background: var(--md-surface-variant);
+                border-right: 1px solid var(--md-outline);
                 display: flex;
                 flex-direction: column;
-                padding: 16px 0;
+                padding: var(--space-4) var(--space-2);
+                gap: var(--space-2);
             }
 
             .tab-btn {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 8px;
-                padding: 16px 12px;
+                gap: var(--space-2);
+                padding: var(--space-4) var(--space-3);
                 border: none;
+                border-left: 3px solid transparent;
                 background: transparent;
                 cursor: pointer;
-                transition: all 0.2s;
-                color: #6b7280;
-                font-size: 12px;
+                transition: all var(--duration-base);
+                color: var(--md-on-surface-variant);
+                font-size: var(--text-xs);
+                border-radius: var(--radius-small);
             }
 
             .tab-btn:hover {
-                background: #f3f4f6;
-                color: #111827;
+                background: var(--md-surface-container-high);  /* 更明显的灰色 #EEEEEE */
+                color: var(--md-on-surface);
             }
 
             .tab-btn.active {
-                background: white;
-                color: #3b82f6;
-                font-weight: 500;
+                background: var(--md-primary-container);
+                color: var(--primary-600);
+                font-weight: var(--font-medium);
+                border-left-color: var(--primary-600);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.08);  /* 微妙的阴影 */
             }
 
             .tab-icon {
@@ -27815,7 +28144,7 @@ Tip: You can export your bookmarks first to create a backup.`
 
             .header {
                 padding: 20px 24px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--gray-200);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -27825,14 +28154,14 @@ Tip: You can export your bookmarks first to create a backup.`
                 margin: 0;
                 font-size: 20px;
                 font-weight: 600;
-                color: #111827;
+                color: var(--gray-900);
             }
 
             .close-btn {
                 background: none;
                 border: none;
                 font-size: 28px;
-                color: #6b7280;
+                color: var(--gray-500);
                 cursor: pointer;
                 padding: 0;
                 width: 32px;
@@ -27845,8 +28174,28 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .close-btn:hover {
-                background: #f3f4f6;
-                color: #111827;
+                background: var(--gray-100);
+                color: var(--gray-900);
+            }
+
+            .tree-item {
+                display: flex;
+                align-items: center;
+                gap: var(--space-2);
+                padding: var(--space-2) var(--space-3);
+                margin-bottom: var(--space-1);
+                cursor: pointer;
+                border-radius: var(--radius-small);
+                transition: all var(--duration-base) var(--ease-out);
+                background: var(--primary-50);  /* 文件夹浅蓝色背景 */
+                border: none;  /* 移除边框 */
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);  /* 微妙阴影 */
+                position: relative;  /* 为actions的absolute定位提供参考 */
+            }
+
+            .tree-item:hover {
+                background: var(--primary-100);  /* 浅蓝色高亮 */
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             }
 
             /* Tab content */
@@ -27864,40 +28213,63 @@ Tip: You can export your bookmarks first to create a backup.`
             /* Toolbar */
             .toolbar {
                 padding: 12px 24px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--gray-200);
                 display: flex;
                 gap: 12px;
                 align-items: center;
             }
 
-            .search-input {
+            .search-wrapper {
+                position: relative;
+                display: flex;
+                align-items: center;  /* 确保内容垂直居中 */
                 flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 14px;
-                font-family: inherit;
+            }
+
+            .search-icon {
+                position: absolute;
+                left: 12px;
+                display: flex;
+                align-items: center;  /* 图标垂直居中 */
+                pointer-events: none;
+                color: var(--gray-500);
+            }
+
+            .search-icon svg {
+                display: block;  /* 移除inline默认的baseline对齐 */
+            }
+
+            .search-input {
+                flex: 1;  /* 拉宽搜索框 */
+                padding: var(--space-3) var(--space-4) var(--space-3) var(--space-10);  /* 左侧留出图标空间 */
+                border: 1px solid var(--md-outline);
+                border-radius: var(--radius-medium);  /* Material Design 12px */
+                background: var(--md-surface-container);
+                font-size: var(--text-sm);
+                color: var(--md-on-surface);
+                transition: all var(--duration-base);
             }
 
             .search-input:focus {
                 outline: none;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                border-color: var(--primary-600);
+                box-shadow: var(--shadow-focus);  /* Material Design focus ring */
+                background: var(--md-surface);
             }
 
             .platform-filter {
                 padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 14px;
-                background: white;
+                border: 1px solid var(--gray-300);
+                border-radius: var(--radius-sm);
+                font-size: var(--text-base);
+                background: var(--white);
                 cursor: pointer;
             }
 
             .export-btn {
                 padding: 8px 16px;
-                background: #3b82f6;
-                color: white;
+                background: var(--primary-600);
+                color: var(--white);
                 border: none;
                 border-radius: 6px;
                 font-size: 14px;
@@ -27906,7 +28278,7 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .export-btn:hover {
-                background: #2563eb;
+                background: var(--primary-700);
             }
 
             /* Content */
@@ -27919,7 +28291,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .empty {
                 text-align: center;
                 padding: 60px 20px;
-                color: #6b7280;
+                color: var(--gray-500);
                 font-size: 15px;
             }
 
@@ -27931,20 +28303,23 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .bookmark-item {
+                padding: var(--space-3) var(--space-4);
+                margin: var(--space-1) 3px;
+                border: none;  /* 移除边框 */
+                border-radius: var(--radius-small);
+                background: var(--md-surface);  /* 书签白色背景 */
+                cursor: pointer;
+                transition: all var(--duration-base) var(--ease-out);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);  /* 纯阴影 */
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                padding: 10px 16px;
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                transition: all 0.2s ease;
-                cursor: pointer;
+                position: relative;  /* 为actions的absolute定位提供参考 */
             }
 
             .bookmark-item:hover {
-                background: #f3f4f6;
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+                background: var(--primary-50);  /* 浅蓝色高亮 */
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.08);
             }
 
             .platform-badge {
@@ -27958,20 +28333,20 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .platform-badge.chatgpt {
-                background: #d1fae5;
-                color: #065f46;
+                background: var(--success-100);
+                color: var(--success-800);
             }
 
             .platform-badge.gemini {
-                background: #dbeafe;
-                color: #1e40af;
+                background: var(--primary-100);
+                color: var(--primary-800);
             }
 
             .title {
                 flex: 2;
                 font-size: 14px;
                 font-weight: 500;
-                color: #111827;
+                color: var(--gray-900);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -27980,7 +28355,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .response {
                 flex: 3;
                 font-size: 13px;
-                color: #6b7280;
+                color: var(--gray-500);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -27989,7 +28364,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .notes {
                 flex: 1;
                 font-size: 13px;
-                color: #9ca3af;
+                color: var(--gray-400);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -27998,7 +28373,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .time {
                 flex-shrink: 0;
                 font-size: 12px;
-                color: #9ca3af;
+                color: var(--gray-400);
                 min-width: 40px;
             }
 
@@ -28023,12 +28398,12 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .action-btn:hover {
-                background: rgba(0, 0, 0, 0.05);
+                background: var(--gray-100);
                 transform: scale(1.1);
             }
 
             .delete-btn:hover {
-                background: rgba(220, 38, 38, 0.1);
+                background: var(--danger-100);
             }
 
             /* Settings content */
@@ -28042,28 +28417,31 @@ Tip: You can export your bookmarks first to create a backup.`
             .support-content h3 {
                 margin: 0 0 16px 0;
                 font-size: 18px;
-                color: #111827;
+                color: var(--gray-900);
             }
 
             .settings-content p,
             .support-content p {
-                color: #6b7280;
+                color: var(--gray-500);
                 margin: 0 0 24px 0;
             }
             /* Support button */
             .support-btn {
                 display: inline-block;
-                padding: 12px 24px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
+                padding: var(--space-3) var(--space-6);
+                background: var(--primary-600);
+                color: var(--white);
                 text-decoration: none;
-                border-radius: 8px;
-                font-weight: 500;
-                transition: transform 0.2s ease;
+                border-radius: var(--radius-small);  /* Material Design 8px */
+                font-weight: var(--font-medium);
+                transition: all var(--duration-base);
+                box-shadow: var(--elevation-1);  /* Material Design elevation */
             }
 
             .support-btn:hover {
-                transform: translateY(-2px);
+                background: var(--primary-700);
+                box-shadow: var(--elevation-2);  /* Material Design hover elevation */
+                transform: translateY(-1px);
             }
 
             /* Conflict Dialog Styles */
@@ -28077,13 +28455,13 @@ Tip: You can export your bookmarks first to create a backup.`
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 2147483648;
+                z-index: var(--z-modal-backdrop);
             }
 
             .conflict-dialog {
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                background: var(--white);
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-2xl);
                 max-width: 500px;
                 width: 90%;
                 max-height: 80vh;
@@ -28094,15 +28472,15 @@ Tip: You can export your bookmarks first to create a backup.`
 
             .conflict-header {
                 padding: 20px 24px;
-                border-bottom: 1px solid #e5e7eb;
-                background: #fef3c7;
+                border-bottom: 1px solid var(--gray-200);
+                background: var(--warning-100);
             }
 
             .conflict-header h3 {
                 margin: 0;
                 font-size: 18px;
                 font-weight: 600;
-                color: #92400e;
+                color: var(--warning-800);
             }
 
             .conflict-body {
@@ -28113,20 +28491,20 @@ Tip: You can export your bookmarks first to create a backup.`
 
             .conflict-body p {
                 margin: 0 0 16px 0;
-                color: #374151;
+                color: var(--gray-700);
                 font-size: 14px;
             }
 
             .conflict-list {
                 margin-top: 16px;
-                border: 1px solid #e5e7eb;
+                border: 1px solid var(--gray-200);
                 border-radius: 8px;
                 overflow: hidden;
             }
 
             .conflict-item {
                 padding: 12px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--gray-200);
                 display: flex;
                 align-items: center;
                 gap: 12px;
@@ -28139,7 +28517,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .conflict-title {
                 flex: 1;
                 font-size: 13px;
-                color: #374151;
+                color: var(--gray-700);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -28149,23 +28527,23 @@ Tip: You can export your bookmarks first to create a backup.`
                 padding: 12px;
                 text-align: center;
                 font-size: 13px;
-                color: #6b7280;
+                color: var(--gray-500);
                 font-style: italic;
             }
 
             .conflict-footer {
                 padding: 16px 24px;
-                border-top: 1px solid #e5e7eb;
+                border-top: 1px solid var(--gray-200);
                 display: flex;
                 gap: 12px;
                 justify-content: flex-end;
-                background: #f9fafb;
+                background: var(--gray-50);
             }
 
             .toolbar button {
                 padding: 8px 12px;
-                border: 1px solid #e5e7eb;
-                background: #f3f4f6;
+                border: 1px solid var(--gray-200);
+                background: var(--gray-100);
                 border-radius: 6px;
                 font-size: 14px;
                 cursor: pointer;
@@ -28173,13 +28551,13 @@ Tip: You can export your bookmarks first to create a backup.`
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                color: #6b7280;
+                color: var(--gray-500);
             }
 
             .toolbar button:hover {
-                background: #e5e7eb;
-                border-color: #9ca3af;
-                color: #374151;
+                background: var(--gray-200);
+                border-color: var(--gray-400);
+                color: var(--gray-700);
             }
 
             .toolbar button svg {
@@ -28187,21 +28565,21 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .merge-btn {
-                background: #3b82f6;
-                color: white;
+                background: var(--primary-600);
+                color: var(--white);
             }
 
             .merge-btn:hover {
-                background: #2563eb;
+                background: var(--primary-700);
             }
 
             .cancel-btn {
-                background: #e5e7eb;
-                color: #374151;
+                background: var(--gray-200);
+                color: var(--gray-700);
             }
 
             .cancel-btn:hover {
-                background: #d1d5db;
+                background: var(--gray-300);
             }
 
             /* Detail Modal */
@@ -28215,23 +28593,23 @@ Tip: You can export your bookmarks first to create a backup.`
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 2147483648;
+                z-index: var(--z-modal-backdrop);
             }
 
             .detail-modal {
-                background: white;
-                border-radius: 12px;
+                background: var(--white);
+                border-radius: var(--radius-lg);
                 width: 90%;
                 max-width: 700px;
                 max-height: 80vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                box-shadow: var(--shadow-2xl);
             }
 
             .detail-header {
                 padding: 20px 24px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--gray-200);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -28241,12 +28619,12 @@ Tip: You can export your bookmarks first to create a backup.`
                 margin: 0;
                 font-size: 18px;
                 font-weight: 600;
-                color: #111827;
+                color: var(--gray-900);
             }
 
             .detail-meta {
                 padding: 12px 24px;
-                background: #f9fafb;
+                background: var(--gray-50);
                 display: flex;
                 gap: 16px;
                 align-items: center;
@@ -28255,11 +28633,11 @@ Tip: You can export your bookmarks first to create a backup.`
             .detail-url {
                 padding: 12px 24px;
                 font-size: 13px;
-                color: #6b7280;
+                color: var(--gray-500);
             }
 
             .detail-url a {
-                color: #3b82f6;
+                color: var(--primary-600);
                 text-decoration: none;
             }
 
@@ -28277,27 +28655,27 @@ Tip: You can export your bookmarks first to create a backup.`
                 margin: 0 0 12px 0;
                 font-size: 14px;
                 font-weight: 600;
-                color: #374151;
+                color: var(--gray-700);
             }
 
             .detail-text {
                 line-height: 1.6;
-                color: #111827;
+                color: var(--gray-900);
                 white-space: pre-wrap;
                 word-break: break-word;
             }
 
             .detail-footer {
                 padding: 16px 24px;
-                border-top: 1px solid #e5e7eb;
+                border-top: 1px solid var(--gray-200);
                 display: flex;
                 justify-content: flex-end;
             }
 
             .open-conversation-btn {
                 padding: 10px 20px;
-                background: #3b82f6;
-                color: white;
+                background: var(--primary-600);
+                color: var(--white);
                 border: none;
                 border-radius: 6px;
                 font-size: 14px;
@@ -28307,7 +28685,7 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .open-conversation-btn:hover {
-                background: #2563eb;
+                background: var(--primary-700);
             }
 
             /* ============================================================================
@@ -28317,18 +28695,17 @@ Tip: You can export your bookmarks first to create a backup.`
             .batch-actions-bar {
                 position: fixed;
                 bottom: 0;
-                left: 80px;
+                left: 140px;  /* Sidebar宽度 */
                 right: 0;
-                z-index: 100;
-                
-                background: #fff3cd;
-                border-top: 1px solid #ffc107;
-                box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-                
+                background: var(--warning-100);  /* 淡黄色背景 */
+                border-top: 1px solid var(--warning-500);
+                border-radius: var(--radius-medium) var(--radius-medium) 0 0;  /* 上方圆角 */
+                padding: var(--space-3) var(--space-6);
                 display: flex;
-                justify-content: space-between;
                 align-items: center;
-                padding: 12px 24px;
+                justify-content: space-between;
+                box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+                z-index: var(--z-sticky);
                 
                 transform: translateY(100%);
                 transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
@@ -28358,7 +28735,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .batch-actions-bar .selected-count {
                 font-size: 14px;
                 font-weight: 500;
-                color: #333;
+                color: var(--gray-900);
             }
             
             .batch-buttons {
@@ -28368,9 +28745,9 @@ Tip: You can export your bookmarks first to create a backup.`
             
             .batch-buttons button {
                 padding: 8px 16px;
-                border: 1px solid #ddd;
-                border-radius: 6px;
-                background: white;
+                border: 1px solid var(--gray-300);
+                border-radius: var(--radius-sm);
+                background: var(--white);
                 cursor: pointer;
                 font-size: 13px;
                 font-weight: 500;
@@ -28378,31 +28755,31 @@ Tip: You can export your bookmarks first to create a backup.`
             }
             
             .batch-buttons button:hover {
-                background: #f0f0f0;
+                background: var(--gray-100);
             }
             
             .batch-delete-btn:hover {
-                background: #dc3545 !important;
-                color: white !important;
-                border-color: #dc3545 !important;
+                background: var(--danger-600) !important;
+                color: var(--white) !important;
+                border-color: var(--danger-600) !important;
             }
             
             .batch-move-btn:hover {
-                background: #007bff !important;
-                color: white !important;
-                border-color: #007bff !important;
+                background: var(--primary-600) !important;
+                color: var(--white) !important;
+                border-color: var(--primary-600) !important;
             }
             
             .batch-export-btn:hover {
-                background: #28a745 !important;
-                color: white !important;
-                border-color: #28a745 !important;
+                background: var(--success-600) !important;
+                color: var(--white) !important;
+                border-color: var(--success-600) !important;
             }
             
             .batch-clear-btn:hover {
-                background: #6c757d !important;
-                color: white !important;
-                border-color: #6c757d !important;
+                background: var(--gray-600) !important;
+                color: var(--white) !important;
+                border-color: var(--gray-600) !important;
             }
             
             .bookmarks-tab .content {
@@ -28414,11 +28791,18 @@ Tip: You can export your bookmarks first to create a backup.`
                ============================================================================ */
 
             /* Tree Container */
+            .content {
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding: var(--space-2);  /* 添加padding避免阴影被截断 */
+            }
+
             .tree-view {
                 flex: 1;
                 overflow-y: auto;
                 overflow-x: hidden;
-                background: white;
+                background: var(--white);
             }
 
             /* Custom Scrollbar (macOS-style) */
@@ -28431,12 +28815,12 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .tree-view::-webkit-scrollbar-thumb {
-                background: #d1d5db;
+                background: var(--gray-300);
                 border-radius: 4px;
             }
 
             .tree-view::-webkit-scrollbar-thumb:hover {
-                background: #9ca3af;
+                background: var(--gray-400);
             }
 
             /* Tree Item Base */
@@ -28445,19 +28829,39 @@ Tip: You can export your bookmarks first to create a backup.`
                 align-items: center;
                 min-height: 36px;
                 padding: 6px 12px;
-                border-bottom: 1px solid #f3f4f6;
+                border-bottom: 1px solid var(--gray-100);
                 position: relative;
                 cursor: pointer;
                 transition: background-color 0.15s ease;
                 user-select: none;
             }
 
+            .batch-action-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-2);
+                padding: var(--space-2) var(--space-4);
+                background: var(--md-surface);
+                border: 1px solid var(--md-outline);
+                border-radius: var(--radius-small);
+                cursor: pointer;
+                transition: all var(--duration-base);
+                font-size: var(--text-sm);
+                color: var(--md-on-surface);
+                line-height: 1;  /* 移除额外的行高 */
+            }
+
+            .batch-action-btn svg {
+                flex-shrink: 0;  /* 防止图标被压缩 */
+            }
+
             .tree-item:hover {
-                background: #f9fafb;
+                background: var(--gray-50);
             }
 
             .tree-item:focus {
-                outline: 2px solid #3b82f6;
+                outline: 2px solid var(--primary-600);
                 outline-offset: -2px;
                 z-index: 1;
             }
@@ -28469,12 +28873,12 @@ Tip: You can export your bookmarks first to create a backup.`
             /* Folder Styles */
             .folder-item {
                 font-weight: 500;
-                background: #fafafa;
+                background: var(--gray-50);
             }
 
             .folder-item.selected {
-                background: #eff6ff;
-                border-left: 3px solid #3b82f6;
+                background: var(--primary-50);
+                border-left: 3px solid var(--primary-600);
             }
 
             .folder-toggle {
@@ -28485,7 +28889,7 @@ Tip: You can export your bookmarks first to create a backup.`
                 height: 16px;
                 margin-right: 4px;
                 font-size: 10px;
-                color: #5f6368;
+                color: var(--gray-500);
                 cursor: pointer;
                 user-select: none;
                 flex-shrink: 0;
@@ -28498,7 +28902,7 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .folder-toggle:hover {
-                color: #202124;
+                color: var(--gray-900);
             }
 
             .folder-icon {
@@ -28510,7 +28914,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .folder-name {
                 flex: 1;
                 font-weight: 500;
-                color: #202124;
+                color: var(--gray-900);
                 user-select: none;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -28520,7 +28924,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .folder-count {
                 margin-left: 6px;
                 font-size: 12px;
-                color: #5f6368;
+                color: var(--gray-500);
                 font-weight: 400;
                 user-select: none;
             }
@@ -28543,7 +28947,7 @@ Tip: You can export your bookmarks first to create a backup.`
 
             /* Bookmark Styles */
             .bookmark-item {
-                background: white;
+                background: var(--white);
             }
 
             .platform-icon {
@@ -28555,7 +28959,7 @@ Tip: You can export your bookmarks first to create a backup.`
             .bookmark-title {
                 flex: 1;
                 font-size: 13px;
-                color: #374151;
+                color: var(--gray-700);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -28566,7 +28970,7 @@ Tip: You can export your bookmarks first to create a backup.`
                 position: absolute;
                 right: 120px; /* Space for action buttons */
                 font-size: 11px;
-                color: #9ca3af;
+                color: var(--gray-400);
                 pointer-events: none;
                 white-space: nowrap;
             }
@@ -28581,16 +28985,19 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .item-checkbox:focus {
-                outline: 2px solid #3b82f6;
+                outline: 2px solid var(--primary-600);
                 outline-offset: 2px;
             }
 
             /* Action Buttons */
             .item-actions {
-                display: none;
-                gap: 4px;
-                margin-left: auto;
-                flex-shrink: 0;
+                display: none;  /* 默认隐藏 */
+                position: absolute;  /* 绝对定位,不影响高度 */
+                right: var(--space-3);
+                top: 50%;
+                transform: translateY(-50%);
+                gap: var(--space-1);
+                align-items: center;
             }
 
             .tree-item:hover .item-actions {
@@ -28617,14 +29024,14 @@ Tip: You can export your bookmarks first to create a backup.`
             }
 
             .action-btn:focus {
-                outline: 2px solid #3b82f6;
+                outline: 2px solid var(--primary-600);
                 outline-offset: -2px;
             }
 
             .action-btn.delete-folder:hover,
             .action-btn.delete-bookmark:hover {
-                background: rgba(239, 68, 68, 0.1);
-                color: #ef4444;
+                background: var(--danger-100);
+                color: var(--danger-500);
             }
 
             /* Empty State */
@@ -28635,7 +29042,7 @@ Tip: You can export your bookmarks first to create a backup.`
                 justify-content: center;
                 padding: 64px 32px;
                 text-align: center;
-                color: #6b7280;
+                color: var(--gray-500);
             }
 
             .empty-icon {
@@ -28648,31 +29055,31 @@ Tip: You can export your bookmarks first to create a backup.`
                 margin: 0 0 8px 0;
                 font-size: 16px;
                 font-weight: 600;
-                color: #374151;
+                color: var(--gray-700);
             }
 
             .tree-empty p {
                 margin: 0 0 24px 0;
                 font-size: 14px;
                 color: #6b7280;
-            }
-
             .btn-primary,
             .create-first-folder {
-                padding: 10px 20px;
-                background: #3b82f6;
+                padding: var(--space-2) var(--space-5);
+                background: var(--primary-600);
                 color: white;
                 border: none;
-                border-radius: 6px;
-                font-size: 14px;
-                font-weight: 500;
+                border-radius: var(--radius-small);  /* Material Design 8px */
                 cursor: pointer;
-                transition: background 0.15s ease;
+                font-weight: var(--font-medium);
+                transition: all var(--duration-base);
+                box-shadow: var(--elevation-1);  /* Material Design elevation */
             }
 
             .btn-primary:hover,
             .create-first-folder:hover {
-                background: #2563eb;
+                background: var(--primary-700);
+                box-shadow: var(--elevation-2);  /* Material Design hover elevation */
+                transform: translateY(-1px);
             }
 
             /* Responsive & Accessibility */
@@ -28694,8 +29101,12 @@ Tip: You can export your bookmarks first to create a backup.`
                 }
                 
                 .tree-item.selected {
-                    border: 2px solid #3b82f6;
-                }
+                background: var(--md-primary-container);
+                color: var(--md-on-primary-container);
+                border-radius: var(--radius-small);
+                font-weight: var(--font-medium);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.08);  /* 与Tab选中一致的阴影 */
+            }    }
             }
 
             /* Loading State */
@@ -28737,86 +29148,86 @@ Tip: You can export your bookmarks first to create a backup.`
 
             @media (prefers-color-scheme: dark) {
                 .panel {
-                    background: #1f2937;
+                    background: var(--gray-800);
                 }
 
                 .sidebar {
-                    background: #111827;
-                    border-color: #374151;
+                    background: var(--gray-900);
+                    border-color: var(--gray-700);
                 }
 
                 .tab-btn.active {
-                    background: #1f2937;
+                    background: var(--gray-800);
                 }
 
                 .header {
-                    border-color: #374151;
+                    border-color: var(--gray-700);
                 }
 
                 .header h2 {
-                    color: #f9fafb;
+                    color: var(--gray-50);
                 }
 
                 .close-btn {
-                    color: #9ca3af;
+                    color: var(--gray-400);
                 }
 
                 .close-btn:hover {
-                    background: #374151;
-                    color: #f9fafb;
+                    background: var(--gray-700);
+                    color: var(--gray-50);
                 }
 
                 .toolbar {
-                    border-color: #374151;
+                    border-color: var(--gray-700);
                 }
 
                 .search-input,
                 .platform-filter {
-                    background: #111827;
-                    border-color: #374151;
-                    color: #f9fafb;
+                    background: var(--gray-900);
+                    border-color: var(--gray-700);
+                    color: var(--gray-50);
                 }
 
                 .bookmark-item {
-                    background: #111827;
-                    border-color: #374151;
+                    background: var(--gray-900);
+                    border-color: var(--gray-700);
                 }
 
                 .bookmark-item:hover {
-                    background: #1f2937;
-                    border-color: #4b5563;
+                    background: var(--gray-800);
+                    border-color: var(--gray-600);
                 }
 
                 .title {
-                    color: #f9fafb;
+                    color: var(--gray-50);
                 }
 
                 .response {
-                    color: #9ca3af;
+                    color: var(--gray-400);
                 }
 
                 .detail-modal {
-                    background: #1f2937;
+                    background: var(--gray-800);
                 }
 
                 .detail-header {
-                    border-color: #374151;
+                    border-color: var(--gray-700);
                 }
 
                 .detail-header h3 {
-                    color: #f9fafb;
+                    color: var(--gray-50);
                 }
 
                 .detail-meta {
-                    background: #111827;
+                    background: var(--gray-900);
                 }
 
                 .detail-text {
-                    color: #f9fafb;
+                    color: var(--gray-50);
                 }
 
                 .detail-footer {
-                    border-color: #374151;
+                    border-color: var(--gray-700);
                 }
             }
         `;

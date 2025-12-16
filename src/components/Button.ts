@@ -1,0 +1,329 @@
+/**
+ * Button Component
+ * 
+ * A reusable button component with multiple variants and sizes.
+ * Uses design tokens for consistent styling.
+ * 
+ * @example
+ * ```typescript
+ * const button = new Button({
+ *   text: 'Save',
+ *   variant: 'primary',
+ *   size: 'md',
+ *   icon: Icons.check,
+ *   onClick: () => console.log('Clicked!')
+ * });
+ * 
+ * container.appendChild(button.render());
+ * ```
+ */
+
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'lg';
+
+export interface ButtonProps {
+    text: string;
+    variant?: ButtonVariant;
+    size?: ButtonSize;
+    icon?: string;
+    iconPosition?: 'left' | 'right';
+    disabled?: boolean;
+    loading?: boolean;
+    fullWidth?: boolean;
+    type?: 'button' | 'submit' | 'reset';
+    className?: string;
+    onClick?: (e: MouseEvent) => void;
+}
+
+export class Button {
+    private props: ButtonProps;
+    private element: HTMLButtonElement | null = null;
+
+    constructor(props: ButtonProps) {
+        this.props = {
+            variant: 'secondary',
+            size: 'md',
+            iconPosition: 'left',
+            disabled: false,
+            loading: false,
+            fullWidth: false,
+            type: 'button',
+            ...props,
+        };
+    }
+
+    /**
+     * Render button element
+     */
+    render(): HTMLButtonElement {
+        const button = document.createElement('button');
+        button.type = this.props.type!;
+        button.className = this.getClassName();
+        button.disabled = this.props.disabled || this.props.loading || false;
+
+        // Add content
+        button.innerHTML = this.getContent();
+
+        // Bind click handler
+        if (this.props.onClick && !this.props.disabled && !this.props.loading) {
+            button.addEventListener('click', this.props.onClick);
+        }
+
+        this.element = button;
+        return button;
+    }
+
+    /**
+     * Get button class name
+     */
+    private getClassName(): string {
+        const classes = ['btn'];
+
+        // Variant
+        classes.push(`btn-${this.props.variant}`);
+
+        // Size
+        classes.push(`btn-${this.props.size}`);
+
+        // States
+        if (this.props.loading) classes.push('btn-loading');
+        if (this.props.fullWidth) classes.push('btn-full-width');
+        if (this.props.icon && !this.props.text) classes.push('btn-icon-only');
+
+        // Custom class
+        if (this.props.className) classes.push(this.props.className);
+
+        return classes.join(' ');
+    }
+
+    /**
+     * Get button content
+     */
+    private getContent(): string {
+        if (this.props.loading) {
+            return `
+        <span class="btn-spinner"></span>
+        <span class="btn-text">Loading...</span>
+      `;
+        }
+
+        const hasIcon = !!this.props.icon;
+        const hasText = !!this.props.text;
+        const iconLeft = this.props.iconPosition === 'left';
+
+        let content = '';
+
+        if (hasIcon && iconLeft) {
+            content += `<span class="btn-icon">${this.props.icon}</span>`;
+        }
+
+        if (hasText) {
+            content += `<span class="btn-text">${this.escapeHtml(this.props.text)}</span>`;
+        }
+
+        if (hasIcon && !iconLeft) {
+            content += `<span class="btn-icon">${this.props.icon}</span>`;
+        }
+
+        return content;
+    }
+
+    /**
+     * Update button props
+     */
+    updateProps(props: Partial<ButtonProps>): void {
+        this.props = { ...this.props, ...props };
+        if (this.element) {
+            this.element.className = this.getClassName();
+            this.element.innerHTML = this.getContent();
+            this.element.disabled = this.props.disabled || this.props.loading || false;
+        }
+    }
+
+    /**
+     * Set loading state
+     */
+    setLoading(loading: boolean): void {
+        this.updateProps({ loading });
+    }
+
+    /**
+     * Set disabled state
+     */
+    setDisabled(disabled: boolean): void {
+        this.updateProps({ disabled });
+    }
+
+    /**
+     * Escape HTML
+     */
+    private escapeHtml(text: string): string {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Get button styles (for Shadow DOM)
+     */
+    static getStyles(): string {
+        return `
+      /* Button Base */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        font-family: var(--font-sans);
+        font-weight: var(--font-medium);
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all var(--duration-fast) var(--ease-in-out);
+        user-select: none;
+        white-space: nowrap;
+        text-decoration: none;
+      }
+
+      .btn:focus {
+        outline: 2px solid var(--primary-500);
+        outline-offset: 2px;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Sizes */
+      .btn-sm {
+        padding: var(--space-1) var(--space-3);
+        font-size: var(--text-sm);
+        height: 32px;
+      }
+
+      .btn-md {
+        padding: var(--space-2) var(--space-4);
+        font-size: var(--text-base);
+        height: 40px;
+      }
+
+      .btn-lg {
+        padding: var(--space-3) var(--space-6);
+        font-size: var(--text-lg);
+        height: 48px;
+      }
+
+      /* Icon only */
+      .btn-icon-only.btn-sm {
+        width: 32px;
+        padding: var(--space-1);
+      }
+
+      .btn-icon-only.btn-md {
+        width: 40px;
+        padding: var(--space-2);
+      }
+
+      .btn-icon-only.btn-lg {
+        width: 48px;
+        padding: var(--space-3);
+      }
+
+      /* Variants */
+      .btn-primary {
+        background: var(--primary-600);
+        color: white;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: var(--primary-700);
+      }
+
+      .btn-primary:active:not(:disabled) {
+        background: var(--primary-800);
+      }
+
+      .btn-secondary {
+        background: var(--gray-100);
+        color: var(--gray-700);
+      }
+
+      .btn-secondary:hover:not(:disabled) {
+        background: var(--gray-200);
+        color: var(--gray-900);
+      }
+
+      .btn-secondary:active:not(:disabled) {
+        background: var(--gray-300);
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--gray-700);
+      }
+
+      .btn-ghost:hover:not(:disabled) {
+        background: var(--gray-100);
+        color: var(--gray-900);
+      }
+
+      .btn-ghost:active:not(:disabled) {
+        background: var(--gray-200);
+      }
+
+      .btn-danger {
+        background: var(--danger-600);
+        color: white;
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        background: var(--danger-700);
+      }
+
+      .btn-danger:active:not(:disabled) {
+        background: var(--danger-800);
+      }
+
+      /* Full width */
+      .btn-full-width {
+        width: 100%;
+      }
+
+      /* Loading state */
+      .btn-loading {
+        position: relative;
+        color: transparent;
+      }
+
+      .btn-spinner {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 16px;
+        height: 16px;
+        border: 2px solid currentColor;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin var(--duration-slower) linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+
+      /* Icon */
+      .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn-icon svg {
+        width: var(--icon-sm);
+        height: var(--icon-sm);
+      }
+    `;
+    }
+}

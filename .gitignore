@@ -6,6 +6,12 @@ Debug/
 mocks/
 test/
 
+# Files for Agent
+memory/
+private/
+*.private.md
+*-internal.md
+
 # Logs
 *.log
 npm-debug.log*

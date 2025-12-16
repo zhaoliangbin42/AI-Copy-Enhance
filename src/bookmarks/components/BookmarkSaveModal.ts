@@ -3,6 +3,7 @@ import { FolderStorage } from '../storage/FolderStorage';
 import { TreeBuilder } from '../utils/tree-builder';
 import { PathUtils } from '../utils/path-utils';
 import { logger } from '../../utils/logger';
+import { Icons } from '../../assets/icons';
 
 /**
  * Unified Bookmark Save Modal
@@ -198,21 +199,21 @@ export class BookmarkSaveModal {
                     align-items: center;
                     justify-content: space-between;
                     padding: 16px 20px;
-                    border-bottom: 1px solid #e5e7eb;
+                    border-bottom: 1px solid var(--gray-200);
                 }
 
                 .save-modal-header h2 {
                     margin: 0;
                     font-size: 16px;
                     font-weight: 600;
-                    color: #111827;
+                    color: var(--gray-900);
                 }
 
                 .save-modal-close-btn {
                     background: none;
                     border: none;
                     font-size: 24px;
-                    color: #6b7280;
+                    color: var(--gray-500);
                     cursor: pointer;
                     padding: 0;
                     width: 32px;
@@ -225,8 +226,8 @@ export class BookmarkSaveModal {
                 }
 
                 .save-modal-close-btn:hover {
-                    background: #f3f4f6;
-                    color: #111827;
+                    background: var(--gray-100);
+                    color: var(--gray-900);
                 }
 
                 /* Body */
@@ -245,14 +246,14 @@ export class BookmarkSaveModal {
                     display: block;
                     font-size: 14px;
                     font-weight: 500;
-                    color: #374151;
+                    color: var(--gray-700);
                     margin-bottom: 8px;
                 }
 
                 .title-input {
                     width: 100%;
                     padding: 10px 12px;
-                    border: 2px solid #e5e7eb;
+                    border: 2px solid var(--gray-200);
                     border-radius: 6px;
                     font-size: 14px;
                     transition: all 0.15s ease;
@@ -260,15 +261,15 @@ export class BookmarkSaveModal {
                 }
 
                 .title-input:focus {
-                    border-color: #3b82f6;
+                    border-color: var(--primary-600);
                 }
 
                 .title-input.error {
-                    border-color: #ef4444;
+                    border-color: var(--danger-500);
                 }
 
                 .title-error {
-                    color: #ef4444;
+                    color: var(--danger-500);
                     font-size: 13px;
                     margin-top: 4px;
                     display: none;
@@ -293,11 +294,11 @@ export class BookmarkSaveModal {
                 .folder-label {
                     font-size: 14px;
                     font-weight: 500;
-                    color: #374151;
+                    color: var(--gray-700);
                 }
 
                 .new-folder-btn {
-                    background: #3b82f6;
+                    background: var(--primary-600);
                     color: white;
                     border: none;
                     padding: 6px 12px;
@@ -309,15 +310,16 @@ export class BookmarkSaveModal {
                 }
 
                 .new-folder-btn:hover {
-                    background: #2563eb;
+                    background: var(--primary-700);
                 }
 
                 .folder-tree-container {
-                    border: 1px solid #e5e7eb;
-                    border-radius: 6px;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--radius-sm);
                     height: 300px;
                     overflow-y: auto;
-                    background: #f9fafb;
+                    font-size: var(--text-base);
+                    background: var(--gray-50);
                 }
 
                 .folder-tree-body {
@@ -335,15 +337,15 @@ export class BookmarkSaveModal {
                 }
 
                 .folder-item:hover {
-                    background: #f3f4f6;
+                    background: var(--gray-100);
                 }
 
                 .folder-item.selected {
-                    background: #dbeafe;
+                    background: var(--primary-100);
                 }
 
                 .folder-item.selected:hover {
-                    background: #bfdbfe;
+                    background: var(--primary-200);
                 }
 
                 .folder-icon {
@@ -446,8 +448,8 @@ export class BookmarkSaveModal {
                 }
 
                 .save-modal-btn-cancel {
-                    background: #f3f4f6;
-                    color: #374151;
+                    background: var(--gray-100);
+                    color: var(--gray-700);
                 }
 
                 .save-modal-btn-cancel:hover {
@@ -496,7 +498,7 @@ export class BookmarkSaveModal {
                     <div class="folder-tree-container">
                         <div class="folder-tree-body">
                             <div class="folder-empty">
-                                <div class="folder-empty-icon">📁</div>
+                                <div class="folder-empty-icon">${Icons.folder}</div>
                                 <div class="folder-empty-text">Loading folders...</div>
                             </div>
                         </div>
@@ -606,7 +608,7 @@ export class BookmarkSaveModal {
         if (tree.length === 0) {
             treeBody.innerHTML = `
                 <div class="folder-empty">
-                    <div class="folder-empty-icon">📁</div>
+                    <div class="folder-empty-icon">${Icons.folder}</div>
                     <div class="folder-empty-text">No folders yet. Create one to get started!</div>
                 </div>
             `;
@@ -630,7 +632,7 @@ export class BookmarkSaveModal {
         return nodes.map(node => {
             const isExpanded = this.expandedPaths.has(node.folder.path);
             const isSelected = node.folder.path === this.selectedPath;
-            const icon = isExpanded ? '📂' : '📁';
+            const icon = isExpanded ? Icons.folderOpen : Icons.folder;
             const indent = depth * 20;
             // Show + button if folder can have subfolders (depth < MAX_DEPTH - 1)
             // Example with MAX_DEPTH=4:
@@ -1174,7 +1176,7 @@ export class BookmarkSaveModal {
                         <div class="folder-tree-container">
                             <div class="folder-tree-body">
                                 <div class="folder-empty">
-                                    <div class="folder-empty-icon">📁</div>
+                                    <div class="folder-empty-icon">${Icons.folder}</div>
                                     <div class="folder-empty-text">Loading folders...</div>
                                 </div>
                             </div>
