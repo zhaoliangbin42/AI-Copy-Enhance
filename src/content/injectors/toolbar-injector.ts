@@ -156,7 +156,7 @@ export class ToolbarInjector {
             wrapper.style.cssText = 'margin-bottom: 8px; padding-left: 60px;';
         } else {
             // ChatGPT: no extra padding
-            wrapper.style.cssText = 'margin-bottom: 8px;';
+            wrapper.style.cssText = 'margin-bottom: 0px; margin-top: 10px;';
         }
 
         wrapper.appendChild(toolbar);

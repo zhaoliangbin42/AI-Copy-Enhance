@@ -218,13 +218,6 @@
     --radius-full: 9999px;
     /* Pills, avatars, badges */
 
-    /* Legacy aliases for compatibility */
-    --radius-xs: 4px;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 28px;
-
 
     /* ============================================
      SHADOWS (Material Design 3 Elevation)

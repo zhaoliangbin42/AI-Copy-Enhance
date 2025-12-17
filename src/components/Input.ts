@@ -263,7 +263,7 @@ export class Input {
         color: var(--gray-900);
         background: white;
         border: 2px solid var(--gray-300);
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-small);
         outline: none;
         transition: all var(--duration-fast) var(--ease-in-out);
         width: 100%;

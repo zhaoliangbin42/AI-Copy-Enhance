@@ -1,5 +1,6 @@
 import { logger } from '../../utils/logger';
 import { simpleBookmarkPanel } from '../../bookmarks/components/SimpleBookmarkPanel';
+import { Icons } from '../../assets/icons';
 
 /**
  * Page Header Archive Icon
@@ -64,14 +65,8 @@ export class PageHeaderIcon {
         button.setAttribute('aria-label', 'View Archive');
         button.setAttribute('type', 'button');
 
-        // Create SVG icon (archive icon)
-        button.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon">
-                <path d="M3 5C3 3.89543 3.89543 3 5 3H15C16.1046 3 17 3.89543 17 5V6H3V5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M3 6H17V16C17 17.1046 16.1046 18 15 18H5C3.89543 18 3 17.1046 3 16V6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M8 10H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        `;
+        // Use bookMarked icon from Icons
+        button.innerHTML = Icons.bookMarked;
 
         button.addEventListener('click', () => this.handleClick());
 

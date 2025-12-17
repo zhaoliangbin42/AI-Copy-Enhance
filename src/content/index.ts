@@ -231,58 +231,68 @@ class ContentScript {
                 logger.info(`[handleBookmark] Removed bookmark at position ${position}`);
             } else {
                 // Add bookmark - show unified save modal
-                const userMessage = this.getUserMessage(messageElement);
-                if (!userMessage) {
-                    logger.error('[handleBookmark] Failed to extract user message');
-                    return;
-                }
+                try {
+                    const userMessage = this.getUserMessage(messageElement);
+                    logger.info('[handleBookmark] User message extracted:', userMessage ? userMessage.substring(0, 50) : 'EMPTY');
 
-                // Detect platform
-                const adapter = adapterRegistry.getAdapter();
-                const platform: 'ChatGPT' | 'Gemini' =
-                    (adapter && 'isGemini' in adapter && typeof adapter.isGemini === 'function' && adapter.isGemini())
-                        ? 'Gemini' : 'ChatGPT';
-
-                // Get AI response (if this is an AI message)
-                const aiResponse = this.getAiResponse(messageElement);
-
-                // Prepare default title (first 50 chars)
-                const defaultTitle = userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : '');
-
-                // Get last used folder
-                const lastUsedFolder = localStorage.getItem('lastUsedFolder') || 'Import';
-
-                // Show unified save modal
-                const saveModal = new BookmarkSaveModal();
-                saveModal.show({
-                    defaultTitle,
-                    lastUsedFolder,
-                    onSave: async (title, folderPath) => {
-                        // Save bookmark with selected folder
-                        await SimpleBookmarkStorage.save(
-                            url,
-                            position,
-                            userMessage,
-                            aiResponse,
-                            title,
-                            platform,
-                            Date.now(),
-                            folderPath
-                        );
-
-                        // Update state
-                        this.bookmarkedPositions.add(position);
-                        this.updateToolbarState(messageElement, true);
-
-                        // Remember folder
-                        localStorage.setItem('lastUsedFolder', folderPath);
-
-                        logger.info(`[handleBookmark] Saved "${title}" to "${folderPath}"`);
+                    if (!userMessage) {
+                        logger.error('[handleBookmark] Failed to extract user message');
+                        alert('Failed to extract user message. Please try again.');
+                        return;
                     }
-                });
+
+                    // Detect platform
+                    const adapter = adapterRegistry.getAdapter();
+                    const platform: 'ChatGPT' | 'Gemini' =
+                        (adapter && 'isGemini' in adapter && typeof adapter.isGemini === 'function' && adapter.isGemini())
+                            ? 'Gemini' : 'ChatGPT';
+
+                    // Get AI response markdown (use parsed markdown, not plain text)
+                    const aiResponse = this.getMarkdown(messageElement);
+                    logger.info('[handleBookmark] AI response extracted (first 200 chars):', aiResponse.substring(0, 200));
+
+                    // Prepare default title (first 50 chars)
+                    const defaultTitle = userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : '');
+
+                    // Get last used folder
+                    const lastUsedFolder = localStorage.getItem('lastUsedFolder') || 'Import';
+
+                    // Show unified save modal
+                    const saveModal = new BookmarkSaveModal();
+                    saveModal.show({
+                        defaultTitle,
+                        lastUsedFolder,
+                        onSave: async (title, folderPath) => {
+                            // Save bookmark with selected folder
+                            await SimpleBookmarkStorage.save(
+                                url,
+                                position,
+                                userMessage,
+                                aiResponse,
+                                title,
+                                platform,
+                                Date.now(),
+                                folderPath
+                            );
+
+                            // Update state
+                            this.bookmarkedPositions.add(position);
+                            this.updateToolbarState(messageElement, true);
+
+                            // Remember folder
+                            localStorage.setItem('lastUsedFolder', folderPath);
+
+                            logger.info(`[handleBookmark] Saved "${title}" to "${folderPath}"`);
+                        }
+                    });
+                } catch (error) {
+                    logger.error('[handleBookmark] Failed to prepare bookmark:', error);
+                    alert('Failed to prepare bookmark. Please try again.');
+                }
             }
         } catch (error) {
             logger.error('[handleBookmark] Failed to toggle bookmark:', error);
+            alert('Failed to toggle bookmark: ' + (error instanceof Error ? error.message : String(error)));
         }
     }
 
@@ -302,55 +312,109 @@ class ContentScript {
 
     /**
      * Get user message text from message element
+     * Based on real-world testing with ChatGPT and Gemini HTML
      */
     private getUserMessage(messageElement: HTMLElement): string {
-        const adapter = adapterRegistry.getAdapter();
-        if (!adapter) return '';
+        try {
+            const adapter = adapterRegistry.getAdapter();
+            if (!adapter) {
+                logger.error('[getUserMessage] No adapter found');
+                return '';
+            }
 
-        const messageSelector = adapter.getMessageSelector();
-        const contentSelector = adapter.getMessageContentSelector();
-        if (!contentSelector) return '';
+            if ('isGemini' in adapter && typeof adapter.isGemini === 'function' && adapter.isGemini()) {
+                // Gemini: Find user prompts
+                logger.debug('[getUserMessage] Gemini mode');
 
-        // First, try to get content from current message (in case it's a user message)
-        const currentContent = messageElement.querySelector(contentSelector);
-        if (currentContent) {
-            const text = currentContent.textContent?.trim() || '';
-            // If current message has content and seems like a user message (not too long), use it
-            if (text && text.length < 5000) {
+                // Try different selectors for Gemini
+                let userPrompts = Array.from(document.querySelectorAll('[data-test-id="user-query"]'));
+                if (userPrompts.length === 0) {
+                    // Fallback: try other possible selectors
+                    userPrompts = Array.from(document.querySelectorAll('user-query, .user-query'));
+                    logger.debug(`[getUserMessage] Fallback selector found ${userPrompts.length} prompts`);
+                }
+
+                const aiResponses = Array.from(document.querySelectorAll('model-response'));
+
+                logger.debug(`[getUserMessage] Found ${userPrompts.length} user prompts, ${aiResponses.length} AI responses`);
+
+                if (userPrompts.length === 0) {
+                    logger.error('[getUserMessage] No user prompts found in Gemini');
+                    return '';
+                }
+
+                const currentAiIndex = aiResponses.indexOf(messageElement);
+                if (currentAiIndex < 0) {
+                    logger.error('[getUserMessage] Current AI response not found in list');
+                    return '';
+                }
+                if (currentAiIndex >= userPrompts.length) {
+                    logger.error(`[getUserMessage] No matching user prompt for AI response ${currentAiIndex}`);
+                    return '';
+                }
+
+                const userPrompt = userPrompts[currentAiIndex] as HTMLElement;
+                const text = userPrompt.textContent?.trim() || '';
+                logger.debug(`[getUserMessage] Extracted Gemini user message: ${text.substring(0, 50)}`);
+                return text;
+            } else {
+                // ChatGPT: messageElement is <article>, need to find assistant element inside
+                logger.debug('[getUserMessage] ChatGPT mode');
+
+                // Get all user messages and assistant messages
+                const userMessages = Array.from(document.querySelectorAll('[data-message-author-role="user"]'));
+                const assistantMessages = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
+
+                logger.debug(`[getUserMessage] Found ${userMessages.length} user messages, ${assistantMessages.length} assistant messages`);
+
+                // Find current assistant message index
+                // messageElement might be <article>, so look inside first
+                let currentIndex = assistantMessages.indexOf(messageElement);
+
+                if (currentIndex < 0) {
+                    // messageElement is probably <article>, find assistant inside
+                    const assistantInside = messageElement.querySelector('[data-message-author-role="assistant"]');
+                    if (assistantInside) {
+                        currentIndex = assistantMessages.indexOf(assistantInside as Element);
+                        logger.debug(`[getUserMessage] Found assistant inside article, index: ${currentIndex}`);
+                    }
+                }
+
+                if (currentIndex < 0) {
+                    logger.error('[getUserMessage] Current assistant message not found in list');
+                    return '';
+                }
+
+                logger.debug(`[getUserMessage] Current assistant index: ${currentIndex}`);
+
+                // Match with corresponding user message (same index)
+                if (currentIndex >= userMessages.length) {
+                    logger.error(`[getUserMessage] No matching user message for assistant ${currentIndex}`);
+                    return '';
+                }
+
+                const userMessage = userMessages[currentIndex] as HTMLElement;
+
+                // Try to extract content using .whitespace-pre-wrap (verified by testing)
+                const whitespacePre = userMessage.querySelector('.whitespace-pre-wrap');
+                if (whitespacePre) {
+                    const text = whitespacePre.textContent?.trim() || '';
+                    logger.debug(`[getUserMessage] Extracted ChatGPT user message: ${text.substring(0, 50)}`);
+                    return text;
+                }
+
+                // Fallback: use direct textContent
+                const text = userMessage.textContent?.trim() || '';
+                logger.debug(`[getUserMessage] Extracted ChatGPT user message (fallback): ${text.substring(0, 50)}`);
                 return text;
             }
+        } catch (error) {
+            logger.error('[getUserMessage] Exception:', error);
+            return '';
         }
-
-        // Otherwise, find previous user message (for AI response messages)
-        const allMessages = Array.from(document.querySelectorAll(messageSelector));
-        const currentIndex = allMessages.indexOf(messageElement);
-
-        if (currentIndex <= 0) return '';
-
-        // Get previous message (should be user message)
-        const prevMessage = allMessages[currentIndex - 1] as HTMLElement;
-        const prevContent = prevMessage.querySelector(contentSelector);
-        if (!prevContent) return '';
-
-        return prevContent.textContent?.trim() || '';
     }
 
-    /**
-     * Get AI response text from message element
-     */
-    private getAiResponse(messageElement: HTMLElement): string {
-        const adapter = adapterRegistry.getAdapter();
-        if (!adapter) return '';
 
-        const contentSelector = adapter.getMessageContentSelector();
-        if (!contentSelector) return '';
-
-        // Get content from current message (should be AI response)
-        const content = messageElement.querySelector(contentSelector);
-        if (!content) return '';
-
-        return content.textContent?.trim() || '';
-    }
 
     /**
      * Update toolbar bookmark state

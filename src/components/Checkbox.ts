@@ -240,7 +240,7 @@ export class Checkbox {
         justify-content: center;
         flex-shrink: 0;
         border: 2px solid var(--gray-300);
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-small);
         background: white;
         transition: all var(--duration-fast) var(--ease-in-out);
         color: white;

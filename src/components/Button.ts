@@ -177,7 +177,7 @@ export class Button {
         font-family: var(--font-sans);
         font-weight: var(--font-medium);
         border: none;
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-small);
         cursor: pointer;
         transition: all var(--duration-fast) var(--ease-in-out);
         user-select: none;

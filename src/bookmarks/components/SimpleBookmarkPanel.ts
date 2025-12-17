@@ -8,6 +8,7 @@ import { FolderOperationsManager } from '../managers/FolderOperationsManager';
 import { TreeBuilder } from '../utils/tree-builder';
 import { PathUtils } from '../utils/path-utils';
 import { Icons } from '../../assets/icons';
+import { MarkdownRenderer } from '../../utils/markdown-renderer';
 
 
 
@@ -105,7 +106,11 @@ export class SimpleBookmarkPanel {
         // Show migration notification if bookmarks were migrated
         if (migratedCount > 0) {
             setTimeout(() => {
-                alert(`✅ Migrated ${migratedCount} bookmark${migratedCount > 1 ? 's' : ''} to "Import" folder`);
+                this.showNotification({
+                    type: 'success',
+                    title: 'Migration Complete',
+                    message: `Migrated ${migratedCount} bookmark${migratedCount > 1 ? 's' : ''} to "Import" folder`
+                });
             }, 100);
         }
     }
@@ -212,11 +217,13 @@ export class SimpleBookmarkPanel {
                         </div>
                         <div class="platform-selector-wrapper">
                             <button class="platform-selector" data-selected="all">
+                                ${Icons.grid}
                                 <span class="platform-selector-label">All Platforms</span>
                                 <span class="platform-selector-icon">${Icons.chevronDown}</span>
                             </button>
                             <div class="platform-dropdown" style="display: none;">
                                 <div class="platform-option" data-value="" data-platform="all">
+                                    ${Icons.grid}
                                     <span class="platform-option-label">All Platforms</span>
                                 </div>
                                 <div class="platform-option" data-value="ChatGPT" data-platform="chatgpt">
@@ -231,8 +238,8 @@ export class SimpleBookmarkPanel {
                         </div>
                         <button class="toolbar-icon-btn new-folder-btn" title="Create new folder" aria-label="Create new folder">${Icons.folderPlus}</button>
                         <div class="toolbar-divider"></div>
-                        <button class="toolbar-icon-btn export-btn" title="Export bookmarks" aria-label="Export bookmarks">${Icons.download}</button>
                         <button class="toolbar-icon-btn import-btn" title="Import bookmarks" aria-label="Import bookmarks">${Icons.upload}</button>
+                        <button class="toolbar-icon-btn export-btn" title="Export bookmarks" aria-label="Export bookmarks">${Icons.download}</button>
                     </div>
                     <div class="content">
                         ${this.renderTreeView()}
@@ -240,16 +247,11 @@ export class SimpleBookmarkPanel {
                     
                     <!-- Batch Actions Bar (Gmail-style floating) -->
                     <div class="batch-actions-bar">
-                        <div class="batch-info">
-                            <input type="checkbox" class="select-all-checkbox" title="Select all" aria-label="Select all items" />
-                            <span class="selected-count">0 selected</span>
-                        </div>
-                        <div class="batch-buttons">
-                            <button class="batch-delete-btn" title="Delete selected items">${Icons.trash} Delete</button>
-                            <button class="batch-move-btn" title="Move selected items">${Icons.folder} Move To</button>
-                            <button class="batch-export-btn" title="Export selected items">${Icons.download} Export</button>
-                            <button class="batch-clear-btn" title="Clear selection">${Icons.x} Clear</button>
-                        </div>
+                        <span class="selected-count">0 selected</span>
+                        <button class="batch-delete-btn" title="Delete selected items">${Icons.trash} <span>Delete</span></button>
+                        <button class="batch-move-btn" title="Move selected items">${Icons.folder} <span>Move To</span></button>
+                        <button class="batch-export-btn" title="Export selected items">${Icons.download} <span>Export</span></button>
+                        <button class="batch-clear-btn" title="Clear selection">${Icons.x} <span>Clear</span></button>
                     </div>
                 </div>
 
@@ -317,7 +319,7 @@ export class SimpleBookmarkPanel {
     private renderFolderItem(node: FolderTreeNode, depth: number): string {
         const folder = node.folder;
         const icon = node.isExpanded ? Icons.folderOpen : Icons.folder;
-        const indent = depth * 20; // 20px per level (Linear spacing)
+        const indent = 10 + depth * 28; // 20px per level (Linear spacing)
         // Show + button if folder can have subfolders (depth < MAX_DEPTH - 1)
         const showAddSubfolder = depth < PathUtils.MAX_DEPTH - 1;
         const selectedClass = node.isSelected ? 'selected' : '';
@@ -373,7 +375,7 @@ export class SimpleBookmarkPanel {
      */
     private renderBookmarkItemInTree(bookmark: Bookmark, depth: number): string {
         const icon = bookmark.platform === 'ChatGPT' ? Icons.chatgpt : Icons.gemini;
-        const indent = depth * 20;
+        const indent = 3 + depth * 28;
         const timestamp = this.formatTimestamp(bookmark.timestamp);
         const key = `${bookmark.urlWithoutProtocol}:${bookmark.position}`;
         const checked = this.selectedItems.has(key) ? 'checked' : '';
@@ -396,7 +398,7 @@ export class SimpleBookmarkPanel {
                 <span class="bookmark-title">${this.escapeHtml(bookmark.title)}</span>
                 <span class="bookmark-timestamp">${timestamp}</span>
                 <div class="item-actions">
-                    <button class="action-btn preview-bookmark" title="Preview" aria-label="Preview bookmark">${Icons.eye}</button>
+                    <button class="action-btn open-conversation" title="Open in Conversation" aria-label="Open conversation">${Icons.link}</button>
                     <button class="action-btn edit-bookmark" title="Edit" aria-label="Edit bookmark">${Icons.edit}</button>
                     <button class="action-btn delete-bookmark" title="Delete" aria-label="Delete bookmark">${Icons.trash}</button>
                 </div>
@@ -612,11 +614,17 @@ export class SimpleBookmarkPanel {
                 });
             });
 
-            // 点击外部关闭下拉菜单
-            document.addEventListener('click', () => {
-                platformSelectorWrapper.classList.remove('open');
-                platformDropdown.style.display = 'none';
-            });
+            // 点击 panel 内任意位置关闭下拉菜单
+            const panelContainer = this.shadowRoot?.querySelector('.bookmarks-tab');
+            if (panelContainer) {
+                panelContainer.addEventListener('click', (e) => {
+                    // 如果点击的不是选择器本身，则关闭下拉菜单
+                    if (!platformSelectorWrapper.contains(e.target as Node)) {
+                        platformSelectorWrapper.classList.remove('open');
+                        platformDropdown.style.display = 'none';
+                    }
+                });
+            }
         }
 
         // Export button
@@ -824,7 +832,11 @@ export class SimpleBookmarkPanel {
 
                 // Check depth limit (max 4 levels, so depth 4 is the max for adding subfolders)
                 if (depth >= PathUtils.MAX_DEPTH) {
-                    alert(`❌ Cannot create subfolder: Maximum folder depth is ${PathUtils.MAX_DEPTH} levels.\n\nPlease create a new root folder or organize within existing folders.`);
+                    this.showNotification({
+                        type: 'error',
+                        title: 'Maximum Depth Exceeded',
+                        message: `Cannot create subfolder: Maximum folder depth is ${PathUtils.MAX_DEPTH} levels.\n\nPlease create a new root folder or organize within existing folders.`
+                    });
                     return;
                 }
 
@@ -853,7 +865,7 @@ export class SimpleBookmarkPanel {
         });
 
         // Preview bookmark
-        this.shadowRoot?.querySelectorAll('.preview-bookmark').forEach(btn => {
+        this.shadowRoot?.querySelectorAll('.open-conversation').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const bookmarkItem = (e.target as HTMLElement).closest('.bookmark-item')!;
@@ -1336,10 +1348,10 @@ export class SimpleBookmarkPanel {
     }
 
     /**
-     * Show inline editing for new folder creation
-     * Reference: VS Code new folder inline creation
+     * Show inline input for creating new folder
+     * Task 2.1.1
      */
-    private showCreateFolderInput(parentPath: string | null): void {
+    private async showCreateFolderInput(parentPath: string | null): Promise<void> {
         // For root level creation, we'll use a temporary placeholder in the tree
         // For now, use prompt as a quick implementation
         // TODO: Implement inline creation in tree view
@@ -1348,12 +1360,20 @@ export class SimpleBookmarkPanel {
 
         // Validate name
         if (name.length > 50) {
-            alert('Folder name must be 50 characters or less');
+            await this.showNotification({
+                type: 'error',
+                title: 'Invalid Folder Name',
+                message: 'Folder name must be 50 characters or less'
+            });
             return;
         }
 
         if (name.includes('/')) {
-            alert('Folder name cannot contain "/"');
+            await this.showNotification({
+                type: 'error',
+                title: 'Invalid Folder Name',
+                message: 'Folder name cannot contain "/"'
+            });
             return;
         }
 
@@ -1367,7 +1387,11 @@ export class SimpleBookmarkPanel {
 
         // Check depth limit BEFORE calling folderOpsManager
         if (newDepth > PathUtils.MAX_DEPTH) {
-            alert(`❌ Cannot create folder: Maximum folder depth is ${PathUtils.MAX_DEPTH} levels.\n\nCurrent path would be: ${newPath}\nDepth: ${newDepth}\n\nPlease create a new root folder or organize within existing folders.`);
+            await this.showNotification({
+                type: 'error',
+                title: 'Maximum Depth Exceeded',
+                message: `Cannot create folder: Maximum folder depth is ${PathUtils.MAX_DEPTH} levels.\n\nCurrent path would be: ${newPath}\nDepth: ${newDepth}\n\nPlease create a new root folder or organize within existing folders.`
+            });
             logger.warn(`[Folder] Create blocked: depth ${newDepth} exceeds limit (${PathUtils.MAX_DEPTH}) for path: ${newPath}`);
             return;
         }
@@ -1385,7 +1409,11 @@ export class SimpleBookmarkPanel {
             await this.refreshTreeView();
             logger.info(`[Folder] Created successfully`);
         } else {
-            alert(`Failed to create folder: ${result.error}`);
+            await this.showNotification({
+                type: 'error',
+                title: 'Failed to Create Folder',
+                message: `Failed to create folder: ${result.error}`
+            });
             logger.error(`[Folder] Create failed:`, result.error);
         }
     }
@@ -1424,7 +1452,7 @@ export class SimpleBookmarkPanel {
             width: 100%;
             padding: 2px 6px;
             border: 1px solid var(--primary-600);
-            border-radius: var(--radius-xs);
+            border-radius: var(--radius-extra-small);
             font-size: var(--text-base);
             font-family: inherit;
             outline: none;
@@ -1451,13 +1479,21 @@ export class SimpleBookmarkPanel {
 
             // Validate
             if (newName.length > 50) {
-                alert('Folder name must be 50 characters or less');
+                await this.showNotification({
+                    type: 'error',
+                    title: 'Invalid Folder Name',
+                    message: 'Folder name must be 50 characters or less'
+                });
                 input.focus();
                 return;
             }
 
             if (newName.includes('/')) {
-                alert('Folder name cannot contain "/"');
+                await this.showNotification({
+                    type: 'error',
+                    title: 'Invalid Folder Name',
+                    message: 'Folder name cannot contain "/"'
+                });
                 input.focus();
                 return;
             }
@@ -1494,7 +1530,11 @@ export class SimpleBookmarkPanel {
             await this.refreshTreeView();
             logger.info(`[Folder] Renamed: ${path} -> ${newName}`);
         } else {
-            alert(`Failed to rename folder: ${result.error}`);
+            await this.showNotification({
+                type: 'error',
+                title: 'Failed to Rename',
+                message: `Failed to rename folder: ${result.error}`
+            });
             logger.error(`[Folder] Rename failed:`, result.error);
         }
     }
@@ -1509,7 +1549,11 @@ export class SimpleBookmarkPanel {
         );
 
         if (hasBookmarks || hasSubfolders) {
-            alert('Please remove all items before deleting folder');
+            await this.showNotification({
+                type: 'error',
+                title: 'Folder Not Empty',
+                message: 'Please remove all items before deleting folder'
+            });
             return;
         }
 
@@ -1524,7 +1568,11 @@ export class SimpleBookmarkPanel {
             await this.refreshTreeView();
             logger.info(`[Folder] Deleted: ${path}`);
         } else {
-            alert(`Failed to delete folder: ${result.error}`);
+            await this.showNotification({
+                type: 'error',
+                title: 'Failed to Delete',
+                message: `Failed to delete folder: ${result.error}`
+            });
             logger.error(`[Folder] Delete failed:`, result.error);
         }
     }
@@ -1556,12 +1604,27 @@ export class SimpleBookmarkPanel {
     /**
      * Show detail modal
      */
+    /**
+     * Show detail modal (CRITICAL: Uses re-render logic for Markdown rendering)
+     */
     private showDetailModal(url: string, position: number): void {
         const bookmark = this.filteredBookmarks.find(
             b => b.url === url && b.position === position
         );
 
         if (!bookmark) return;
+
+        // CRITICAL: Inject markdown styles into Shadow DOM
+        // Shadow DOM cannot access styles from document.head, so we must inject them directly
+        if (this.shadowRoot) {
+            MarkdownRenderer.injectShadowStyles(this.shadowRoot);
+        }
+
+        // Render markdown using MarkdownRenderer utility
+        const userMessageHtml = MarkdownRenderer.render(bookmark.userMessage);
+        const aiResponseHtml = bookmark.aiResponse
+            ? MarkdownRenderer.render(bookmark.aiResponse)
+            : '';
 
         const modalOverlay = document.createElement('div');
         modalOverlay.className = 'detail-modal-overlay';
@@ -1574,33 +1637,57 @@ export class SimpleBookmarkPanel {
             e.stopPropagation();
         });
 
+        // Format absolute date
+        const date = new Date(bookmark.timestamp);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+        const formattedDate = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+
         modal.innerHTML = `
             <div class="detail-header">
                 <h3>${this.escapeHtml(bookmark.title || bookmark.userMessage.substring(0, 50))}</h3>
-                <button class="close-btn">×</button>
+                <div class="detail-header-actions">
+                    <button class="fullscreen-btn" title="Toggle fullscreen">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                        </svg>
+                    </button>
+                    <button class="close-btn" title="Close">×</button>
+                </div>
             </div>
 
             <div class="detail-meta">
-                <span class="platform-badge ${bookmark.platform?.toLowerCase() || 'chatgpt'}">
-                    ${this.getPlatformIcon(bookmark.platform)} ${bookmark.platform || 'ChatGPT'}
-                </span>
-                <span class="timestamp">${this.formatTimestamp(bookmark.timestamp)}</span>
-            </div>
-
-            <div class="detail-url">
-                URL: <a href="${this.escapeHtml(bookmark.url)}" target="_blank">${this.escapeHtml(bookmark.urlWithoutProtocol)}</a>
+                <div class="detail-meta-left">
+                    <span class="platform-badge ${bookmark.platform?.toLowerCase() || 'chatgpt'}">
+                        ${this.getPlatformIcon(bookmark.platform)} ${bookmark.platform || 'ChatGPT'}
+                    </span>
+                </div>
+                <div class="detail-meta-right">
+                    Saved date: ${formattedDate}
+                </div>
             </div>
 
             <div class="detail-content">
-                <div class="detail-section">
-                    <h4>📝 User Message</h4>
-                    <div class="detail-text">${this.escapeHtml(bookmark.userMessage)}</div>
+                <div class="detail-section user-section">
+                    <div class="section-header">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <h4>User Prompt</h4>
+                    </div>
+                    <div class="detail-text markdown-content">${userMessageHtml}</div>
                 </div>
 
                 ${bookmark.aiResponse ? `
-                    <div class="detail-section">
-                        <h4>AI Response</h4>
-                        <div class="detail-text">${this.escapeHtml(bookmark.aiResponse)}</div>
+                    <div class="detail-section ai-section">
+                        <div class="section-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                            </svg>
+                            <h4>AI Response</h4>
+                        </div>
+                        <div class="detail-text markdown-content">${aiResponseHtml}</div>
                     </div>
                 ` : ''}
             </div>
@@ -1612,6 +1699,7 @@ export class SimpleBookmarkPanel {
             </div>
         `;
 
+
         modalOverlay.appendChild(modal);
 
         // Add to shadow root
@@ -1620,6 +1708,10 @@ export class SimpleBookmarkPanel {
         // Bind events
         modal.querySelector('.close-btn')?.addEventListener('click', () => {
             modalOverlay.remove();
+        });
+
+        modal.querySelector('.fullscreen-btn')?.addEventListener('click', () => {
+            modal.classList.toggle('detail-modal-fullscreen');
         });
 
         modal.querySelector('.open-conversation-btn')?.addEventListener('click', async () => {
@@ -1910,14 +2002,22 @@ export class SimpleBookmarkPanel {
      */
     private async handleBatchExport(): Promise<void> {
         if (this.selectedItems.size === 0) {
-            alert('Please select items to export');
+            await this.showNotification({
+                type: 'warning',
+                title: 'No Items Selected',
+                message: 'Please select items to export'
+            });
             return;
         }
 
         const selectedBookmarks = this.getSelectedBookmarks();
 
         if (selectedBookmarks.length === 0) {
-            alert('No bookmarks selected');
+            await this.showNotification({
+                type: 'warning',
+                title: 'No Bookmarks Selected',
+                message: 'No bookmarks selected'
+            });
             return;
         }
 
@@ -1984,6 +2084,148 @@ export class SimpleBookmarkPanel {
     }
 
     /**
+     * Show notification dialog in Shadow DOM
+     * Replaces browser alert() with styled modal
+     * 
+     * @param options - Notification configuration
+     */
+    private async showNotification(options: {
+        type: 'success' | 'error' | 'warning' | 'info';
+        title?: string;
+        message: string;
+    }): Promise<void> {
+        return new Promise((resolve) => {
+            const configs = {
+                success: {
+                    icon: Icons.checkCircle,
+                    iconColor: 'var(--success-600)',
+                    titleColor: 'var(--success-700)',
+                    defaultTitle: 'Success'
+                },
+                error: {
+                    icon: Icons.xCircle,
+                    iconColor: 'var(--danger-600)',
+                    titleColor: 'var(--danger-700)',
+                    defaultTitle: 'Error'
+                },
+                warning: {
+                    icon: Icons.alertTriangle,
+                    iconColor: 'var(--warning-600)',
+                    titleColor: 'var(--warning-700)',
+                    defaultTitle: 'Warning'
+                },
+                info: {
+                    icon: Icons.info,
+                    iconColor: 'var(--primary-600)',
+                    titleColor: 'var(--primary-700)',
+                    defaultTitle: 'Information'
+                }
+            };
+
+            const config = configs[options.type];
+            const title = options.title || config.defaultTitle;
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 2147483647;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: var(--radius-medium);
+                box-shadow: var(--shadow-2xl);
+                max-width: 400px;
+                width: 90%;
+            `;
+
+            modal.innerHTML = `
+<div style="padding: 24px 24px 20px;">
+    <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: 16px;">
+        <span style="color: ${config.iconColor}; display: flex; align-items: center;">${config.icon}</span>
+        <h3 style="margin: 0; font-size: 18px; font-weight: 500; color: ${config.titleColor};">
+            ${title}
+        </h3>
+    </div>
+    <div style="color: var(--gray-700); font-size: 14px; line-height: 1.6; white-space: pre-wrap;">
+${options.message}
+    </div>
+</div>
+<div style="padding: 12px 24px; display: flex; justify-content: flex-end; border-top: 1px solid var(--gray-200);">
+    <button class="ok-btn" style="
+        padding: 8px 24px;
+        border: none;
+        border-radius: var(--radius-small);
+        background: var(--primary-600);
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+    ">OK</button>
+</div>
+            `;
+
+            overlay.appendChild(modal);
+
+            if (this.shadowRoot) {
+                this.shadowRoot.appendChild(overlay);
+            }
+
+            // CRITICAL: Stop propagation to prevent closing parent panel
+            overlay.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (e.target === overlay) {
+                    closeDialog();
+                }
+            });
+
+            modal.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            const okBtn = modal.querySelector('.ok-btn') as HTMLElement;
+
+            okBtn.addEventListener('mouseenter', () => {
+                okBtn.style.background = 'var(--primary-700)';
+            });
+            okBtn.addEventListener('mouseleave', () => {
+                okBtn.style.background = 'var(--primary-600)';
+            });
+
+            const closeDialog = () => {
+                overlay.remove();
+                resolve();
+            };
+
+            okBtn.addEventListener('click', closeDialog);
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeDialog();
+                }
+            });
+
+            const handleEscape = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                    document.removeEventListener('keydown', handleEscape);
+                    closeDialog();
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+        });
+    }
+
+    /**
      * Show custom delete confirmation modal
      * Task 3.4.2
      */
@@ -2010,20 +2252,20 @@ export class SimpleBookmarkPanel {
             const modal = document.createElement('div');
             modal.style.cssText = `
                 background: white;
-                border-radius: var(--radius-md);
+                border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
             `;
 
             modal.innerHTML = `
-                <div style="padding: 24px 24px 20px;">
-                    <div style="display: flex; align-items: center; gap: var(--space-4);  /* 16px */ margin-bottom: 16px;">
-                        <span class="warning-icon">${Icons.alertTriangle}</span>
-                        <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: var(--gray-900);">
-                            Delete Selected Items
-                        </h3>
-                    </div>
+<div style="padding: 24px 24px 20px;">
+    <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px;">
+        <span style="color: var(--warning-600); display: flex; align-items: center; flex-shrink: 0;">${Icons.alertTriangle}</span>
+        <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: var(--gray-900); flex: 1;">
+            Delete Selected Items
+        </h3>
+    </div>
                     <div style="color: var(--gray-500); font-size: 14px; line-height: 1.5;">
                         <p style="margin: 0 0 16px 0;">This will permanently delete:</p>
                         <ul style="margin: 0; padding-left: 24px;">
@@ -2063,7 +2305,11 @@ export class SimpleBookmarkPanel {
             `;
 
             overlay.appendChild(modal);
-            document.body.appendChild(overlay);
+
+            // CRITICAL: Append to Shadow DOM instead of document.body
+            if (this.shadowRoot) {
+                this.shadowRoot.appendChild(overlay);
+            }
 
             const cancelBtn = modal.querySelector('.cancel-btn') as HTMLElement;
             const deleteBtn = modal.querySelector('.delete-btn') as HTMLElement;
@@ -2093,10 +2339,15 @@ export class SimpleBookmarkPanel {
             });
 
             overlay.addEventListener('click', (e) => {
+                e.stopPropagation();
                 if (e.target === overlay) {
                     overlay.remove();
                     resolve(false);
                 }
+            });
+
+            modal.addEventListener('click', (e) => {
+                e.stopPropagation();
             });
 
             const handleEscape = (e: KeyboardEvent) => {
@@ -2184,7 +2435,7 @@ export class SimpleBookmarkPanel {
         const modal = document.createElement('div');
         modal.style.cssText = `
             background: white;
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-medium);
             box-shadow: var(--shadow-2xl);
             max-width: 500px;
             width: 90%;
@@ -2234,7 +2485,11 @@ export class SimpleBookmarkPanel {
         `;
 
         overlay.appendChild(modal);
-        document.body.appendChild(overlay);
+
+        // CRITICAL: Append to Shadow DOM instead of document.body
+        if (this.shadowRoot) {
+            this.shadowRoot.appendChild(overlay);
+        }
 
         const okBtn = modal.querySelector('.ok-btn') as HTMLElement;
         okBtn.addEventListener('mouseenter', () => {
@@ -2249,9 +2504,14 @@ export class SimpleBookmarkPanel {
         });
 
         overlay.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (e.target === overlay) {
                 overlay.remove();
             }
+        });
+
+        modal.addEventListener('click', (e) => {
+            e.stopPropagation();
         });
     }
 
@@ -2316,14 +2576,22 @@ export class SimpleBookmarkPanel {
      */
     private async handleBatchMove(): Promise<void> {
         if (this.selectedItems.size === 0) {
-            alert('Please select items to move');
+            await this.showNotification({
+                type: 'warning',
+                title: 'No Items Selected',
+                message: 'Please select items to move'
+            });
             return;
         }
 
         // Get only bookmarks (folders can't be moved)
         const bookmarks = this.getSelectedBookmarks();
         if (bookmarks.length === 0) {
-            alert('No bookmarks selected to move.\n\nNote: Folders cannot be moved, only bookmarks.');
+            await this.showNotification({
+                type: 'warning',
+                title: 'No Bookmarks to Move',
+                message: 'No bookmarks selected to move.\n\nNote: Folders cannot be moved, only bookmarks.'
+            });
             return;
         }
 
@@ -2348,7 +2616,11 @@ export class SimpleBookmarkPanel {
 
     /**
      * Show export options dialog
-     * Returns: true = preserve structure, false = remove structure, null = cancelled
+     * 
+     * IMPORTANT: This dialog is created in Shadow DOM (not document.body)
+     * so it can access CSS variables defined in the panel's styles.
+     * 
+     * @see /src/styles/design-tokens.css
      */
     private async showExportOptionsDialog(): Promise<boolean | null> {
         return new Promise((resolve) => {
@@ -2369,7 +2641,7 @@ export class SimpleBookmarkPanel {
             const modal = document.createElement('div');
             modal.style.cssText = `
                 background: white;
-                border-radius: var(--radius-md);
+                border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
@@ -2389,7 +2661,28 @@ export class SimpleBookmarkPanel {
                         </span>
                     </label>
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-2);  /* 8px */">
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-2);">
+                    <div class="batch-actions-bar">
+                        <span class="selected-count">0 selected</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="batch-delete-btn" title="Delete selected items">
+                                ${Icons.trash}
+                                <span>Delete</span>
+                            </button>
+                            <button class="batch-move-btn" title="Move to folder">
+                                ${Icons.folder}
+                                <span>Move To</span>
+                            </button>
+                            <button class="batch-export-btn" title="Export selected">
+                                ${Icons.download}
+                                <span>Export</span>
+                            </button>
+                            <button class="batch-clear-btn" title="Clear selection">
+                                ${Icons.x}
+                                <span>Clear</span>
+                            </button>
+                        </div>
+                    </div>
                     <button class="cancel-btn" style="
                         padding: 8px 16px;
                         border: 1px solid var(--gray-300);
@@ -2416,13 +2709,17 @@ export class SimpleBookmarkPanel {
             `;
 
             overlay.appendChild(modal);
-            document.body.appendChild(overlay);
+
+            // CRITICAL: Append to Shadow DOM instead of document.body
+            if (this.shadowRoot) {
+                this.shadowRoot.appendChild(overlay);
+            }
 
             const checkbox = modal.querySelector('#preserve-structure') as HTMLInputElement;
             const cancelBtn = modal.querySelector('.cancel-btn') as HTMLElement;
             const exportBtn = modal.querySelector('.export-btn') as HTMLElement;
 
-            // Hover effects
+            // Hover effects using CSS variables
             cancelBtn.addEventListener('mouseenter', () => {
                 cancelBtn.style.background = 'var(--gray-100)';
             });
@@ -2450,10 +2747,15 @@ export class SimpleBookmarkPanel {
 
             // Close on overlay click
             overlay.addEventListener('click', (e) => {
+                e.stopPropagation();
                 if (e.target === overlay) {
                     overlay.remove();
                     resolve(null);
                 }
+            });
+
+            modal.addEventListener('click', (e) => {
+                e.stopPropagation();
             });
 
             // Close on Escape key
@@ -2587,12 +2889,20 @@ export class SimpleBookmarkPanel {
                 await this.refresh();
 
                 // Show success message
-                alert(`✅ Successfully imported ${bookmarks.length} bookmark(s)!`);
+                await this.showNotification({
+                    type: 'success',
+                    title: 'Import Successful',
+                    message: `Successfully imported ${bookmarks.length} bookmark(s)!`
+                });
                 logger.info(`[Import] Successfully imported ${bookmarks.length} bookmarks`);
             } catch (error) {
                 logger.error('[Import] Failed:', error);
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                alert(`❌ Import failed: ${errorMessage}`);
+                await this.showNotification({
+                    type: 'error',
+                    title: 'Import Failed',
+                    message: `Import failed: ${errorMessage}`
+                });
             }
         };
 
@@ -2666,7 +2976,7 @@ export class SimpleBookmarkPanel {
             const modal = document.createElement('div');
             modal.style.cssText = `
                 background: white;
-                border-radius: var(--radius-md);
+                border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 450px;
                 width: 90%;
@@ -2724,7 +3034,11 @@ export class SimpleBookmarkPanel {
             `;
 
             overlay.appendChild(modal);
-            document.body.appendChild(overlay);
+
+            // CRITICAL: Append to Shadow DOM instead of document.body
+            if (this.shadowRoot) {
+                this.shadowRoot.appendChild(overlay);
+            }
 
             const cancelBtn = modal.querySelector('.cancel-btn') as HTMLElement;
             const proceedBtn = modal.querySelector('.proceed-btn') as HTMLElement;
@@ -4012,7 +4326,7 @@ export class SimpleBookmarkPanel {
 
             .conflict-dialog {
                 background: var(--white);
-                border-radius: var(--radius-lg);
+                border-radius: var(--radius-large);
                 box-shadow: var(--shadow-2xl);
                 max-width: 500px;
                 width: 90%;
@@ -4134,110 +4448,245 @@ export class SimpleBookmarkPanel {
                 background: var(--gray-300);
             }
 
-            /* Detail Modal */
+            /* Detail Modal - Modern & Clean */
             .detail-modal-overlay {
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(8px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: var(--z-modal-backdrop);
+                z-index: 2147483648;
+                animation: overlayFadeIn 0.2s ease;
+            }
+
+            @keyframes overlayFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
             }
 
             .detail-modal {
-                background: var(--white);
-                border-radius: var(--radius-lg);
+                background: white;
+                border-radius: 16px;
                 width: 90%;
-                max-width: 700px;
-                max-height: 80vh;
+                max-width: 800px;
+                max-height: 85vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: var(--shadow-2xl);
+                box-shadow: 
+                    0 0 0 1px rgba(0, 0, 0, 0.08),
+                    0 4px 12px rgba(0, 0, 0, 0.12),
+                    0 16px 48px rgba(0, 0, 0, 0.18),
+                    0 24px 80px rgba(0, 0, 0, 0.12);
+                position: relative;
+                z-index: 2147483649;
+                animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+
+            @keyframes modalSlideIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.95) translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+
+            .detail-modal-fullscreen {
+                width: 100vw !important;
+                max-width: none !important;
+                height: 100vh !important;
+                max-height: none !important;
+                border-radius: 0 !important;
+            }
+
+            .detail-modal-fullscreen .detail-content {
+                max-width: 1000px;
+                margin: 0 auto;
             }
 
             .detail-header {
-                padding: var(--space-5) var(--space-6);  /* 20px 24px */
-                border-bottom: 1px solid var(--gray-200);
+                padding: 16px 24px;
+                border-bottom: 1px solid #F0F0F0;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                flex-shrink: 0;
             }
 
             .detail-header h3 {
                 margin: 0;
                 font-size: 18px;
                 font-weight: 600;
-                color: var(--gray-900);
+                color: #1A1A1A;
+                letter-spacing: -0.02em;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                flex: 1;
+                padding-right: 16px;
+            }
+
+            .detail-header-actions {
+                display: flex;
+                gap: 8px;
+            }
+
+            .fullscreen-btn,
+            .detail-header .close-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                border: none;
+                background: transparent;
+                color: #6B7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.15s ease;
+                font-size: 20px;
+            }
+
+            .fullscreen-btn:hover,
+            .detail-header .close-btn:hover {
+                background: #F3F4F6;
+                color: #1A1A1A;
             }
 
             .detail-meta {
-                padding: var(--space-3) var(--space-6);  /* 12px 24px */
-                background: var(--gray-50);
+                padding: 10px 24px;
+                background: #F8F9FA;
                 display: flex;
-                gap: var(--space-4);  /* 16px */
+                justify-content: space-between;
                 align-items: center;
+                border-bottom: 1px solid #E8E8E8;
+                flex-shrink: 0;
+                gap: 16px;
+                height: 44px;
+                overflow: hidden;
             }
 
-            .detail-url {
-                padding: var(--space-3) var(--space-6);  /* 12px 24px */
+            .detail-meta-left {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+
+            .detail-meta .platform-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                border-radius: 6px;
                 font-size: 13px;
-                color: var(--gray-500);
+                font-weight: 500;
+                white-space: nowrap;
+                flex-shrink: 0;
             }
 
-            .detail-url a {
-                color: var(--primary-600);
-                text-decoration: none;
+            .detail-meta .platform-badge.chatgpt {
+                background: #D1FAE5;
+                color: #065F46;
+            }
+
+            .detail-meta .platform-badge.gemini {
+                background: #DBEAFE;
+                color: #1E40AF;
+            }
+
+            .detail-meta-right {
+                font-size: 13px;
+                color: #6B7280;
+                white-space: nowrap;
+                flex-shrink: 0;
             }
 
             .detail-content {
                 flex: 1;
                 overflow-y: auto;
-                padding: var(--space-6);  /* 24px */
+                padding: 0;
             }
 
             .detail-section {
-                margin-bottom: 24px;
+                padding: 28px;
+                border-bottom: 1px solid #F5F5F5;
             }
 
-            .detail-section h4 {
-                margin: 0 0 12px 0;
+            .detail-section:last-child {
+                border-bottom: none;
+            }
+
+            .user-section {
+                background: #F0F7FF;
+                border-left: 3px solid #3B82F6;
+            }
+
+            .ai-section {
+                background: #F0FDF4;
+                border-left: 3px solid #10B981;
+            }
+
+            .section-header {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 16px;
+            }
+
+            .section-header svg {
+                color: #6B7280;
+                flex-shrink: 0;
+            }
+
+            .section-header h4 {
+                margin: 0;
                 font-size: 14px;
                 font-weight: 600;
-                color: var(--gray-700);
+                color: #6B7280;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
 
             .detail-text {
-                line-height: 1.6;
-                color: var(--gray-900);
-                white-space: pre-wrap;
-                word-break: break-word;
+                font-size: 15px;
+                line-height: 1.7;
+                color: #1A1A1A;
             }
 
             .detail-footer {
-                padding: var(--space-4) var(--space-6);  /* 16px 24px */
-                border-top: 1px solid var(--gray-200);
+                padding: 10px 24px;
+                border-top: 1px solid #F0F0F0;
                 display: flex;
                 justify-content: flex-end;
+                background: white;
+                flex-shrink: 0;
+                border-radius: 0 0 16px 16px;
+                min-height: 44px;
             }
 
             .open-conversation-btn {
-                padding: var(--space-3) var(--space-5);  /* 12px 20px */
-                background: var(--primary-600);
-                color: var(--white);
+                padding: 8px 20px;
+                background: #2563EB;
+                color: white;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 font-size: 14px;
                 font-weight: 500;
                 cursor: pointer;
-                transition: background 0.2s;
+                transition: all 0.15s ease;
             }
 
             .open-conversation-btn:hover {
-                background: var(--primary-700);
+                background: #1D4ED8;
+                box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
             }
 
             /* ============================================================================
@@ -4256,82 +4705,73 @@ export class SimpleBookmarkPanel {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-                z-index: var(--z-sticky);
-                
-                transform: translateY(100%);
-                transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-                opacity: 0;
-                pointer-events: none;
-            }
-            
-            .batch-actions-bar.visible {
-                transform: translateY(0);
-                opacity: 1;
-                pointer-events: auto;
-            }
-            
-            .batch-info {
+                padding: 16px 20px;
+                background: rgba(255, 255, 255, 0.85);
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+                border-top: 1px solid rgba(0, 0, 0, 0.08);
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
                 display: flex;
                 align-items: center;
-                gap: var(--space-3);  /* 12px */
+                gap: 12px;
+                z-index: 100;
+                transform: translateY(100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
-            
-            .select-all-checkbox {
-                width: 18px;
-                height: 18px;
-                cursor: pointer;
-                margin: 0;
+
+            .batch-actions-bar.visible {
+                transform: translateY(0);
             }
-            
+
             .batch-actions-bar .selected-count {
                 font-size: 14px;
                 font-weight: 500;
-                color: var(--gray-900);
+                color: var(--gray-700);
+                margin-right: auto;
+                white-space: nowrap;
             }
-            
-            .batch-buttons {
+
+            .batch-actions-bar button {
                 display: flex;
-                gap: var(--space-2);  /* 8px */
-            }
-            
-            .batch-buttons button {
-                padding: var(--space-2) var(--space-4);  /* 8px 16px */
-                border: 1px solid var(--gray-300);
-                border-radius: var(--radius-sm);
-                background: var(--white);
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 10px 16px;
+                background: white;
+                border: 1px solid var(--gray-200);
+                border-radius: var(--radius-medium);
                 cursor: pointer;
+                transition: all 0.2s ease;
                 font-size: 13px;
                 font-weight: 500;
-                transition: all 0.2s;
+                color: var(--gray-700);
+                white-space: nowrap;
             }
-            
-            .batch-buttons button:hover {
-                background: var(--gray-100);
+
+            .batch-actions-bar button:hover {
+                background: var(--gray-50);
+                border-color: var(--gray-300);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
-            
-            .batch-delete-btn:hover {
-                background: var(--danger-600) !important;
-                color: var(--white) !important;
-                border-color: var(--danger-600) !important;
+
+            .batch-actions-bar button:active {
+                transform: translateY(0);
             }
-            
-            .batch-move-btn:hover {
-                background: var(--primary-600) !important;
-                color: var(--white) !important;
-                border-color: var(--primary-600) !important;
+
+            .batch-actions-bar button svg {
+                width: 20px;
+                height: 20px;
             }
-            
-            .batch-export-btn:hover {
-                background: var(--success-600) !important;
-                color: var(--white) !important;
-                border-color: var(--success-600) !important;
+
+            .batch-actions-bar button.danger {
+                color: var(--danger-600);
             }
-            
-            .batch-clear-btn:hover {
-                background: var(--gray-600) !important;
-                color: var(--white) !important;
-                border-color: var(--gray-600) !important;
+
+            .batch-actions-bar button.danger:hover {
+                background: var(--danger-50);
+                border-color: var(--danger-200);
             }
             
             .bookmarks-tab .content {
@@ -4430,7 +4870,7 @@ export class SimpleBookmarkPanel {
 
             .folder-item.selected {
                 background: var(--primary-50);
-                border-left: 3px solid var(--primary-600);
+                box-shadow: inset 3px 0 0 var(--primary-600);
             }
 
             .folder-toggle {
@@ -4439,7 +4879,6 @@ export class SimpleBookmarkPanel {
                 justify-content: center;
                 width: 16px;
                 height: 16px;
-                margin-right: 4px;
                 font-size: 10px;
                 color: var(--gray-500);
                 cursor: pointer;

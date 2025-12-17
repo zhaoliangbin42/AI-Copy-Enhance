@@ -1,6 +1,6 @@
 /**
  * Shadow DOM styles for toolbar component
- * Simple layout with Copy button on left, stats on right
+ * Notion-style floating toolbar with glassmorphism effect
  * 
  * Updated to use design tokens from design-tokens.css
  */
@@ -12,113 +12,227 @@ export const toolbarStyles = `
 :host {
   display: block;
   font-family: var(--font-sans);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
   
-  /* Light mode theme colors */
-  --gradient-solid-from: #ad5389;
-  --gradient-solid-to: #3c1053;
-  --gradient-light-from: rgba(173, 83, 137, 0.12);
-  --gradient-light-to: rgba(60, 16, 83, 0.12);
-  --theme-color: #ad5389;
+  /* Light mode theme colors - Blue theme */
+  --gradient-solid-from: #3b82f6;
+  --gradient-solid-to: #1d4ed8;
+  --gradient-light-from: rgba(59, 130, 246, 0.12);
+  --gradient-light-to: rgba(29, 78, 216, 0.12);
+  --theme-color: #3b82f6;
 }
 
 /* Dark mode theme colors */
 @media (prefers-color-scheme: dark) {
   :host {
-    --gradient-solid-from: #e091d0;
-    --gradient-solid-to: #c084b3;
-    --gradient-light-from: rgba(224, 145, 208, 0.25);
-    --gradient-light-to: rgba(192, 132, 179, 0.25);
-    --theme-color: #e091d0;
+    --gradient-solid-from: #60a5fa;
+    --gradient-solid-to: #3b82f6;
+    --gradient-light-from: rgba(96, 165, 250, 0.25);
+    --gradient-light-to: rgba(59, 130, 246, 0.25);
+    --theme-color: #60a5fa;
   }
 }
 
+/* Notion-style floating toolbar */
 .aicopy-toolbar {
-  display: flex;
+  /* Floating card container */
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-1) 0;
+  gap: var(--space-1);
+  
+  /* Glassmorphism */
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  
+  /* Rounded corners */
+  border-radius: 8px;
+  
+  /* Use box-shadow for both border and elevation - no clipping */
+  box-shadow: 
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06),  /* Border as inset shadow */
+    0 1px 2px rgba(0, 0, 0, 0.06),         /* Close shadow */
+    0 2px 4px rgba(0, 0, 0, 0.04);         /* Subtle depth */
+  
+  /* Compact padding */
+  padding: 4px;
+  
+  /* Right alignment */
+  position: absolute;
+  right: 0;
+  
+  /* Ensure clickability */
+  z-index: 100;
+  pointer-events: auto;
+  
+  /* Smooth transitions */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.aicopy-toolbar:hover {
+  /* Lift on hover with slightly stronger shadow */
+  transform: translateY(-1px);
+  box-shadow: 
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08),  /* Slightly darker border */
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Bookmarked state - entire toolbar highlights */
+.aicopy-toolbar.bookmarked {
+  background: linear-gradient(135deg, var(--gradient-light-from), var(--gradient-light-to));
+  box-shadow: 
+    inset 0 0 0 1px var(--theme-color),
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.aicopy-toolbar.bookmarked:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    inset 0 0 0 1px var(--theme-color),
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Dark mode toolbar */
+@media (prefers-color-scheme: dark) {
+  .aicopy-toolbar {
+    background: rgba(40, 40, 40, 0.98);
+    box-shadow: 
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),  /* Border */
+      0 1px 2px rgba(0, 0, 0, 0.4),
+      0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .aicopy-toolbar:hover {
+    box-shadow: 
+      inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 2px 4px rgba(0, 0, 0, 0.5),
+      0 4px 8px rgba(0, 0, 0, 0.4);
+  }
 }
 
 .aicopy-button-group {
   display: flex;
   align-items: center;
-  gap: var(--space-1);  /* Reduced from 8px to 4px for more compact layout */
+  gap: 2px;
 }
 
+/* Visual divider */
+.aicopy-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--gray-200);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .aicopy-divider {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Notion-style rounded buttons */
 .aicopy-button {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   padding: 0;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   border: none;
   background: transparent;
-  color: var(--gray-500);
+  color: var(--gray-600);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-in-out);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
+  pointer-events: auto;
+  z-index: 1;
 }
 
 .aicopy-button:hover {
-  background: linear-gradient(135deg, var(--gradient-light-from), var(--gradient-light-to));
-  color: var(--theme-color);
+  background: var(--gray-100);
+  color: var(--gray-900);
 }
 
 .aicopy-button:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
+  background: var(--gray-200);
 }
 
 .aicopy-button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Bookmarked state - highlighted with theme color */
-.aicopy-button.bookmarked {
-  background: linear-gradient(135deg, var(--gradient-light-from), var(--gradient-light-to));
+@media (prefers-color-scheme: dark) {
+  .aicopy-button {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .aicopy-button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .aicopy-button:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Button hover in bookmarked toolbar - light blue for visibility */
+.aicopy-toolbar.bookmarked .aicopy-button:not(.bookmarked):hover {
+  background: rgba(59, 130, 246, 0.2);
   color: var(--theme-color);
+}
+
+/* Bookmarked state - deeper highlight than toolbar */
+.aicopy-button.bookmarked {
+  background: linear-gradient(135deg, var(--gradient-solid-from), var(--gradient-solid-to));
+  color: white;
 }
 
 .aicopy-button.bookmarked:hover {
   background: linear-gradient(135deg, var(--gradient-solid-from), var(--gradient-solid-to));
   color: white;
+  opacity: 0.9;
 }
 
-/* Tooltip on hover */
+/* Tooltip */
 .aicopy-button::after {
   content: attr(aria-label);
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%) translateY(calc(-1 * var(--space-2)));
-  padding: var(--space-1) var(--space-2);
+  transform: translateX(-50%);
+  padding: 6px 10px;
   background: var(--gray-900);
   color: white;
-  font-size: var(--text-xs);
+  font-size: 12px;
   white-space: nowrap;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-base) var(--ease-in-out);
-  z-index: var(--z-tooltip);
+  transition: opacity 0.15s ease;
+  z-index: 1000;
 }
 
 .aicopy-button::before {
   content: '';
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 2px);
   left: 50%;
-  transform: translateX(-50%) translateY(-2px);
-  border: 5px solid transparent;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
   border-top-color: var(--gray-900);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-base) var(--ease-in-out);
-  z-index: var(--z-tooltip);
+  transition: opacity 0.15s ease;
+  z-index: 1000;
 }
 
 .aicopy-button:hover::after,
@@ -126,13 +240,13 @@ export const toolbarStyles = `
   opacity: 1;
 }
 
-/* Click feedback tooltip */
+/* Feedback tooltip */
 .aicopy-button-feedback {
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 12px);
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  padding: 6px 10px;
+  transform: translateX(-50%);
+  padding: 6px 12px;
   background: var(--theme-color);
   color: white;
   font-size: 12px;
@@ -145,38 +259,37 @@ export const toolbarStyles = `
 }
 
 @keyframes fadeInOut {
-  0% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-  20% { opacity: 1; transform: translateX(-50%) translateY(-12px); }
-  80% { opacity: 1; transform: translateX(-50%) translateY(-12px); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+  0% { opacity: 0; transform: translateX(-50%) translateY(0); }
+  20% { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  80% { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
 }
 
 .aicopy-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: block;
 }
 
-/* Word count stats - right aligned */
+/* Word count stats - two lines */
 .aicopy-stats {
-  font-size: 12px;
-  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--gray-600);
   white-space: nowrap;
-  text-align: right;
-  cursor: text;
+  padding: 0 6px;
+  min-width: 60px;
+  cursor: default;
+  user-select: none;
 }
 
-/* Light mode colors */
-:host {
-  --text-secondary: #6b7280;
-  --bg-secondary: rgba(0, 0, 0, 0.05);
-}
-
-/* Dark mode support */
 @media (prefers-color-scheme: dark) {
-  :host {
-    --text-secondary: #9ca3af;
-    --bg-secondary: rgba(255, 255, 255, 0.1);
+  .aicopy-stats {
+    color: rgba(255, 255, 255, 0.5);
   }
 }
 `;

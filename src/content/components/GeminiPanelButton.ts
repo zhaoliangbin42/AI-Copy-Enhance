@@ -1,5 +1,6 @@
 import { simpleBookmarkPanel } from '../../bookmarks/components/SimpleBookmarkPanel';
 import { logger } from '../../utils/logger';
+import { Icons } from '../../assets/icons';
 
 /**
  * Gemini Header Panel Button
@@ -83,15 +84,8 @@ export class GeminiPanelButton {
         button.setAttribute('type', 'button');
         button.style.cssText = 'margin-left: 12px; color: var(--gem-sys-color--on-surface);';
 
-        // Create Material icon (bookmark icon)
-        button.innerHTML = `
-            <span class="mat-mdc-button-persistent-ripple mdc-icon-button__ripple"></span>
-            <mat-icon role="img" class="mat-icon notranslate gds-icon-l google-symbols mat-ligature-font mat-icon-no-color" 
-                      aria-hidden="true" data-mat-icon-type="font" data-mat-icon-name="bookmark" 
-                      fonticon="bookmark"></mat-icon>
-            <span class="mat-focus-indicator"></span>
-            <span class="mat-mdc-button-touch-target"></span>
-        `;
+        // Use bookMarked icon from Icons
+        button.innerHTML = Icons.bookMarked;
 
         button.addEventListener('click', () => this.handleClick());
 

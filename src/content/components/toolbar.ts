@@ -2,6 +2,7 @@ import { toolbarStyles } from '../../styles/toolbar.css';
 import { copyToClipboard } from '../../utils/dom-utils';
 import { logger } from '../../utils/logger';
 import { WordCounter } from '../parsers/word-counter';
+import { Icons } from '../../assets/icons';
 
 export interface ToolbarCallbacks {
     onCopyMarkdown: () => Promise<string>;
@@ -50,7 +51,7 @@ export class Toolbar {
         // Bookmark button (bookmark icon)
         const bookmarkBtn = this.createIconButton(
             'bookmark-btn',
-            this.getBookmarkIcon(),
+            Icons.bookmark,
             'Bookmark',
             () => this.handleBookmark()
         );
@@ -58,7 +59,7 @@ export class Toolbar {
         // Copy Markdown button (clipboard icon)
         const copyBtn = this.createIconButton(
             'copy-md-btn',
-            this.getClipboardIcon(),
+            Icons.copy,
             'Copy Markdown',
             () => this.handleCopyMarkdown()
         );
@@ -66,7 +67,7 @@ export class Toolbar {
         // View Source button (code icon)
         const sourceBtn = this.createIconButton(
             'source-btn',
-            this.getCodeIcon(),
+            Icons.code,
             'View Source',
             () => this.handleViewSource()
         );
@@ -74,7 +75,7 @@ export class Toolbar {
         // Re-render button (eye icon)
         const reRenderBtn = this.createIconButton(
             're-render-btn',
-            this.getEyeIcon(),
+            Icons.eye,
             'Preview Enhance',
             () => this.handleReRender()
         );
@@ -85,6 +86,10 @@ export class Toolbar {
         stats.id = 'word-stats';
         stats.textContent = 'Loading...';
 
+        // Visual divider between buttons and stats
+        const divider = document.createElement('div');
+        divider.className = 'aicopy-divider';
+
         // Button group for left-aligned buttons
         const buttonGroup = document.createElement('div');
         buttonGroup.className = 'aicopy-button-group';
@@ -94,6 +99,7 @@ export class Toolbar {
         buttonGroup.appendChild(reRenderBtn);
 
         wrapper.appendChild(buttonGroup);
+        wrapper.appendChild(divider);
         wrapper.appendChild(stats);
 
         this.shadowRoot.appendChild(wrapper);
@@ -125,7 +131,13 @@ export class Toolbar {
 
                         // Only update if not "No content"
                         if (formatted !== 'No content') {
-                            stats.textContent = formatted;
+                            // Split into two lines: "123" and "words"
+                            const parts = formatted.split(' / ');
+                            if (parts.length >= 2) {
+                                stats.innerHTML = `<div>${parts[0]}</div><div>${parts.slice(1).join(' ')}</div>`;
+                            } else {
+                                stats.textContent = formatted;
+                            }
                             logger.debug(`[WordCount] Initialized on attempt ${attempt + 1}`);
                             return; // Success!
                         }
@@ -172,63 +184,7 @@ export class Toolbar {
         return button;
     }
 
-    /**
-     * Get clipboard icon SVG
-     */
-    private getClipboardIcon(): string {
-        return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-      </svg>
-    `;
-    }
 
-    /**
-     * Get code icon SVG
-     */
-    private getCodeIcon(): string {
-        return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="16 18 22 12 16 6"></polyline>
-        <polyline points="8 6 2 12 8 18"></polyline>
-      </svg>
-    `;
-    }
-
-    /**
-     * Get eye icon SVG (for preview)
-     */
-    private getEyeIcon(): string {
-        return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
-      </svg>
-    `;
-    }
-
-    /**
-     * Get checkmark icon SVG
-     */
-    private getCheckIcon(): string {
-        return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
-    `;
-    }
-
-    /**
-     * Get bookmark icon SVG
-     */
-    private getBookmarkIcon(): string {
-        return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-      </svg>
-    `;
-    }
 
 
     /**
@@ -251,7 +207,7 @@ export class Toolbar {
             if (success) {
                 // Change icon to checkmark
                 const originalIcon = btn.innerHTML;
-                btn.innerHTML = this.getCheckIcon();
+                btn.innerHTML = Icons.check;
                 btn.style.color = 'var(--theme-color)';
 
                 logger.info('Markdown copied to clipboard');
@@ -329,15 +285,18 @@ export class Toolbar {
      * Set bookmark button state (highlighted when bookmarked)
      */
     setBookmarkState(isBookmarked: boolean): void {
+        const toolbar = this.shadowRoot.querySelector('.aicopy-toolbar');
         const bookmarkBtn = this.shadowRoot.querySelector('#bookmark-btn') as HTMLButtonElement;
-        if (!bookmarkBtn) return;
+        if (!bookmarkBtn || !toolbar) return;
 
         if (isBookmarked) {
-            // Add bookmarked class for visual feedback
+            // Add bookmarked class to both toolbar and button
+            toolbar.classList.add('bookmarked');
             bookmarkBtn.classList.add('bookmarked');
             bookmarkBtn.title = 'Remove Bookmark';
             bookmarkBtn.setAttribute('aria-label', 'Remove Bookmark');
         } else {
+            toolbar.classList.remove('bookmarked');
             bookmarkBtn.classList.remove('bookmarked');
             bookmarkBtn.title = 'Bookmark';
             bookmarkBtn.setAttribute('aria-label', 'Bookmark');

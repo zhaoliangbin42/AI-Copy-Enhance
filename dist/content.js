@@ -717,7 +717,7 @@ class ToolbarInjector {
     if (isGemini) {
       wrapper.style.cssText = "margin-bottom: 8px; padding-left: 60px;";
     } else {
-      wrapper.style.cssText = "margin-bottom: 8px;";
+      wrapper.style.cssText = "margin-bottom: 0px; margin-top: 10px;";
     }
     wrapper.appendChild(toolbar);
     actionBar.parentElement?.insertBefore(wrapper, actionBar);
@@ -750,113 +750,227 @@ const toolbarStyles = `
 :host {
   display: block;
   font-family: var(--font-sans);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
   
-  /* Light mode theme colors */
-  --gradient-solid-from: #ad5389;
-  --gradient-solid-to: #3c1053;
-  --gradient-light-from: rgba(173, 83, 137, 0.12);
-  --gradient-light-to: rgba(60, 16, 83, 0.12);
-  --theme-color: #ad5389;
+  /* Light mode theme colors - Blue theme */
+  --gradient-solid-from: #3b82f6;
+  --gradient-solid-to: #1d4ed8;
+  --gradient-light-from: rgba(59, 130, 246, 0.12);
+  --gradient-light-to: rgba(29, 78, 216, 0.12);
+  --theme-color: #3b82f6;
 }
 
 /* Dark mode theme colors */
 @media (prefers-color-scheme: dark) {
   :host {
-    --gradient-solid-from: #e091d0;
-    --gradient-solid-to: #c084b3;
-    --gradient-light-from: rgba(224, 145, 208, 0.25);
-    --gradient-light-to: rgba(192, 132, 179, 0.25);
-    --theme-color: #e091d0;
+    --gradient-solid-from: #60a5fa;
+    --gradient-solid-to: #3b82f6;
+    --gradient-light-from: rgba(96, 165, 250, 0.25);
+    --gradient-light-to: rgba(59, 130, 246, 0.25);
+    --theme-color: #60a5fa;
   }
 }
 
+/* Notion-style floating toolbar */
 .aicopy-toolbar {
-  display: flex;
+  /* Floating card container */
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-1) 0;
+  gap: var(--space-1);
+  
+  /* Glassmorphism */
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  
+  /* Rounded corners */
+  border-radius: 8px;
+  
+  /* Use box-shadow for both border and elevation - no clipping */
+  box-shadow: 
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06),  /* Border as inset shadow */
+    0 1px 2px rgba(0, 0, 0, 0.06),         /* Close shadow */
+    0 2px 4px rgba(0, 0, 0, 0.04);         /* Subtle depth */
+  
+  /* Compact padding */
+  padding: 4px;
+  
+  /* Right alignment */
+  position: absolute;
+  right: 0;
+  
+  /* Ensure clickability */
+  z-index: 100;
+  pointer-events: auto;
+  
+  /* Smooth transitions */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.aicopy-toolbar:hover {
+  /* Lift on hover with slightly stronger shadow */
+  transform: translateY(-1px);
+  box-shadow: 
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08),  /* Slightly darker border */
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Bookmarked state - entire toolbar highlights */
+.aicopy-toolbar.bookmarked {
+  background: linear-gradient(135deg, var(--gradient-light-from), var(--gradient-light-to));
+  box-shadow: 
+    inset 0 0 0 1px var(--theme-color),
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.aicopy-toolbar.bookmarked:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    inset 0 0 0 1px var(--theme-color),
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Dark mode toolbar */
+@media (prefers-color-scheme: dark) {
+  .aicopy-toolbar {
+    background: rgba(40, 40, 40, 0.98);
+    box-shadow: 
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),  /* Border */
+      0 1px 2px rgba(0, 0, 0, 0.4),
+      0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .aicopy-toolbar:hover {
+    box-shadow: 
+      inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 2px 4px rgba(0, 0, 0, 0.5),
+      0 4px 8px rgba(0, 0, 0, 0.4);
+  }
 }
 
 .aicopy-button-group {
   display: flex;
   align-items: center;
-  gap: var(--space-1);  /* Reduced from 8px to 4px for more compact layout */
+  gap: 2px;
 }
 
+/* Visual divider */
+.aicopy-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--gray-200);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .aicopy-divider {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Notion-style rounded buttons */
 .aicopy-button {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   padding: 0;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   border: none;
   background: transparent;
-  color: var(--gray-500);
+  color: var(--gray-600);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-in-out);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
+  pointer-events: auto;
+  z-index: 1;
 }
 
 .aicopy-button:hover {
-  background: linear-gradient(135deg, var(--gradient-light-from), var(--gradient-light-to));
-  color: var(--theme-color);
+  background: var(--gray-100);
+  color: var(--gray-900);
 }
 
 .aicopy-button:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
+  background: var(--gray-200);
 }
 
 .aicopy-button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Bookmarked state - highlighted with theme color */
-.aicopy-button.bookmarked {
-  background: linear-gradient(135deg, var(--gradient-light-from), var(--gradient-light-to));
+@media (prefers-color-scheme: dark) {
+  .aicopy-button {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .aicopy-button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .aicopy-button:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Button hover in bookmarked toolbar - light blue for visibility */
+.aicopy-toolbar.bookmarked .aicopy-button:not(.bookmarked):hover {
+  background: rgba(59, 130, 246, 0.2);
   color: var(--theme-color);
+}
+
+/* Bookmarked state - deeper highlight than toolbar */
+.aicopy-button.bookmarked {
+  background: linear-gradient(135deg, var(--gradient-solid-from), var(--gradient-solid-to));
+  color: white;
 }
 
 .aicopy-button.bookmarked:hover {
   background: linear-gradient(135deg, var(--gradient-solid-from), var(--gradient-solid-to));
   color: white;
+  opacity: 0.9;
 }
 
-/* Tooltip on hover */
+/* Tooltip */
 .aicopy-button::after {
   content: attr(aria-label);
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%) translateY(calc(-1 * var(--space-2)));
-  padding: var(--space-1) var(--space-2);
+  transform: translateX(-50%);
+  padding: 6px 10px;
   background: var(--gray-900);
   color: white;
-  font-size: var(--text-xs);
+  font-size: 12px;
   white-space: nowrap;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-base) var(--ease-in-out);
-  z-index: var(--z-tooltip);
+  transition: opacity 0.15s ease;
+  z-index: 1000;
 }
 
 .aicopy-button::before {
   content: '';
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 2px);
   left: 50%;
-  transform: translateX(-50%) translateY(-2px);
-  border: 5px solid transparent;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
   border-top-color: var(--gray-900);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-base) var(--ease-in-out);
-  z-index: var(--z-tooltip);
+  transition: opacity 0.15s ease;
+  z-index: 1000;
 }
 
 .aicopy-button:hover::after,
@@ -864,13 +978,13 @@ const toolbarStyles = `
   opacity: 1;
 }
 
-/* Click feedback tooltip */
+/* Feedback tooltip */
 .aicopy-button-feedback {
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 12px);
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  padding: 6px 10px;
+  transform: translateX(-50%);
+  padding: 6px 12px;
   background: var(--theme-color);
   color: white;
   font-size: 12px;
@@ -883,38 +997,37 @@ const toolbarStyles = `
 }
 
 @keyframes fadeInOut {
-  0% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-  20% { opacity: 1; transform: translateX(-50%) translateY(-12px); }
-  80% { opacity: 1; transform: translateX(-50%) translateY(-12px); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+  0% { opacity: 0; transform: translateX(-50%) translateY(0); }
+  20% { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  80% { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
 }
 
 .aicopy-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: block;
 }
 
-/* Word count stats - right aligned */
+/* Word count stats - two lines */
 .aicopy-stats {
-  font-size: 12px;
-  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--gray-600);
   white-space: nowrap;
-  text-align: right;
-  cursor: text;
+  padding: 0 6px;
+  min-width: 60px;
+  cursor: default;
+  user-select: none;
 }
 
-/* Light mode colors */
-:host {
-  --text-secondary: #6b7280;
-  --bg-secondary: rgba(0, 0, 0, 0.05);
-}
-
-/* Dark mode support */
 @media (prefers-color-scheme: dark) {
-  :host {
-    --text-secondary: #9ca3af;
-    --bg-secondary: rgba(255, 255, 255, 0.1);
+  .aicopy-stats {
+    color: rgba(255, 255, 255, 0.5);
   }
 }
 `;
@@ -982,6 +1095,278 @@ class WordCounter {
   }
 }
 
+const Icons = {
+  // ============================================
+  // GENERAL ICONS (from Lucide)
+  // ============================================
+  /**
+   * Bookmark icon
+   * Usage: Save/bookmark content
+   */
+  bookmark: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+  </svg>`,
+  /**
+   * Book marked icon
+   * Usage: Bookmarked/saved book content
+   */
+  bookMarked: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-marked-icon lucide-book-marked"><path d="M10 2v8l3-3 3 3V2"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>`,
+  /**
+   * Link icon
+   * Usage: Hyperlink, external link
+   */
+  link: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+  </svg>`,
+  /**
+   * Bookmark check icon
+   * Usage: Bookmarked state
+   */
+  bookmarkCheck: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/>
+    <path d="m9 10 2 2 4-4"/>
+  </svg>`,
+  /**
+   * Folder icon (closed)
+   * Usage: Collapsed folders
+   */
+  folder: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+  </svg>`,
+  /**
+   * Folder plus icon
+   * Usage: Create new folder
+   */
+  folderPlus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+    <line x1="12" y1="10" x2="12" y2="16"/>
+    <line x1="9" y1="13" x2="15" y2="13"/>
+  </svg>`,
+  /**
+   * Folder open icon
+   * Usage: Expanded folders
+   */
+  folderOpen: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>
+  </svg>`,
+  /**
+   * Search icon
+   * Usage: Search input
+   */
+  search: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="8"/>
+    <path d="m21 21-4.35-4.35"/>
+  </svg>`,
+  /**
+   * Plus icon
+   * Usage: Add/Create actions
+   */
+  plus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>`,
+  /**
+   * X icon
+   * Usage: Close buttons
+   */
+  x: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>`,
+  /**
+   * Trash icon
+   * Usage: Delete actions
+   */
+  trash: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6h18"/>
+    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+  </svg>`,
+  /**
+   * Edit icon
+   * Usage: Edit/Rename actions
+   */
+  edit: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+  </svg>`,
+  /**
+   * Eye icon
+   * Usage: Preview/View actions
+   */
+  eye: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>`,
+  /**
+   * Copy icon
+   * Usage: Copy to clipboard
+   */
+  copy: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>`,
+  /**
+   * Download icon (Export)
+   * Usage: Export bookmarks to file
+   * More intuitive: Shows file with down arrow
+   */
+  download: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="12" y1="18" x2="12" y2="12"/>
+    <line x1="9" y1="15" x2="12" y2="18"/>
+    <line x1="15" y1="15" x2="12" y2="18"/>
+  </svg>`,
+  /**
+   * Upload icon (Import)
+   * Usage: Import bookmarks from file
+   * More intuitive: Shows file with up arrow
+   */
+  upload: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="12" y1="12" x2="12" y2="18"/>
+    <line x1="9" y1="15" x2="12" y2="12"/>
+    <line x1="15" y1="15" x2="12" y2="12"/>
+  </svg>`,
+  /**
+   * Check icon
+   * Usage: Checkmark, success
+   */
+  check: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>`,
+  /**
+   * Check square icon
+   * Usage: Multi-select mode
+   */
+  checkSquare: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="9 11 12 14 22 4"/>
+    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+  </svg>`,
+  /**
+   * Settings icon
+   * Usage: Settings/Preferences
+   */
+  settings: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>`,
+  /**
+   * Coffee icon
+   * Usage: Buy me a coffee
+   */
+  coffee: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
+    <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
+    <line x1="6" y1="2" x2="6" y2="4"/>
+    <line x1="10" y1="2" x2="10" y2="4"/>
+    <line x1="14" y1="2" x2="14" y2="4"/>
+  </svg>`,
+  /**
+   * Code icon
+   * Usage: View source code
+   */
+  code: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="16 18 22 12 16 6"/>
+    <polyline points="8 6 2 12 8 18"/>
+  </svg>`,
+  /**
+   * Chevron down icon
+   * Usage: Dropdown indicators
+   */
+  chevronDown: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"/>
+    </svg>`,
+  /**
+   * Chevron right icon
+   * Usage: Folder expand/collapse
+   */
+  chevronRight: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+    </svg>`,
+  /**
+   * More horizontal icon
+   * Usage: More options menu
+   */
+  moreHorizontal: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="1"/>
+    <circle cx="19" cy="12" r="1"/>
+    <circle cx="5" cy="12" r="1"/>
+  </svg>`,
+  /**
+   * Layers icon
+   * Usage: All platforms
+   */
+  layers: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+    <polyline points="2 17 12 22 22 17"/>
+    <polyline points="2 12 12 17 22 12"/>
+  </svg>`,
+  /**
+   * Alert triangle icon
+   * Usage: Warnings, alerts
+   */
+  alertTriangle: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/>
+    <line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>`,
+  /**
+   * Check circle icon
+   * Usage: Success notifications
+   */
+  checkCircle: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+    <polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>`,
+  /**
+   * X circle icon
+   * Usage: Error notifications
+   */
+  xCircle: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="15" y1="9" x2="9" y2="15"/>
+    <line x1="9" y1="9" x2="15" y2="15"/>
+  </svg>`,
+  /**
+   * Info icon
+   * Usage: Info notifications
+   */
+  info: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="16" x2="12" y2="12"/>
+    <line x1="12" y1="8" x2="12.01" y2="8"/>
+  </svg>`,
+  // Navigation & UI
+  globe: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+  grid: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect width="7" height="7" x="3" y="3" rx="1"/>
+    <rect width="7" height="7" x="14" y="3" rx="1"/>
+    <rect width="7" height="7" x="14" y="14" rx="1"/>
+    <rect width="7" height="7" x="3" y="14" rx="1"/>
+  </svg>`,
+  menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`,
+  // ============================================
+  // PLATFORM ICONS (Official Branding)
+  // ============================================
+  /**
+   * ChatGPT official icon
+   * Source: OpenAI official branding
+   * Color: Use with color: var(--chatgpt-icon)
+   */
+  chatgpt: `<svg width="16" height="16" viewBox="0 0 41 41" fill="none">
+    <path d="M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.676 8.68622C35.6126 6.83404 33.9882 5.3676 32.0373 4.4985C30.0864 3.62941 27.9098 3.40259 25.8215 3.85078C24.8796 2.7893 23.7219 1.94125 22.4257 1.36341C21.1295 0.785575 19.7249 0.491269 18.3058 0.500197C16.1708 0.495044 14.0893 1.16803 12.3614 2.42214C10.6335 3.67624 9.34853 5.44666 8.6917 7.47815C7.30085 7.76286 5.98686 8.3414 4.8377 9.17505C3.68854 10.0087 2.73073 11.0782 2.02839 12.312C0.956464 14.1591 0.498905 16.2988 0.721698 18.4228C0.944492 20.5467 1.83612 22.5449 3.268 24.1293C2.81966 25.4759 2.66413 26.9026 2.81182 28.3141C2.95951 29.7256 3.40701 31.0892 4.12437 32.3138C5.18791 34.1659 6.8123 35.6322 8.76321 36.5013C10.7141 37.3704 12.8907 37.5973 14.9789 37.1492C15.9208 38.2107 17.0786 39.0587 18.3747 39.6366C19.6709 40.2144 21.0755 40.5087 22.4946 40.4998C24.6307 40.5054 26.7133 39.8321 28.4418 38.5772C30.1704 37.3223 31.4556 35.5506 32.1119 33.5179C33.5027 33.2332 34.8167 32.6547 35.9659 31.821C37.115 30.9874 38.0728 29.9178 38.7752 28.684C39.8458 26.8371 40.3023 24.6979 40.0789 22.5748C39.8556 20.4517 38.9639 18.4544 37.5324 16.8707ZM22.4978 37.8849C20.7443 37.8874 19.0459 37.2733 17.6994 36.1501C17.7601 36.117 17.8666 36.0586 17.936 36.0161L25.9004 31.4156C26.1003 31.3019 26.2663 31.137 26.3813 30.9378C26.4964 30.7386 26.5563 30.5124 26.5549 30.2825V19.0542L29.9213 20.998C29.9389 21.0068 29.9541 21.0198 29.9656 21.0359C29.977 21.052 29.9842 21.0707 29.9867 21.0902V30.3889C29.9842 32.375 29.1946 34.2791 27.7909 35.6841C26.3872 37.0892 24.4838 37.8806 22.4978 37.8849ZM6.39227 31.0064C5.51397 29.4888 5.19742 27.7107 5.49804 25.9832C5.55718 26.0187 5.66048 26.0818 5.73461 26.1244L13.699 30.7248C13.8975 30.8408 14.1233 30.902 14.3532 30.902C14.583 30.902 14.8088 30.8408 15.0073 30.7248L24.731 25.1103V28.9979C24.7321 29.0177 24.7283 29.0376 24.7199 29.0556C24.7115 29.0736 24.6988 29.0893 24.6829 29.1012L16.6317 33.7497C14.9096 34.7416 12.8643 35.0097 10.9447 34.4954C9.02506 33.9811 7.38785 32.7263 6.39227 31.0064ZM4.29707 13.6194C5.17156 12.0998 6.55279 10.9364 8.19885 10.3327C8.19885 10.4013 8.19491 10.5228 8.19491 10.6071V19.808C8.19351 20.0378 8.25334 20.2638 8.36823 20.4629C8.48312 20.6619 8.64893 20.8267 8.84863 20.9404L18.5723 26.5542L15.206 28.4979C15.1894 28.5089 15.1703 28.5155 15.1505 28.5173C15.1307 28.5191 15.1107 28.516 15.0924 28.5082L7.04046 23.8557C5.32135 22.8601 4.06716 21.2235 3.55289 19.3046C3.03862 17.3858 3.30624 15.3413 4.29707 13.6194ZM31.955 20.0556L22.2312 14.4411L25.5976 12.4981C25.6142 12.4872 25.6333 12.4805 25.6531 12.4787C25.6729 12.4769 25.6928 12.4801 25.7111 12.4879L33.7631 17.1364C34.9967 17.849 36.0017 18.8982 36.6606 20.1613C37.3194 21.4244 37.6047 22.849 37.4832 24.2684C37.3617 25.6878 36.8382 27.0432 35.9743 28.1759C35.1103 29.3086 33.9415 30.1717 32.6047 30.6641C32.6047 30.5947 32.6047 30.4733 32.6047 30.3889V21.188C32.6066 20.9586 32.5474 20.7328 32.4332 20.5338C32.319 20.3348 32.154 20.1698 31.955 20.0556ZM35.3055 15.0128C35.2464 14.9765 35.1431 14.9142 35.069 14.8717L27.1045 10.2712C26.906 10.1554 26.6803 10.0943 26.4504 10.0943C26.2206 10.0943 25.9948 10.1554 25.7963 10.2712L16.0726 15.8858V11.9982C16.0715 11.9783 16.0753 11.9585 16.0837 11.9405C16.0921 11.9225 16.1048 11.9068 16.1207 11.8949L24.1719 7.25025C25.4053 6.53903 26.8158 6.19376 28.2383 6.25482C29.6608 6.31589 31.0364 6.78077 32.2044 7.59508C33.3723 8.40939 34.2842 9.53945 34.8334 10.8531C35.3826 12.1667 35.5464 13.6095 35.3055 15.0128ZM14.2424 21.9419L10.8752 19.9981C10.8576 19.9893 10.8423 19.9763 10.8309 19.9602C10.8195 19.9441 10.8122 19.9254 10.8098 19.9058V10.6071C10.8107 9.18295 11.2173 7.78848 11.9819 6.58696C12.7466 5.38544 13.8377 4.42659 15.1275 3.82264C16.4173 3.21869 17.8524 2.99464 19.2649 3.1767C20.6775 3.35876 22.0089 3.93941 23.1034 4.85067C23.0427 4.88379 22.937 4.94215 22.8668 4.98473L14.9024 9.58517C14.7025 9.69878 14.5366 9.86356 14.4215 10.0626C14.3065 10.2616 14.2466 10.4877 14.2479 10.7175L14.2424 21.9419ZM16.071 17.9991L20.4018 15.4978L24.7325 17.9975V22.9985L20.4018 25.4983L16.071 22.9985V17.9991Z" fill="currentColor"/>
+  </svg>`,
+  /**
+   * Gemini official icon (2025 version)
+   * Source: Google official branding
+   * Color: Blue gradient star design
+   */
+  gemini: `<svg height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg"><title>Gemini</title><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="#3186FF"></path><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="url(#lobe-icons-gemini-fill-0)"></path><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="url(#lobe-icons-gemini-fill-1)"></path><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="url(#lobe-icons-gemini-fill-2)"></path><defs><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-0" x1="7" x2="11" y1="15.5" y2="12"><stop stop-color="#08B962"></stop><stop offset="1" stop-color="#08B962" stop-opacity="0"></stop></linearGradient><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-1" x1="8" x2="11.5" y1="5.5" y2="11"><stop stop-color="#F94543"></stop><stop offset="1" stop-color="#F94543" stop-opacity="0"></stop></linearGradient><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-2" x1="3.5" x2="17.5" y1="13.5" y2="12"><stop stop-color="#FABC12"></stop><stop offset=".46" stop-color="#FABC12" stop-opacity="0"></stop></linearGradient></defs></svg>`
+};
+
 class Toolbar {
   shadowRoot;
   container;
@@ -1006,25 +1391,25 @@ class Toolbar {
     wrapper.className = "aicopy-toolbar";
     const bookmarkBtn = this.createIconButton(
       "bookmark-btn",
-      this.getBookmarkIcon(),
+      Icons.bookmark,
       "Bookmark",
       () => this.handleBookmark()
     );
     const copyBtn = this.createIconButton(
       "copy-md-btn",
-      this.getClipboardIcon(),
+      Icons.copy,
       "Copy Markdown",
       () => this.handleCopyMarkdown()
     );
     const sourceBtn = this.createIconButton(
       "source-btn",
-      this.getCodeIcon(),
+      Icons.code,
       "View Source",
       () => this.handleViewSource()
     );
     const reRenderBtn = this.createIconButton(
       "re-render-btn",
-      this.getEyeIcon(),
+      Icons.eye,
       "Preview Enhance",
       () => this.handleReRender()
     );
@@ -1032,6 +1417,8 @@ class Toolbar {
     stats.className = "aicopy-stats";
     stats.id = "word-stats";
     stats.textContent = "Loading...";
+    const divider = document.createElement("div");
+    divider.className = "aicopy-divider";
     const buttonGroup = document.createElement("div");
     buttonGroup.className = "aicopy-button-group";
     buttonGroup.appendChild(bookmarkBtn);
@@ -1039,6 +1426,7 @@ class Toolbar {
     buttonGroup.appendChild(sourceBtn);
     buttonGroup.appendChild(reRenderBtn);
     wrapper.appendChild(buttonGroup);
+    wrapper.appendChild(divider);
     wrapper.appendChild(stats);
     this.shadowRoot.appendChild(wrapper);
     this.initWordCountWithRetry();
@@ -1059,7 +1447,12 @@ class Toolbar {
             const result = this.wordCounter.count(markdown);
             const formatted = this.wordCounter.format(result);
             if (formatted !== "No content") {
-              stats2.textContent = formatted;
+              const parts = formatted.split(" / ");
+              if (parts.length >= 2) {
+                stats2.innerHTML = `<div>${parts[0]}</div><div>${parts.slice(1).join(" ")}</div>`;
+              } else {
+                stats2.textContent = formatted;
+              }
               logger$1.debug(`[WordCount] Initialized on attempt ${attempt + 1}`);
               return;
             }
@@ -1095,59 +1488,6 @@ class Toolbar {
     return button;
   }
   /**
-   * Get clipboard icon SVG
-   */
-  getClipboardIcon() {
-    return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-      </svg>
-    `;
-  }
-  /**
-   * Get code icon SVG
-   */
-  getCodeIcon() {
-    return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="16 18 22 12 16 6"></polyline>
-        <polyline points="8 6 2 12 8 18"></polyline>
-      </svg>
-    `;
-  }
-  /**
-   * Get eye icon SVG (for preview)
-   */
-  getEyeIcon() {
-    return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
-      </svg>
-    `;
-  }
-  /**
-   * Get checkmark icon SVG
-   */
-  getCheckIcon() {
-    return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
-    `;
-  }
-  /**
-   * Get bookmark icon SVG
-   */
-  getBookmarkIcon() {
-    return `
-      <svg class="aicopy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-      </svg>
-    `;
-  }
-  /**
    * Handle Copy Markdown button click
    */
   async handleCopyMarkdown() {
@@ -1159,7 +1499,7 @@ class Toolbar {
       const success = await copyToClipboard(markdown);
       if (success) {
         const originalIcon = btn.innerHTML;
-        btn.innerHTML = this.getCheckIcon();
+        btn.innerHTML = Icons.check;
         btn.style.color = "var(--theme-color)";
         logger$1.info("Markdown copied to clipboard");
         setTimeout(() => {
@@ -1219,13 +1559,16 @@ class Toolbar {
    * Set bookmark button state (highlighted when bookmarked)
    */
   setBookmarkState(isBookmarked) {
+    const toolbar = this.shadowRoot.querySelector(".aicopy-toolbar");
     const bookmarkBtn = this.shadowRoot.querySelector("#bookmark-btn");
-    if (!bookmarkBtn) return;
+    if (!bookmarkBtn || !toolbar) return;
     if (isBookmarked) {
+      toolbar.classList.add("bookmarked");
       bookmarkBtn.classList.add("bookmarked");
       bookmarkBtn.title = "Remove Bookmark";
       bookmarkBtn.setAttribute("aria-label", "Remove Bookmark");
     } else {
+      toolbar.classList.remove("bookmarked");
       bookmarkBtn.classList.remove("bookmarked");
       bookmarkBtn.title = "Bookmark";
       bookmarkBtn.setAttribute("aria-label", "Bookmark");
@@ -1247,7 +1590,7 @@ class Toolbar {
 
 const modalStyles = `
 :host {
-  font-family: var(--font-sans);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .modal-overlay {
@@ -1256,156 +1599,142 @@ const modalStyles = `
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-modal-backdrop);
-  backdrop-filter: blur(4px);
+  z-index: 999999;
+  animation: overlayFadeIn 0.2s ease;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-container {
   background: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-2xl);
-  max-width: 800px;
+  border-radius: 16px;
+  box-shadow: 
+    0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.12),
+    0 16px 48px rgba(0, 0, 0, 0.18),
+    0 24px 80px rgba(0, 0, 0, 0.12);
+  max-width: 900px;
   width: 90%;
-  max-height: 80vh;
+  height: 80vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .modal-header {
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--gray-200);
+  padding: 8px 24px;
+  border-bottom: 1px solid #F0F0F0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-title {
-  font-size: var(--text-xl);
-  font-weight: var(--font-semibold);
-  color: var(--gray-900);
+  font-size: 18px;
+  font-weight: 600;
+  color: #1A1A1A;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
 .modal-close {
-  background: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   border: none;
-  font-size: var(--text-2xl);
-  color: var(--gray-500);
+  background: transparent;
+  color: #6B7280;
   cursor: pointer;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  transition: all var(--duration-fast) var(--ease-in-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  font-size: 20px;
 }
 
 .modal-close:hover {
-  background: var(--gray-100);
-  color: var(--gray-900);
+  background: #F3F4F6;
+  color: #1A1A1A;
 }
 
 .modal-body {
-  padding: var(--space-5);
+  padding: 0;
   overflow-y: auto;
   flex: 1;
 }
 
 .modal-content {
-  background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  line-height: var(--leading-relaxed);
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 32px;
+  background: white;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-x: auto;
-  color: var(--gray-900);
+  color: #1A1A1A;
+  tab-size: 2;
 }
 
 .modal-footer {
-  padding: var(--space-4) var(--space-5);
-  border-top: 1px solid var(--gray-200);
+  padding: 4px 16px;
+  border-top: 1px solid #F0F0F0;
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-2);
+  gap: 16px;
+  background: white;
+  flex-shrink: 0;
+  border-radius: 0 0 16px 16px;
+  min-height: 32px;
 }
 
 .modal-button {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--gray-300);
-  background: white;
-  color: var(--gray-700);
-  font-size: var(--text-base);
-  font-weight: var(--font-medium);
+  padding: 0px 40px;
+  border-radius: 8px;
+  border: none;
+  background: #F3F4F6;
+  color: #1A1A1A;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-in-out);
+  transition: all 0.15s ease;
 }
 
 .modal-button:hover {
-  background: var(--gray-100);
-  border-color: var(--gray-400);
+  background: #E5E7EB;
 }
 
 .modal-button.primary {
-  background: var(--primary-600);
+  background: #2563EB;
   color: white;
-  border-color: var(--primary-600);
 }
 
 .modal-button.primary:hover {
-  background: var(--primary-700);
-  border-color: var(--primary-700);
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .modal-container {
-    background: #1f2937;
-  }
-
-  .modal-header {
-    border-bottom-color: #374151;
-  }
-
-  .modal-title {
-    color: #f9fafb;
-  }
-
-  .modal-close {
-    color: #9ca3af;
-  }
-
-  .modal-close:hover {
-    background: #374151;
-    color: #f9fafb;
-  }
-
-  .modal-content {
-    background: #111827;
-    border-color: #374151;
-    color: #f9fafb;
-  }
-
-  .modal-footer {
-    border-top-color: #374151;
-  }
-
-  .modal-button {
-    background: #374151;
-    color: #f9fafb;
-    border-color: #4b5563;
-  }
-
-  .modal-button:hover {
-    background: #4b5563;
-    border-color: #6b7280;
-  }
+  background: #1D4ED8;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 `;
 
@@ -21900,9 +22229,9 @@ const panelStyles = `
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 15, 15, 0.6);
   z-index: 999998;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(8px);
 }
 
 .aicopy-panel {
@@ -21914,12 +22243,28 @@ const panelStyles = `
   max-width: 900px;
   height: 80vh;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  box-shadow: 
+    0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.12),
+    0 16px 48px rgba(0, 0, 0, 0.18),
+    0 24px 80px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   z-index: 999999;
   overflow: hidden;
+  animation: modalFadeIn 0.2s ease;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .aicopy-panel-fullscreen {
@@ -21933,12 +22278,13 @@ const panelStyles = `
 }
 
 .aicopy-panel-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 24px;
+  border-bottom: 1px solid #E9E9E7;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f9fafb;
+  background: white;
+  flex-shrink: 0;
 }
 
 .aicopy-panel-header-left {
@@ -21948,56 +22294,63 @@ const panelStyles = `
 }
 
 .aicopy-panel-title {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: #37352F;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .aicopy-panel-fullscreen-btn {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #6b7280;
-  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #6B7280;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .aicopy-panel-fullscreen-btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  color: #374151;
+  background: #F3F4F6;
+  color: #1A1A1A;
 }
 
 .aicopy-panel-close {
   background: none;
   border: none;
-  font-size: 28px;
-  color: #6b7280;
+  font-size: 24px;
+  color: #9B9A97;
   cursor: pointer;
-  padding: 0;
+  padding: 4px;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
 }
 
 .aicopy-panel-close:hover {
-  background: #e5e7eb;
-  color: #111827;
+  background: #EBEBEB;
+  color: #37352F;
 }
 
 .aicopy-panel-body {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  padding: 0px 32px;
   background: white;
-  padding: 24px;
+}
+
+.aicopy-panel-body .markdown-content {
+  max-width: 1000px;
+  margin: 0 auto;
 }
 `;
 const markdownStyles = `
@@ -22007,95 +22360,133 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.6;
-  color: #24292f;
+  color: #37352F;
   background: #fff;
 }
 
 .markdown-content {
-  padding: 24px;
+  padding: 12px 16px;
   max-width: 100%;
 }
 
 /* Limit content width in fullscreen mode for better readability */
 .aicopy-panel-fullscreen .markdown-content {
-  max-width: 800px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
-
-h1, h2 {
-  padding-bottom: 0.3em;
-  border-bottom: 1px solid #d0d7de;
-  margin-top: 24px;
-  margin-bottom: 16px;
+/* Headings - Notion style: clean, no borders */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 2em;
+  margin-bottom: 4px;
   font-weight: 600;
+  line-height: 1.3;
+  color: #37352F;
 }
 
-h1 { font-size: 2em; }
-h2 { font-size: 1.5em; }
-h3 { font-size: 1.25em; font-weight: 600; margin: 24px 0 16px; }
-h4, h5, h6 { font-weight: 600; margin: 24px 0 16px; }
+h1 { 
+  font-size: 2.25em;
+  margin-top: 0;
+  margin-bottom: 0.5em;
+  font-weight: 700;
+}
 
-p { margin: 0 0 16px; }
+h2 { 
+  font-size: 1.75em;
+  margin-bottom: 0.5em;
+}
 
+h3 { 
+  font-size: 1.25em; 
+}
+
+h4, h5, h6 { 
+  font-size: 1.125em; 
+}
+
+/* Paragraphs - generous spacing */
+p { 
+  margin: 0.75em 0 0.75em 0;
+  line-height: 1.7;
+}
+
+/* Blockquotes - Notion style: subtle left border, no background */
 blockquote {
-  padding: 0 1em;
-  color: #57606a;
-  border-left: 0.25em solid #d0d7de;
-  margin: 0 0 16px;
+  padding: 3px 0 3px 16px;
+  margin: 1em 0;
+  color: #37352F;
+  border-left: 3px solid #E9E9E7;
+  font-size: 1em;
 }
 
+blockquote p {
+  margin: 0.5em 0;
+}
+
+/* Inline code - Notion style: vibrant red background */
 code {
-  padding: 0.2em 0.4em;
-  margin: 0;
-  font-size: 85%;
-  background-color: rgba(175, 184, 193, 0.2);
-  border-radius: 6px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 4px 8px;
+  margin: 0 2px;
+  font-size: 0.9em;
+  background-color: #FFF3F3;
+  border-radius: 4px;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+  color: #E03E3E;
+  font-weight: 500;
+  border: 1px solid #FFE0E0;
 }
 
+/* Code blocks - Notion style: warm background with border */
 pre {
-  padding: 16px;
+  padding: 20px;
+  margin: 1.5em 0;
   overflow: auto;
-  font-size: 85%;
-  line-height: 1.45;
-  background-color: #f6f8fa;
-  border-radius: 6px;
-  margin: 0 0 16px;
+  font-size: 0.875em;
+  line-height: 1.7;
+  background-color: #FAFAF9;
+  border-radius: 8px;
+  border: 1px solid #E7E5E4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 pre code {
   background: transparent;
   padding: 0;
   margin: 0;
-  font-size: 100%;
+  font-size: 1em;
+  color: #37352F;
+  border-radius: 0;
 }
 
+/* Tables - Notion style: clean borders */
 table {
   border-spacing: 0;
   border-collapse: collapse;
-  margin: 0 0 16px;
+  margin: 1.5em 0;
   width: 100%;
+  font-size: 0.9375em;
 }
 
 th, td {
-  padding: 6px 13px;
-  border: 1px solid #d0d7de;
+  padding: 8px 12px;
+  border: 1px solid #E9E9E7;
+  text-align: left;
 }
 
 th {
   font-weight: 600;
-  background-color: #f6f8fa;
+  background-color: #F7F6F3;
+  color: #37352F;
 }
 
-tr:nth-child(2n) {
-  background-color: #f6f8fa;
+tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
+/* Lists - Notion style: comfortable spacing */
 ul, ol {
-  padding-left: 2em;
-  margin-top: 0;
-  margin-bottom: 16px;
+  padding-left: 1.625em;
+  margin: 0.75em 0;
 }
 
 ul {
@@ -22107,7 +22498,8 @@ ol {
 }
 
 li {
-  margin-top: 0.25em;
+  margin: 0.25em 0;
+  line-height: 1.7;
 }
 
 li:first-child {
@@ -22115,53 +22507,80 @@ li:first-child {
 }
 
 li > p {
-  margin-top: 16px;
-  margin-bottom: 0;
+  margin: 0.5em 0;
 }
 
 li > p:first-child {
   margin-top: 0;
 }
 
-li + li {
-  margin-top: 0.25em;
-}
-
 ul ul, 
 ul ol, 
 ol ul, 
 ol ol {
-  margin-top: 0;
-  margin-bottom: 0;
+  margin: 0.25em 0;
 }
 
+/* Horizontal rule - Notion style: subtle */
 hr {
-  height: 0.25em;
+  height: 1px;
   padding: 0;
-  margin: 24px 0;
-  background-color: #d0d7de;
+  margin: 2em 0;
+  background-color: #E9E9E7;
   border: 0;
 }
 
+/* Links - Notion style: subtle underline on hover */
 a {
-  color: #0969da;
+  color: #0B6E99;
   text-decoration: none;
+  border-bottom: 0.05em solid transparent;
+  transition: border-bottom-color 0.2s ease;
 }
 
 a:hover {
-  text-decoration: underline;
+  border-bottom-color: #0B6E99;
 }
 
+/* Images */
 img {
   max-width: 100%;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+
+/* Strong and emphasis */
+strong {
+  font-weight: 600;
+  color: #37352F;
+}
+
+em {
+  font-style: italic;
+  color: #37352F;
 }
 
 /* KaTeX styles - inline to avoid loading issues */
-.katex { font-size: 1.1em; }
+.katex { 
+  font-size: 1.1em; 
+}
+
 .katex-display {
   display: block;
-  margin: 1em 0;
+  margin: 1.5em 0;
   text-align: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Task lists - Notion style */
+input[type="checkbox"] {
+  margin-right: 0.5em;
+}
+
+/* Selection color - Notion style */
+::selection {
+  background-color: rgba(45, 170, 219, 0.3);
 }
 `;
 class ReRenderPanel {
@@ -22185,12 +22604,6 @@ class ReRenderPanel {
    */
   show(markdown) {
     this.hide();
-    if (!document.querySelector("#aicopy-panel-styles")) {
-      const style = document.createElement("style");
-      style.id = "aicopy-panel-styles";
-      style.textContent = panelStyles;
-      document.head.appendChild(style);
-    }
     this.createPanel(markdown);
   }
   /**
@@ -22203,11 +22616,24 @@ class ReRenderPanel {
     }
   }
   /**
-   * Create panel with direct DOM rendering
+   * Create panel with Shadow DOM for style isolation
    */
   createPanel(markdown) {
-    let processedMarkdown = markdown.replace(/\$([^$]+)\$([、，。；：！？])\$([^$]+)\$/g, "$$$1$$ $2 $$$3$$").replace(/\$([^$]+)\$(——)\$([^$]+)\$/g, "$$$1$$ $2 $$$3$$");
+    let processedMarkdown = markdown.replace(/\$([^$]+)\$([\u3001\uff0c\u3002\uff1b\uff1a\uff01\uff1f])\$([^$]+)\$/g, "$$$1$$ $2 $$$3$$").replace(/\$([^$]+)\$(\u2014\u2014)\$([^$]+)\$/g, "$$$1$$ $2 $$$3$$");
     const html = d.parse(processedMarkdown);
+    this.container = document.createElement("div");
+    const shadowRoot = this.container.attachShadow({ mode: "open" });
+    const panelStyleEl = document.createElement("style");
+    panelStyleEl.textContent = panelStyles;
+    shadowRoot.appendChild(panelStyleEl);
+    const mdStyleEl = document.createElement("style");
+    mdStyleEl.textContent = markdownStyles;
+    shadowRoot.appendChild(mdStyleEl);
+    const katexLink = document.createElement("link");
+    katexLink.rel = "stylesheet";
+    katexLink.href = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
+    katexLink.crossOrigin = "anonymous";
+    shadowRoot.appendChild(katexLink);
     const overlay = document.createElement("div");
     overlay.className = "aicopy-panel-overlay";
     overlay.addEventListener("click", () => this.hide());
@@ -22219,14 +22645,13 @@ class ReRenderPanel {
     header.innerHTML = `
       <div class="aicopy-panel-header-left">
         <h2 class="aicopy-panel-title">Rendered Markdown</h2>
-        <button class="aicopy-panel-fullscreen-btn" aria-label="Toggle fullscreen">
+        <button class="aicopy-panel-fullscreen-btn" aria-label="Toggle fullscreen" title="Toggle fullscreen">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
           </svg>
-          Fullscreen
         </button>
       </div>
-      <button class="aicopy-panel-close" aria-label="Close">×</button>
+      <button class="aicopy-panel-close" aria-label="Close" title="Close">×</button>
     `;
     const closeBtn = header.querySelector(".aicopy-panel-close");
     closeBtn?.addEventListener("click", () => this.hide());
@@ -22234,18 +22659,14 @@ class ReRenderPanel {
     fullscreenBtn?.addEventListener("click", () => this.toggleFullscreen());
     const body = document.createElement("div");
     body.className = "aicopy-panel-body";
-    const styleEl = document.createElement("style");
-    styleEl.textContent = markdownStyles;
     const content = document.createElement("div");
     content.className = "markdown-content";
     content.innerHTML = html;
-    body.appendChild(styleEl);
     body.appendChild(content);
     panel.appendChild(header);
     panel.appendChild(body);
-    this.container = document.createElement("div");
-    this.container.appendChild(overlay);
-    this.container.appendChild(panel);
+    shadowRoot.appendChild(overlay);
+    shadowRoot.appendChild(panel);
     document.body.appendChild(this.container);
     const handleEscape = (e) => {
       if (e.key === "Escape") {
@@ -22260,7 +22681,9 @@ class ReRenderPanel {
    */
   toggleFullscreen() {
     if (!this.container) return;
-    const panel = this.container.querySelector(".aicopy-panel");
+    const shadowRoot = this.container.shadowRoot;
+    if (!shadowRoot) return;
+    const panel = shadowRoot.querySelector(".aicopy-panel");
     if (panel) {
       panel.classList.toggle("aicopy-panel-fullscreen");
     }
@@ -23759,167 +24182,6 @@ class TreeBuilder {
   }
 }
 
-const Icons = {
-  // ============================================
-  // GENERAL ICONS (from Lucide)
-  // ============================================
-  /**
-   * Bookmark icon
-   * Usage: Bookmark button, saved items
-   */
-  bookmark: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-  </svg>`,
-  /**
-   * Folder icon (closed)
-   * Usage: Collapsed folders
-   */
-  folder: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
-  </svg>`,
-  /**
-   * Folder plus icon
-   * Usage: Create new folder
-   */
-  folderPlus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
-    <line x1="12" y1="10" x2="12" y2="16"/>
-    <line x1="9" y1="13" x2="15" y2="13"/>
-  </svg>`,
-  /**
-   * Folder open icon
-   * Usage: Expanded folders
-   */
-  folderOpen: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>
-  </svg>`,
-  /**
-   * Search icon
-   * Usage: Search input
-   */
-  search: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="11" cy="11" r="8"/>
-    <path d="m21 21-4.35-4.35"/>
-  </svg>`,
-  /**
-   * Plus icon
-   * Usage: Add/Create actions
-   */
-  plus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"/>
-    <line x1="5" y1="12" x2="19" y2="12"/>
-  </svg>`,
-  /**
-   * X icon
-   * Usage: Close buttons
-   */
-  x: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18"/>
-    <line x1="6" y1="6" x2="18" y2="18"/>
-  </svg>`,
-  /**
-   * Trash icon
-   * Usage: Delete actions
-   */
-  trash: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 6h18"/>
-    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-  </svg>`,
-  /**
-   * Edit icon
-   * Usage: Edit/Rename actions
-   */
-  edit: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-  </svg>`,
-  /**
-   * Eye icon
-   * Usage: Preview/View actions
-   */
-  eye: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-    <circle cx="12" cy="12" r="3"/>
-  </svg>`,
-  /**
-   * Download icon
-   * Usage: Export/Download
-   */
-  download: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <polyline points="7 10 12 15 17 10"/>
-    <line x1="12" y1="15" x2="12" y2="3"/>
-  </svg>`,
-  /**
-   * Upload icon
-   * Usage: Import/Upload
-   */
-  upload: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <polyline points="17 8 12 3 7 8"/>
-    <line x1="12" y1="3" x2="12" y2="15"/>
-  </svg>`,
-  /**
-   * Check icon
-   * Usage: Checkmark, success
-   */
-  check: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="20 6 9 17 4 12"/>
-  </svg>`,
-  /**
-   * Settings icon
-   * Usage: Settings/Preferences
-   */
-  settings: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-    <circle cx="12" cy="12" r="3"/>
-  </svg>`,
-  /**
-   * Coffee icon
-   * Usage: Buy me a coffee
-   */
-  coffee: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
-    <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
-    <line x1="6" y1="2" x2="6" y2="4"/>
-    <line x1="10" y1="2" x2="10" y2="4"/>
-    <line x1="14" y1="2" x2="14" y2="4"/>
-  </svg>`,
-  /**
-   * Chevron down icon
-   * Usage: Dropdown indicators
-   */
-  chevronDown: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="6 9 12 15 18 9"/>
-  </svg>`,
-  /**
-   * Alert triangle icon
-   * Usage: Warnings, alerts
-   */
-  alertTriangle: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-    <line x1="12" y1="9" x2="12" y2="13"/>
-    <line x1="12" y1="17" x2="12.01" y2="17"/>
-  </svg>`,
-  // ============================================
-  // PLATFORM ICONS (Official Branding)
-  // ============================================
-  /**
-   * ChatGPT official icon
-   * Source: OpenAI official branding
-   * Color: Use with color: var(--chatgpt-icon)
-   */
-  chatgpt: `<svg width="16" height="16" viewBox="0 0 41 41" fill="none">
-    <path d="M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.676 8.68622C35.6126 6.83404 33.9882 5.3676 32.0373 4.4985C30.0864 3.62941 27.9098 3.40259 25.8215 3.85078C24.8796 2.7893 23.7219 1.94125 22.4257 1.36341C21.1295 0.785575 19.7249 0.491269 18.3058 0.500197C16.1708 0.495044 14.0893 1.16803 12.3614 2.42214C10.6335 3.67624 9.34853 5.44666 8.6917 7.47815C7.30085 7.76286 5.98686 8.3414 4.8377 9.17505C3.68854 10.0087 2.73073 11.0782 2.02839 12.312C0.956464 14.1591 0.498905 16.2988 0.721698 18.4228C0.944492 20.5467 1.83612 22.5449 3.268 24.1293C2.81966 25.4759 2.66413 26.9026 2.81182 28.3141C2.95951 29.7256 3.40701 31.0892 4.12437 32.3138C5.18791 34.1659 6.8123 35.6322 8.76321 36.5013C10.7141 37.3704 12.8907 37.5973 14.9789 37.1492C15.9208 38.2107 17.0786 39.0587 18.3747 39.6366C19.6709 40.2144 21.0755 40.5087 22.4946 40.4998C24.6307 40.5054 26.7133 39.8321 28.4418 38.5772C30.1704 37.3223 31.4556 35.5506 32.1119 33.5179C33.5027 33.2332 34.8167 32.6547 35.9659 31.821C37.115 30.9874 38.0728 29.9178 38.7752 28.684C39.8458 26.8371 40.3023 24.6979 40.0789 22.5748C39.8556 20.4517 38.9639 18.4544 37.5324 16.8707ZM22.4978 37.8849C20.7443 37.8874 19.0459 37.2733 17.6994 36.1501C17.7601 36.117 17.8666 36.0586 17.936 36.0161L25.9004 31.4156C26.1003 31.3019 26.2663 31.137 26.3813 30.9378C26.4964 30.7386 26.5563 30.5124 26.5549 30.2825V19.0542L29.9213 20.998C29.9389 21.0068 29.9541 21.0198 29.9656 21.0359C29.977 21.052 29.9842 21.0707 29.9867 21.0902V30.3889C29.9842 32.375 29.1946 34.2791 27.7909 35.6841C26.3872 37.0892 24.4838 37.8806 22.4978 37.8849ZM6.39227 31.0064C5.51397 29.4888 5.19742 27.7107 5.49804 25.9832C5.55718 26.0187 5.66048 26.0818 5.73461 26.1244L13.699 30.7248C13.8975 30.8408 14.1233 30.902 14.3532 30.902C14.583 30.902 14.8088 30.8408 15.0073 30.7248L24.731 25.1103V28.9979C24.7321 29.0177 24.7283 29.0376 24.7199 29.0556C24.7115 29.0736 24.6988 29.0893 24.6829 29.1012L16.6317 33.7497C14.9096 34.7416 12.8643 35.0097 10.9447 34.4954C9.02506 33.9811 7.38785 32.7263 6.39227 31.0064ZM4.29707 13.6194C5.17156 12.0998 6.55279 10.9364 8.19885 10.3327C8.19885 10.4013 8.19491 10.5228 8.19491 10.6071V19.808C8.19351 20.0378 8.25334 20.2638 8.36823 20.4629C8.48312 20.6619 8.64893 20.8267 8.84863 20.9404L18.5723 26.5542L15.206 28.4979C15.1894 28.5089 15.1703 28.5155 15.1505 28.5173C15.1307 28.5191 15.1107 28.516 15.0924 28.5082L7.04046 23.8557C5.32135 22.8601 4.06716 21.2235 3.55289 19.3046C3.03862 17.3858 3.30624 15.3413 4.29707 13.6194ZM31.955 20.0556L22.2312 14.4411L25.5976 12.4981C25.6142 12.4872 25.6333 12.4805 25.6531 12.4787C25.6729 12.4769 25.6928 12.4801 25.7111 12.4879L33.7631 17.1364C34.9967 17.849 36.0017 18.8982 36.6606 20.1613C37.3194 21.4244 37.6047 22.849 37.4832 24.2684C37.3617 25.6878 36.8382 27.0432 35.9743 28.1759C35.1103 29.3086 33.9415 30.1717 32.6047 30.6641C32.6047 30.5947 32.6047 30.4733 32.6047 30.3889V21.188C32.6066 20.9586 32.5474 20.7328 32.4332 20.5338C32.319 20.3348 32.154 20.1698 31.955 20.0556ZM35.3055 15.0128C35.2464 14.9765 35.1431 14.9142 35.069 14.8717L27.1045 10.2712C26.906 10.1554 26.6803 10.0943 26.4504 10.0943C26.2206 10.0943 25.9948 10.1554 25.7963 10.2712L16.0726 15.8858V11.9982C16.0715 11.9783 16.0753 11.9585 16.0837 11.9405C16.0921 11.9225 16.1048 11.9068 16.1207 11.8949L24.1719 7.25025C25.4053 6.53903 26.8158 6.19376 28.2383 6.25482C29.6608 6.31589 31.0364 6.78077 32.2044 7.59508C33.3723 8.40939 34.2842 9.53945 34.8334 10.8531C35.3826 12.1667 35.5464 13.6095 35.3055 15.0128ZM14.2424 21.9419L10.8752 19.9981C10.8576 19.9893 10.8423 19.9763 10.8309 19.9602C10.8195 19.9441 10.8122 19.9254 10.8098 19.9058V10.6071C10.8107 9.18295 11.2173 7.78848 11.9819 6.58696C12.7466 5.38544 13.8377 4.42659 15.1275 3.82264C16.4173 3.21869 17.8524 2.99464 19.2649 3.1767C20.6775 3.35876 22.0089 3.93941 23.1034 4.85067C23.0427 4.88379 22.937 4.94215 22.8668 4.98473L14.9024 9.58517C14.7025 9.69878 14.5366 9.86356 14.4215 10.0626C14.3065 10.2616 14.2466 10.4877 14.2479 10.7175L14.2424 21.9419ZM16.071 17.9991L20.4018 15.4978L24.7325 17.9975V22.9985L20.4018 25.4983L16.071 22.9985V17.9991Z" fill="currentColor"/>
-  </svg>`,
-  /**
-   * Gemini official icon (2025 version)
-   * Source: Google official branding
-   * Color: Blue gradient star design
-   */
-  gemini: `<svg height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg"><title>Gemini</title><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="#3186FF"></path><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="url(#lobe-icons-gemini-fill-0)"></path><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="url(#lobe-icons-gemini-fill-1)"></path><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="url(#lobe-icons-gemini-fill-2)"></path><defs><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-0" x1="7" x2="11" y1="15.5" y2="12"><stop stop-color="#08B962"></stop><stop offset="1" stop-color="#08B962" stop-opacity="0"></stop></linearGradient><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-1" x1="8" x2="11.5" y1="5.5" y2="11"><stop stop-color="#F94543"></stop><stop offset="1" stop-color="#F94543" stop-opacity="0"></stop></linearGradient><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-2" x1="3.5" x2="17.5" y1="13.5" y2="12"><stop stop-color="#FABC12"></stop><stop offset=".46" stop-color="#FABC12" stop-opacity="0"></stop></linearGradient></defs></svg>`
-};
-
 class BookmarkSaveModal {
   overlay = null;
   modal = null;
@@ -23944,9 +24206,9 @@ class BookmarkSaveModal {
     }
     this.onSave = options.onSave || null;
     this.title = options.defaultTitle || "";
-    this.selectedPath = mode === "edit" ? options.currentFolder || null : options.lastUsedFolder || null;
     this.folders = await FolderStorage.getAll();
     logger$1.debug(`[BookmarkSaveModal] Loaded ${this.folders.length} folders`);
+    this.selectedPath = options.currentFolder || options.lastUsedFolder || null;
     if (this.selectedPath) {
       this.expandPathToFolder(this.selectedPath);
     }
@@ -23981,6 +24243,7 @@ class BookmarkSaveModal {
     };
     document.addEventListener("keydown", this.escKeyHandler);
     this.renderFolderTree();
+    this.updateSaveButtonState();
     const headerText = mode === "edit" ? "Edit Bookmark" : "Save Bookmark";
     const header = this.modal.querySelector(".save-modal-header h2");
     if (header) {
@@ -24077,8 +24340,7 @@ class BookmarkSaveModal {
                     --text-lg: 16px;
                     
                     /* Border Radius */
-                    --radius-xs: 4px;
-                    --radius-sm: 8px;  /* Alias for --radius-small */
+                    --radius-extra-small: 4px;
                     --radius-small: 8px;
                     --radius-large: 12px;
                     
@@ -24230,7 +24492,7 @@ class BookmarkSaveModal {
 
                 .folder-tree-container {
                     border: 1px solid var(--gray-200);
-                    border-radius: var(--radius-sm);
+                    border-radius: var(--radius-small);
                     height: 300px;
                     overflow-y: auto;
                     font-size: var(--text-base);
@@ -24314,7 +24576,7 @@ class BookmarkSaveModal {
                     border: none;
                     width: 24px;
                     height: 24px;
-                    border-radius: var(--radius-xs);
+                    border-radius: var(--radius-extra-small);
                     cursor: pointer;
                     opacity: 0;
                     transition: opacity 0.15s;
@@ -24619,26 +24881,33 @@ class BookmarkSaveModal {
     this.createFolder(name, parentPath);
   }
   /**
+   * Show simple notification (for BookmarkSaveModal errors)
+   * Uses browser alert as fallback since this modal is not in Shadow DOM
+   */
+  showSimpleNotification(_type, message) {
+    alert(message);
+  }
+  /**
    * Create folder
    */
   async createFolder(name, parentPath) {
     if (name.length > 50) {
-      alert("❌ Folder name too long (max 50 characters)");
+      this.showSimpleNotification("error", "Folder name too long (max 50 characters)");
       return;
     }
     if (name.includes("/")) {
-      alert('❌ Folder name cannot contain "/"');
+      this.showSimpleNotification("error", 'Folder name cannot contain "/"');
       return;
     }
     const newPath = parentPath ? `${parentPath}/${name}` : name;
     const depth = newPath.split("/").length;
     if (depth > PathUtils.MAX_DEPTH) {
-      alert(`❌ Maximum folder depth is ${PathUtils.MAX_DEPTH} levels (e.g., Work/Projects/AI/ChatGPT)`);
+      this.showSimpleNotification("error", `Maximum folder depth is ${PathUtils.MAX_DEPTH} levels (e.g., Work/Projects/AI/ChatGPT)`);
       return;
     }
     const exists = this.folders.find((f) => f.path === newPath);
     if (exists) {
-      alert(`❌ Folder "${name}" already exists`);
+      this.showSimpleNotification("error", `Folder "${name}" already exists`);
       return;
     }
     try {
@@ -24654,7 +24923,7 @@ class BookmarkSaveModal {
       this.updateSaveButtonState();
     } catch (error) {
       logger$1.error("[BookmarkSaveModal] Failed to create folder:", error);
-      alert(`❌ Failed to create folder: ${error instanceof Error ? error.message : "Unknown error"}`);
+      this.showSimpleNotification("error", `Failed to create folder: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }
   /**
@@ -24777,8 +25046,7 @@ class BookmarkSaveModal {
                         --text-lg: 16px;
                         
                         /* Border Radius */
-                        --radius-xs: 4px;
-                        --radius-sm: 8px;  /* Alias for --radius-small */
+                        --radius-extra-small: 4px;
                         --radius-small: 8px;
                         --radius-large: 12px;
                         
@@ -25483,6 +25751,314 @@ class FolderOperationsManager {
   }
 }
 
+class MarkdownRenderer {
+  static markedInitialized = false;
+  /**
+   * Initialize marked with KaTeX support (same as re-render)
+   */
+  static initializeMarked() {
+    if (this.markedInitialized) return;
+    d.setOptions({
+      breaks: true,
+      // Convert \n to <br>
+      gfm: true
+      // GitHub Flavored Markdown
+    });
+    d.use(markedKatex({
+      throwOnError: false,
+      output: "html",
+      nonStandard: true
+      // Allow non-standard syntax
+    }));
+    this.markedInitialized = true;
+  }
+  /**
+   * Render markdown to HTML (same as re-render)
+   */
+  static render(markdown) {
+    this.initializeMarked();
+    const processedMarkdown = markdown.replace(/\$([^$]+)\$([、，。；：！？])\$([^$]+)\$/g, "$$$1$$ $2 $$$3$$").replace(/\$([^$]+)\$(——)\$([^$]+)\$/g, "$$$1$$ $2 $$$3$$");
+    return d.parse(processedMarkdown);
+  }
+  /**
+   * Inject markdown styles to document head (same as re-render)
+   */
+  /**
+   * Inject styles into Shadow DOM
+   * Use this for components that use Shadow DOM (like modals)
+   */
+  static injectShadowStyles(shadowRoot) {
+    if (shadowRoot.querySelector("#aicopy-markdown-styles")) {
+      return;
+    }
+    const mdStyle = document.createElement("style");
+    mdStyle.id = "aicopy-markdown-styles";
+    mdStyle.textContent = this.getMarkdownStyles();
+    shadowRoot.appendChild(mdStyle);
+    const katexLink = document.createElement("link");
+    katexLink.id = "katex-styles";
+    katexLink.rel = "stylesheet";
+    katexLink.href = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
+    katexLink.crossOrigin = "anonymous";
+    shadowRoot.appendChild(katexLink);
+  }
+  /**
+   * Inject markdown styles to document head (for non-Shadow DOM components)
+   */
+  static injectStyles() {
+    if (!document.querySelector("#aicopy-markdown-styles")) {
+      const mdStyle = document.createElement("style");
+      mdStyle.id = "aicopy-markdown-styles";
+      mdStyle.textContent = this.getMarkdownStyles();
+      document.head.appendChild(mdStyle);
+    }
+    if (!document.querySelector("#katex-styles")) {
+      const link = document.createElement("link");
+      link.id = "katex-styles";
+      link.rel = "stylesheet";
+      link.href = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
+      link.crossOrigin = "anonymous";
+      document.head.appendChild(link);
+    }
+  }
+  /**
+   * Get markdown styles as string (for Shadow DOM injection)
+   * Public method to allow external components to inject styles
+   */
+  static getMarkdownStyles() {
+    return `
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #37352F;
+  background: #fff;
+}
+
+.markdown-content {
+  padding: 12px 16px;
+  max-width: 100%;
+}
+
+/* Limit content width in fullscreen mode for better readability */
+.aicopy-panel-fullscreen .markdown-content {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Headings - Notion style: clean, no borders */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 2em;
+  margin-bottom: 4px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #37352F;
+}
+
+h1 { 
+  font-size: 2.25em;
+  margin-top: 0;
+  margin-bottom: 0.5em;
+  font-weight: 700;
+}
+
+h2 { 
+  font-size: 1.75em;
+  margin-bottom: 0.5em;
+}
+
+h3 { 
+  font-size: 1.25em; 
+}
+
+h4, h5, h6 { 
+  font-size: 1.125em; 
+}
+
+/* Paragraphs - generous spacing */
+p { 
+  margin: 0.75em 0 0.75em 0;
+  line-height: 1.7;
+}
+
+/* Blockquotes - Notion style: subtle left border, no background */
+blockquote {
+  padding: 3px 0 3px 16px;
+  margin: 1em 0;
+  color: #37352F;
+  border-left: 3px solid #E9E9E7;
+  font-size: 1em;
+}
+
+blockquote p {
+  margin: 0.5em 0;
+}
+
+/* Inline code - Notion style: vibrant red background */
+code {
+  padding: 4px 8px;
+  margin: 0 2px;
+  font-size: 0.9em;
+  background-color: #FFF3F3;
+  border-radius: 4px;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+  color: #E03E3E;
+  font-weight: 500;
+  border: 1px solid #FFE0E0;
+}
+
+/* Code blocks - Notion style: warm background with border */
+pre {
+  padding: 20px;
+  margin: 1.5em 0;
+  overflow: auto;
+  font-size: 0.875em;
+  line-height: 1.7;
+  background-color: #FAFAF9;
+  border-radius: 8px;
+  border: 1px solid #E7E5E4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-size: 1em;
+  color: #37352F;
+  border-radius: 0;
+}
+
+/* Tables - Notion style: clean borders */
+table {
+  border-spacing: 0;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  width: 100%;
+  font-size: 0.9375em;
+}
+
+th, td {
+  padding: 8px 12px;
+  border: 1px solid #E9E9E7;
+  text-align: left;
+}
+
+th {
+  font-weight: 600;
+  background-color: #F7F6F3;
+  color: #37352F;
+}
+
+tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Lists - Notion style: comfortable spacing */
+ul, ol {
+  padding-left: 1.625em;
+  margin: 0.75em 0;
+}
+
+ul {
+  list-style-type: disc;
+}
+
+ol {
+  list-style-type: decimal;
+}
+
+li {
+  margin: 0.25em 0;
+  line-height: 1.7;
+}
+
+li:first-child {
+  margin-top: 0;
+}
+
+li > p {
+  margin: 0.5em 0;
+}
+
+li > p:first-child {
+  margin-top: 0;
+}
+
+ul ul, 
+ul ol, 
+ol ul, 
+ol ol {
+  margin: 0.25em 0;
+}
+
+/* Horizontal rule - Notion style: subtle */
+hr {
+  height: 1px;
+  padding: 0;
+  margin: 2em 0;
+  background-color: #E9E9E7;
+  border: 0;
+}
+
+/* Links - Notion style: subtle underline on hover */
+a {
+  color: #0B6E99;
+  text-decoration: none;
+  border-bottom: 0.05em solid transparent;
+  transition: border-bottom-color 0.2s ease;
+}
+
+a:hover {
+  border-bottom-color: #0B6E99;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+
+/* Strong and emphasis */
+strong {
+  font-weight: 600;
+  color: #37352F;
+}
+
+em {
+  font-style: italic;
+  color: #37352F;
+}
+
+/* KaTeX styles - inline to avoid loading issues */
+.katex { 
+  font-size: 1.1em; 
+}
+
+.katex-display {
+  display: block;
+  margin: 1.5em 0;
+  text-align: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Task lists - Notion style */
+input[type="checkbox"] {
+  margin-right: 0.5em;
+}
+
+/* Selection color - Notion style */
+::selection {
+  background-color: rgba(45, 170, 219, 0.3);
+}
+`;
+  }
+}
+
 class SimpleBookmarkPanel {
   overlay = null;
   shadowRoot = null;
@@ -25540,7 +26116,11 @@ class SimpleBookmarkPanel {
     this.bindEventListeners();
     if (migratedCount > 0) {
       setTimeout(() => {
-        alert(`✅ Migrated ${migratedCount} bookmark${migratedCount > 1 ? "s" : ""} to "Import" folder`);
+        this.showNotification({
+          type: "success",
+          title: "Migration Complete",
+          message: `Migrated ${migratedCount} bookmark${migratedCount > 1 ? "s" : ""} to "Import" folder`
+        });
       }, 100);
     }
   }
@@ -25633,11 +26213,13 @@ class SimpleBookmarkPanel {
                         </div>
                         <div class="platform-selector-wrapper">
                             <button class="platform-selector" data-selected="all">
+                                ${Icons.grid}
                                 <span class="platform-selector-label">All Platforms</span>
                                 <span class="platform-selector-icon">${Icons.chevronDown}</span>
                             </button>
                             <div class="platform-dropdown" style="display: none;">
                                 <div class="platform-option" data-value="" data-platform="all">
+                                    ${Icons.grid}
                                     <span class="platform-option-label">All Platforms</span>
                                 </div>
                                 <div class="platform-option" data-value="ChatGPT" data-platform="chatgpt">
@@ -25652,8 +26234,8 @@ class SimpleBookmarkPanel {
                         </div>
                         <button class="toolbar-icon-btn new-folder-btn" title="Create new folder" aria-label="Create new folder">${Icons.folderPlus}</button>
                         <div class="toolbar-divider"></div>
-                        <button class="toolbar-icon-btn export-btn" title="Export bookmarks" aria-label="Export bookmarks">${Icons.download}</button>
                         <button class="toolbar-icon-btn import-btn" title="Import bookmarks" aria-label="Import bookmarks">${Icons.upload}</button>
+                        <button class="toolbar-icon-btn export-btn" title="Export bookmarks" aria-label="Export bookmarks">${Icons.download}</button>
                     </div>
                     <div class="content">
                         ${this.renderTreeView()}
@@ -25661,16 +26243,11 @@ class SimpleBookmarkPanel {
                     
                     <!-- Batch Actions Bar (Gmail-style floating) -->
                     <div class="batch-actions-bar">
-                        <div class="batch-info">
-                            <input type="checkbox" class="select-all-checkbox" title="Select all" aria-label="Select all items" />
-                            <span class="selected-count">0 selected</span>
-                        </div>
-                        <div class="batch-buttons">
-                            <button class="batch-delete-btn" title="Delete selected items">${Icons.trash} Delete</button>
-                            <button class="batch-move-btn" title="Move selected items">${Icons.folder} Move To</button>
-                            <button class="batch-export-btn" title="Export selected items">${Icons.download} Export</button>
-                            <button class="batch-clear-btn" title="Clear selection">${Icons.x} Clear</button>
-                        </div>
+                        <span class="selected-count">0 selected</span>
+                        <button class="batch-delete-btn" title="Delete selected items">${Icons.trash} <span>Delete</span></button>
+                        <button class="batch-move-btn" title="Move selected items">${Icons.folder} <span>Move To</span></button>
+                        <button class="batch-export-btn" title="Export selected items">${Icons.download} <span>Export</span></button>
+                        <button class="batch-clear-btn" title="Clear selection">${Icons.x} <span>Clear</span></button>
                     </div>
                 </div>
 
@@ -25730,7 +26307,7 @@ class SimpleBookmarkPanel {
   renderFolderItem(node, depth) {
     const folder = node.folder;
     const icon = node.isExpanded ? Icons.folderOpen : Icons.folder;
-    const indent = depth * 20;
+    const indent = 10 + depth * 28;
     const showAddSubfolder = depth < PathUtils.MAX_DEPTH - 1;
     const selectedClass = node.isSelected ? "selected" : "";
     const expandedClass = node.isExpanded ? "expanded" : "";
@@ -25775,7 +26352,7 @@ class SimpleBookmarkPanel {
    */
   renderBookmarkItemInTree(bookmark, depth) {
     const icon = bookmark.platform === "ChatGPT" ? Icons.chatgpt : Icons.gemini;
-    const indent = depth * 20;
+    const indent = 3 + depth * 28;
     const timestamp = this.formatTimestamp(bookmark.timestamp);
     const key = `${bookmark.urlWithoutProtocol}:${bookmark.position}`;
     const checked = this.selectedItems.has(key) ? "checked" : "";
@@ -25797,7 +26374,7 @@ class SimpleBookmarkPanel {
                 <span class="bookmark-title">${this.escapeHtml(bookmark.title)}</span>
                 <span class="bookmark-timestamp">${timestamp}</span>
                 <div class="item-actions">
-                    <button class="action-btn preview-bookmark" title="Preview" aria-label="Preview bookmark">${Icons.eye}</button>
+                    <button class="action-btn open-conversation" title="Open in Conversation" aria-label="Open conversation">${Icons.link}</button>
                     <button class="action-btn edit-bookmark" title="Edit" aria-label="Edit bookmark">${Icons.edit}</button>
                     <button class="action-btn delete-bookmark" title="Delete" aria-label="Delete bookmark">${Icons.trash}</button>
                 </div>
@@ -25967,10 +26544,15 @@ class SimpleBookmarkPanel {
           this.refreshContent();
         });
       });
-      document.addEventListener("click", () => {
-        platformSelectorWrapper.classList.remove("open");
-        platformDropdown.style.display = "none";
-      });
+      const panelContainer = this.shadowRoot?.querySelector(".bookmarks-tab");
+      if (panelContainer) {
+        panelContainer.addEventListener("click", (e) => {
+          if (!platformSelectorWrapper.contains(e.target)) {
+            platformSelectorWrapper.classList.remove("open");
+            platformDropdown.style.display = "none";
+          }
+        });
+      }
     }
     this.shadowRoot?.querySelector(".export-btn")?.addEventListener("click", () => {
       this.handleExport();
@@ -26106,9 +26688,13 @@ class SimpleBookmarkPanel {
         const path = btn.dataset.path;
         const depth = parseInt(btn.dataset.depth || "0");
         if (depth >= PathUtils.MAX_DEPTH) {
-          alert(`❌ Cannot create subfolder: Maximum folder depth is ${PathUtils.MAX_DEPTH} levels.
+          this.showNotification({
+            type: "error",
+            title: "Maximum Depth Exceeded",
+            message: `Cannot create subfolder: Maximum folder depth is ${PathUtils.MAX_DEPTH} levels.
 
-Please create a new root folder or organize within existing folders.`);
+Please create a new root folder or organize within existing folders.`
+          });
           return;
         }
         this.showCreateFolderInput(path);
@@ -26130,7 +26716,7 @@ Please create a new root folder or organize within existing folders.`);
         await this.handleDeleteFolder(path);
       });
     });
-    this.shadowRoot?.querySelectorAll(".preview-bookmark").forEach((btn) => {
+    this.shadowRoot?.querySelectorAll(".open-conversation").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const bookmarkItem = e.target.closest(".bookmark-item");
@@ -26489,18 +27075,26 @@ Please create a new root folder or organize within existing folders.`);
     });
   }
   /**
-   * Show inline editing for new folder creation
-   * Reference: VS Code new folder inline creation
+   * Show inline input for creating new folder
+   * Task 2.1.1
    */
-  showCreateFolderInput(parentPath) {
+  async showCreateFolderInput(parentPath) {
     const name = prompt("Enter folder name:");
     if (!name) return;
     if (name.length > 50) {
-      alert("Folder name must be 50 characters or less");
+      await this.showNotification({
+        type: "error",
+        title: "Invalid Folder Name",
+        message: "Folder name must be 50 characters or less"
+      });
       return;
     }
     if (name.includes("/")) {
-      alert('Folder name cannot contain "/"');
+      await this.showNotification({
+        type: "error",
+        title: "Invalid Folder Name",
+        message: 'Folder name cannot contain "/"'
+      });
       return;
     }
     this.handleCreateFolder(parentPath, name);
@@ -26509,12 +27103,16 @@ Please create a new root folder or organize within existing folders.`);
     const newPath = parentPath ? `${parentPath}/${name}` : name;
     const newDepth = PathUtils.getDepth(newPath);
     if (newDepth > PathUtils.MAX_DEPTH) {
-      alert(`❌ Cannot create folder: Maximum folder depth is ${PathUtils.MAX_DEPTH} levels.
+      await this.showNotification({
+        type: "error",
+        title: "Maximum Depth Exceeded",
+        message: `Cannot create folder: Maximum folder depth is ${PathUtils.MAX_DEPTH} levels.
 
 Current path would be: ${newPath}
 Depth: ${newDepth}
 
-Please create a new root folder or organize within existing folders.`);
+Please create a new root folder or organize within existing folders.`
+      });
       logger$1.warn(`[Folder] Create blocked: depth ${newDepth} exceeds limit (${PathUtils.MAX_DEPTH}) for path: ${newPath}`);
       return;
     }
@@ -26527,7 +27125,11 @@ Please create a new root folder or organize within existing folders.`);
       await this.refreshTreeView();
       logger$1.info(`[Folder] Created successfully`);
     } else {
-      alert(`Failed to create folder: ${result.error}`);
+      await this.showNotification({
+        type: "error",
+        title: "Failed to Create Folder",
+        message: `Failed to create folder: ${result.error}`
+      });
       logger$1.error(`[Folder] Create failed:`, result.error);
     }
   }
@@ -26556,7 +27158,7 @@ Please create a new root folder or organize within existing folders.`);
             width: 100%;
             padding: 2px 6px;
             border: 1px solid var(--primary-600);
-            border-radius: var(--radius-xs);
+            border-radius: var(--radius-extra-small);
             font-size: var(--text-base);
             font-family: inherit;
             outline: none;
@@ -26574,12 +27176,20 @@ Please create a new root folder or organize within existing folders.`);
         return;
       }
       if (newName.length > 50) {
-        alert("Folder name must be 50 characters or less");
+        await this.showNotification({
+          type: "error",
+          title: "Invalid Folder Name",
+          message: "Folder name must be 50 characters or less"
+        });
         input.focus();
         return;
       }
       if (newName.includes("/")) {
-        alert('Folder name cannot contain "/"');
+        await this.showNotification({
+          type: "error",
+          title: "Invalid Folder Name",
+          message: 'Folder name cannot contain "/"'
+        });
         input.focus();
         return;
       }
@@ -26607,7 +27217,11 @@ Please create a new root folder or organize within existing folders.`);
       await this.refreshTreeView();
       logger$1.info(`[Folder] Renamed: ${path} -> ${newName}`);
     } else {
-      alert(`Failed to rename folder: ${result.error}`);
+      await this.showNotification({
+        type: "error",
+        title: "Failed to Rename",
+        message: `Failed to rename folder: ${result.error}`
+      });
       logger$1.error(`[Folder] Rename failed:`, result.error);
     }
   }
@@ -26619,7 +27233,11 @@ Please create a new root folder or organize within existing folders.`);
       (f) => f.path.startsWith(path + "/")
     );
     if (hasBookmarks || hasSubfolders) {
-      alert("Please remove all items before deleting folder");
+      await this.showNotification({
+        type: "error",
+        title: "Folder Not Empty",
+        message: "Please remove all items before deleting folder"
+      });
       return;
     }
     if (!confirm(`Delete folder "${path}"?`)) {
@@ -26631,7 +27249,11 @@ Please create a new root folder or organize within existing folders.`);
       await this.refreshTreeView();
       logger$1.info(`[Folder] Deleted: ${path}`);
     } else {
-      alert(`Failed to delete folder: ${result.error}`);
+      await this.showNotification({
+        type: "error",
+        title: "Failed to Delete",
+        message: `Failed to delete folder: ${result.error}`
+      });
       logger$1.error(`[Folder] Delete failed:`, result.error);
     }
   }
@@ -26657,11 +27279,19 @@ Please create a new root folder or organize within existing folders.`);
   /**
    * Show detail modal
    */
+  /**
+   * Show detail modal (CRITICAL: Uses re-render logic for Markdown rendering)
+   */
   showDetailModal(url, position) {
     const bookmark = this.filteredBookmarks.find(
       (b) => b.url === url && b.position === position
     );
     if (!bookmark) return;
+    if (this.shadowRoot) {
+      MarkdownRenderer.injectShadowStyles(this.shadowRoot);
+    }
+    const userMessageHtml = MarkdownRenderer.render(bookmark.userMessage);
+    const aiResponseHtml = bookmark.aiResponse ? MarkdownRenderer.render(bookmark.aiResponse) : "";
     const modalOverlay = document.createElement("div");
     modalOverlay.className = "detail-modal-overlay";
     const modal = document.createElement("div");
@@ -26669,33 +27299,55 @@ Please create a new root folder or organize within existing folders.`);
     modal.addEventListener("click", (e) => {
       e.stopPropagation();
     });
+    const date = new Date(bookmark.timestamp);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
+    const formattedDate = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
     modal.innerHTML = `
             <div class="detail-header">
                 <h3>${this.escapeHtml(bookmark.title || bookmark.userMessage.substring(0, 50))}</h3>
-                <button class="close-btn">×</button>
+                <div class="detail-header-actions">
+                    <button class="fullscreen-btn" title="Toggle fullscreen">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                        </svg>
+                    </button>
+                    <button class="close-btn" title="Close">×</button>
+                </div>
             </div>
 
             <div class="detail-meta">
-                <span class="platform-badge ${bookmark.platform?.toLowerCase() || "chatgpt"}">
-                    ${this.getPlatformIcon(bookmark.platform)} ${bookmark.platform || "ChatGPT"}
-                </span>
-                <span class="timestamp">${this.formatTimestamp(bookmark.timestamp)}</span>
-            </div>
-
-            <div class="detail-url">
-                URL: <a href="${this.escapeHtml(bookmark.url)}" target="_blank">${this.escapeHtml(bookmark.urlWithoutProtocol)}</a>
+                <div class="detail-meta-left">
+                    <span class="platform-badge ${bookmark.platform?.toLowerCase() || "chatgpt"}">
+                        ${this.getPlatformIcon(bookmark.platform)} ${bookmark.platform || "ChatGPT"}
+                    </span>
+                </div>
+                <div class="detail-meta-right">
+                    Saved date: ${formattedDate}
+                </div>
             </div>
 
             <div class="detail-content">
-                <div class="detail-section">
-                    <h4>📝 User Message</h4>
-                    <div class="detail-text">${this.escapeHtml(bookmark.userMessage)}</div>
+                <div class="detail-section user-section">
+                    <div class="section-header">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <h4>User Prompt</h4>
+                    </div>
+                    <div class="detail-text markdown-content">${userMessageHtml}</div>
                 </div>
 
                 ${bookmark.aiResponse ? `
-                    <div class="detail-section">
-                        <h4>AI Response</h4>
-                        <div class="detail-text">${this.escapeHtml(bookmark.aiResponse)}</div>
+                    <div class="detail-section ai-section">
+                        <div class="section-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                            </svg>
+                            <h4>AI Response</h4>
+                        </div>
+                        <div class="detail-text markdown-content">${aiResponseHtml}</div>
                     </div>
                 ` : ""}
             </div>
@@ -26710,6 +27362,9 @@ Please create a new root folder or organize within existing folders.`);
     this.shadowRoot?.appendChild(modalOverlay);
     modal.querySelector(".close-btn")?.addEventListener("click", () => {
       modalOverlay.remove();
+    });
+    modal.querySelector(".fullscreen-btn")?.addEventListener("click", () => {
+      modal.classList.toggle("detail-modal-fullscreen");
     });
     modal.querySelector(".open-conversation-btn")?.addEventListener("click", async () => {
       modalOverlay.remove();
@@ -26948,12 +27603,20 @@ Tip: You can export your bookmarks first to create a backup.`
    */
   async handleBatchExport() {
     if (this.selectedItems.size === 0) {
-      alert("Please select items to export");
+      await this.showNotification({
+        type: "warning",
+        title: "No Items Selected",
+        message: "Please select items to export"
+      });
       return;
     }
     const selectedBookmarks = this.getSelectedBookmarks();
     if (selectedBookmarks.length === 0) {
-      alert("No bookmarks selected");
+      await this.showNotification({
+        type: "warning",
+        title: "No Bookmarks Selected",
+        message: "No bookmarks selected"
+      });
       return;
     }
     const preserveStructure = await this.showExportOptionsDialog();
@@ -27003,6 +27666,128 @@ Tip: You can export your bookmarks first to create a backup.`
     return { folders, subfolders, bookmarks };
   }
   /**
+   * Show notification dialog in Shadow DOM
+   * Replaces browser alert() with styled modal
+   * 
+   * @param options - Notification configuration
+   */
+  async showNotification(options) {
+    return new Promise((resolve) => {
+      const configs = {
+        success: {
+          icon: Icons.checkCircle,
+          iconColor: "var(--success-600)",
+          titleColor: "var(--success-700)",
+          defaultTitle: "Success"
+        },
+        error: {
+          icon: Icons.xCircle,
+          iconColor: "var(--danger-600)",
+          titleColor: "var(--danger-700)",
+          defaultTitle: "Error"
+        },
+        warning: {
+          icon: Icons.alertTriangle,
+          iconColor: "var(--warning-600)",
+          titleColor: "var(--warning-700)",
+          defaultTitle: "Warning"
+        },
+        info: {
+          icon: Icons.info,
+          iconColor: "var(--primary-600)",
+          titleColor: "var(--primary-700)",
+          defaultTitle: "Information"
+        }
+      };
+      const config = configs[options.type];
+      const title = options.title || config.defaultTitle;
+      const overlay = document.createElement("div");
+      overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 2147483647;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+      const modal = document.createElement("div");
+      modal.style.cssText = `
+                background: white;
+                border-radius: var(--radius-medium);
+                box-shadow: var(--shadow-2xl);
+                max-width: 400px;
+                width: 90%;
+            `;
+      modal.innerHTML = `
+<div style="padding: 24px 24px 20px;">
+    <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: 16px;">
+        <span style="color: ${config.iconColor}; display: flex; align-items: center;">${config.icon}</span>
+        <h3 style="margin: 0; font-size: 18px; font-weight: 500; color: ${config.titleColor};">
+            ${title}
+        </h3>
+    </div>
+    <div style="color: var(--gray-700); font-size: 14px; line-height: 1.6; white-space: pre-wrap;">
+${options.message}
+    </div>
+</div>
+<div style="padding: 12px 24px; display: flex; justify-content: flex-end; border-top: 1px solid var(--gray-200);">
+    <button class="ok-btn" style="
+        padding: 8px 24px;
+        border: none;
+        border-radius: var(--radius-small);
+        background: var(--primary-600);
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+    ">OK</button>
+</div>
+            `;
+      overlay.appendChild(modal);
+      if (this.shadowRoot) {
+        this.shadowRoot.appendChild(overlay);
+      }
+      overlay.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (e.target === overlay) {
+          closeDialog();
+        }
+      });
+      modal.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+      const okBtn = modal.querySelector(".ok-btn");
+      okBtn.addEventListener("mouseenter", () => {
+        okBtn.style.background = "var(--primary-700)";
+      });
+      okBtn.addEventListener("mouseleave", () => {
+        okBtn.style.background = "var(--primary-600)";
+      });
+      const closeDialog = () => {
+        overlay.remove();
+        resolve();
+      };
+      okBtn.addEventListener("click", closeDialog);
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) {
+          closeDialog();
+        }
+      });
+      const handleEscape = (e) => {
+        if (e.key === "Escape") {
+          document.removeEventListener("keydown", handleEscape);
+          closeDialog();
+        }
+      };
+      document.addEventListener("keydown", handleEscape);
+    });
+  }
+  /**
    * Show custom delete confirmation modal
    * Task 3.4.2
    */
@@ -27024,19 +27809,19 @@ Tip: You can export your bookmarks first to create a backup.`
       const modal = document.createElement("div");
       modal.style.cssText = `
                 background: white;
-                border-radius: var(--radius-md);
+                border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
             `;
       modal.innerHTML = `
-                <div style="padding: 24px 24px 20px;">
-                    <div style="display: flex; align-items: center; gap: var(--space-4);  /* 16px */ margin-bottom: 16px;">
-                        <span class="warning-icon">${Icons.alertTriangle}</span>
-                        <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: var(--gray-900);">
-                            Delete Selected Items
-                        </h3>
-                    </div>
+<div style="padding: 24px 24px 20px;">
+    <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px;">
+        <span style="color: var(--warning-600); display: flex; align-items: center; flex-shrink: 0;">${Icons.alertTriangle}</span>
+        <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: var(--gray-900); flex: 1;">
+            Delete Selected Items
+        </h3>
+    </div>
                     <div style="color: var(--gray-500); font-size: 14px; line-height: 1.5;">
                         <p style="margin: 0 0 16px 0;">This will permanently delete:</p>
                         <ul style="margin: 0; padding-left: 24px;">
@@ -27075,7 +27860,9 @@ Tip: You can export your bookmarks first to create a backup.`
                 </div>
             `;
       overlay.appendChild(modal);
-      document.body.appendChild(overlay);
+      if (this.shadowRoot) {
+        this.shadowRoot.appendChild(overlay);
+      }
       const cancelBtn = modal.querySelector(".cancel-btn");
       const deleteBtn = modal.querySelector(".delete-btn");
       cancelBtn.addEventListener("mouseenter", () => {
@@ -27099,10 +27886,14 @@ Tip: You can export your bookmarks first to create a backup.`
         resolve(true);
       });
       overlay.addEventListener("click", (e) => {
+        e.stopPropagation();
         if (e.target === overlay) {
           overlay.remove();
           resolve(false);
         }
+      });
+      modal.addEventListener("click", (e) => {
+        e.stopPropagation();
       });
       const handleEscape = (e) => {
         if (e.key === "Escape") {
@@ -27173,7 +27964,7 @@ Tip: You can export your bookmarks first to create a backup.`
     const modal = document.createElement("div");
     modal.style.cssText = `
             background: white;
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-medium);
             box-shadow: var(--shadow-2xl);
             max-width: 500px;
             width: 90%;
@@ -27221,7 +28012,9 @@ Tip: You can export your bookmarks first to create a backup.`
             </div>
         `;
     overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    if (this.shadowRoot) {
+      this.shadowRoot.appendChild(overlay);
+    }
     const okBtn = modal.querySelector(".ok-btn");
     okBtn.addEventListener("mouseenter", () => {
       okBtn.style.background = "var(--primary-700)";
@@ -27233,9 +28026,13 @@ Tip: You can export your bookmarks first to create a backup.`
       overlay.remove();
     });
     overlay.addEventListener("click", (e) => {
+      e.stopPropagation();
       if (e.target === overlay) {
         overlay.remove();
       }
+    });
+    modal.addEventListener("click", (e) => {
+      e.stopPropagation();
     });
   }
   /**
@@ -27288,12 +28085,20 @@ Tip: You can export your bookmarks first to create a backup.`
    */
   async handleBatchMove() {
     if (this.selectedItems.size === 0) {
-      alert("Please select items to move");
+      await this.showNotification({
+        type: "warning",
+        title: "No Items Selected",
+        message: "Please select items to move"
+      });
       return;
     }
     const bookmarks = this.getSelectedBookmarks();
     if (bookmarks.length === 0) {
-      alert("No bookmarks selected to move.\n\nNote: Folders cannot be moved, only bookmarks.");
+      await this.showNotification({
+        type: "warning",
+        title: "No Bookmarks to Move",
+        message: "No bookmarks selected to move.\n\nNote: Folders cannot be moved, only bookmarks."
+      });
       return;
     }
     const { BookmarkSaveModal } = await __vitePreload(async () => { const { BookmarkSaveModal } = await Promise.resolve().then(() => BookmarkSaveModal$1);return { BookmarkSaveModal }},true?void 0:void 0);
@@ -27310,7 +28115,11 @@ Tip: You can export your bookmarks first to create a backup.`
   }
   /**
    * Show export options dialog
-   * Returns: true = preserve structure, false = remove structure, null = cancelled
+   * 
+   * IMPORTANT: This dialog is created in Shadow DOM (not document.body)
+   * so it can access CSS variables defined in the panel's styles.
+   * 
+   * @see /src/styles/design-tokens.css
    */
   async showExportOptionsDialog() {
     return new Promise((resolve) => {
@@ -27330,7 +28139,7 @@ Tip: You can export your bookmarks first to create a backup.`
       const modal = document.createElement("div");
       modal.style.cssText = `
                 background: white;
-                border-radius: var(--radius-md);
+                border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
@@ -27349,7 +28158,28 @@ Tip: You can export your bookmarks first to create a backup.`
                         </span>
                     </label>
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-2);  /* 8px */">
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-2);">
+                    <div class="batch-actions-bar">
+                        <span class="selected-count">0 selected</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="batch-delete-btn" title="Delete selected items">
+                                ${Icons.trash}
+                                <span>Delete</span>
+                            </button>
+                            <button class="batch-move-btn" title="Move to folder">
+                                ${Icons.folder}
+                                <span>Move To</span>
+                            </button>
+                            <button class="batch-export-btn" title="Export selected">
+                                ${Icons.download}
+                                <span>Export</span>
+                            </button>
+                            <button class="batch-clear-btn" title="Clear selection">
+                                ${Icons.x}
+                                <span>Clear</span>
+                            </button>
+                        </div>
+                    </div>
                     <button class="cancel-btn" style="
                         padding: 8px 16px;
                         border: 1px solid var(--gray-300);
@@ -27375,7 +28205,9 @@ Tip: You can export your bookmarks first to create a backup.`
                 </div>
             `;
       overlay.appendChild(modal);
-      document.body.appendChild(overlay);
+      if (this.shadowRoot) {
+        this.shadowRoot.appendChild(overlay);
+      }
       const checkbox = modal.querySelector("#preserve-structure");
       const cancelBtn = modal.querySelector(".cancel-btn");
       const exportBtn = modal.querySelector(".export-btn");
@@ -27401,10 +28233,14 @@ Tip: You can export your bookmarks first to create a backup.`
         resolve(preserveStructure);
       });
       overlay.addEventListener("click", (e) => {
+        e.stopPropagation();
         if (e.target === overlay) {
           overlay.remove();
           resolve(null);
         }
+      });
+      modal.addEventListener("click", (e) => {
+        e.stopPropagation();
       });
       const handleEscape = (e) => {
         if (e.key === "Escape") {
@@ -27496,12 +28332,20 @@ Tip: You can export your bookmarks first to create a backup.`
         }
         await this.importBookmarks(allBookmarks, false);
         await this.refresh();
-        alert(`✅ Successfully imported ${bookmarks.length} bookmark(s)!`);
+        await this.showNotification({
+          type: "success",
+          title: "Import Successful",
+          message: `Successfully imported ${bookmarks.length} bookmark(s)!`
+        });
         logger$1.info(`[Import] Successfully imported ${bookmarks.length} bookmarks`);
       } catch (error) {
         logger$1.error("[Import] Failed:", error);
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        alert(`❌ Import failed: ${errorMessage}`);
+        await this.showNotification({
+          type: "error",
+          title: "Import Failed",
+          message: `Import failed: ${errorMessage}`
+        });
       }
     };
     input.click();
@@ -27557,7 +28401,7 @@ Tip: You can export your bookmarks first to create a backup.`
       const modal = document.createElement("div");
       modal.style.cssText = `
                 background: white;
-                border-radius: var(--radius-md);
+                border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 450px;
                 width: 90%;
@@ -27612,7 +28456,9 @@ Tip: You can export your bookmarks first to create a backup.`
                 </div>
             `;
       overlay.appendChild(modal);
-      document.body.appendChild(overlay);
+      if (this.shadowRoot) {
+        this.shadowRoot.appendChild(overlay);
+      }
       const cancelBtn = modal.querySelector(".cancel-btn");
       const proceedBtn = modal.querySelector(".proceed-btn");
       cancelBtn.addEventListener("mouseenter", () => {
@@ -28796,7 +29642,7 @@ Tip: You can export your bookmarks first to create a backup.`
 
             .conflict-dialog {
                 background: var(--white);
-                border-radius: var(--radius-lg);
+                border-radius: var(--radius-large);
                 box-shadow: var(--shadow-2xl);
                 max-width: 500px;
                 width: 90%;
@@ -28918,110 +29764,245 @@ Tip: You can export your bookmarks first to create a backup.`
                 background: var(--gray-300);
             }
 
-            /* Detail Modal */
+            /* Detail Modal - Modern & Clean */
             .detail-modal-overlay {
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(8px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: var(--z-modal-backdrop);
+                z-index: 2147483648;
+                animation: overlayFadeIn 0.2s ease;
+            }
+
+            @keyframes overlayFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
             }
 
             .detail-modal {
-                background: var(--white);
-                border-radius: var(--radius-lg);
+                background: white;
+                border-radius: 16px;
                 width: 90%;
-                max-width: 700px;
-                max-height: 80vh;
+                max-width: 800px;
+                max-height: 85vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: var(--shadow-2xl);
+                box-shadow: 
+                    0 0 0 1px rgba(0, 0, 0, 0.08),
+                    0 4px 12px rgba(0, 0, 0, 0.12),
+                    0 16px 48px rgba(0, 0, 0, 0.18),
+                    0 24px 80px rgba(0, 0, 0, 0.12);
+                position: relative;
+                z-index: 2147483649;
+                animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+
+            @keyframes modalSlideIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.95) translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+
+            .detail-modal-fullscreen {
+                width: 100vw !important;
+                max-width: none !important;
+                height: 100vh !important;
+                max-height: none !important;
+                border-radius: 0 !important;
+            }
+
+            .detail-modal-fullscreen .detail-content {
+                max-width: 1000px;
+                margin: 0 auto;
             }
 
             .detail-header {
-                padding: var(--space-5) var(--space-6);  /* 20px 24px */
-                border-bottom: 1px solid var(--gray-200);
+                padding: 16px 24px;
+                border-bottom: 1px solid #F0F0F0;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                flex-shrink: 0;
             }
 
             .detail-header h3 {
                 margin: 0;
                 font-size: 18px;
                 font-weight: 600;
-                color: var(--gray-900);
+                color: #1A1A1A;
+                letter-spacing: -0.02em;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                flex: 1;
+                padding-right: 16px;
+            }
+
+            .detail-header-actions {
+                display: flex;
+                gap: 8px;
+            }
+
+            .fullscreen-btn,
+            .detail-header .close-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                border: none;
+                background: transparent;
+                color: #6B7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.15s ease;
+                font-size: 20px;
+            }
+
+            .fullscreen-btn:hover,
+            .detail-header .close-btn:hover {
+                background: #F3F4F6;
+                color: #1A1A1A;
             }
 
             .detail-meta {
-                padding: var(--space-3) var(--space-6);  /* 12px 24px */
-                background: var(--gray-50);
+                padding: 10px 24px;
+                background: #F8F9FA;
                 display: flex;
-                gap: var(--space-4);  /* 16px */
+                justify-content: space-between;
                 align-items: center;
+                border-bottom: 1px solid #E8E8E8;
+                flex-shrink: 0;
+                gap: 16px;
+                height: 44px;
+                overflow: hidden;
             }
 
-            .detail-url {
-                padding: var(--space-3) var(--space-6);  /* 12px 24px */
+            .detail-meta-left {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+
+            .detail-meta .platform-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                border-radius: 6px;
                 font-size: 13px;
-                color: var(--gray-500);
+                font-weight: 500;
+                white-space: nowrap;
+                flex-shrink: 0;
             }
 
-            .detail-url a {
-                color: var(--primary-600);
-                text-decoration: none;
+            .detail-meta .platform-badge.chatgpt {
+                background: #D1FAE5;
+                color: #065F46;
+            }
+
+            .detail-meta .platform-badge.gemini {
+                background: #DBEAFE;
+                color: #1E40AF;
+            }
+
+            .detail-meta-right {
+                font-size: 13px;
+                color: #6B7280;
+                white-space: nowrap;
+                flex-shrink: 0;
             }
 
             .detail-content {
                 flex: 1;
                 overflow-y: auto;
-                padding: var(--space-6);  /* 24px */
+                padding: 0;
             }
 
             .detail-section {
-                margin-bottom: 24px;
+                padding: 28px;
+                border-bottom: 1px solid #F5F5F5;
             }
 
-            .detail-section h4 {
-                margin: 0 0 12px 0;
+            .detail-section:last-child {
+                border-bottom: none;
+            }
+
+            .user-section {
+                background: #F0F7FF;
+                border-left: 3px solid #3B82F6;
+            }
+
+            .ai-section {
+                background: #F0FDF4;
+                border-left: 3px solid #10B981;
+            }
+
+            .section-header {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 16px;
+            }
+
+            .section-header svg {
+                color: #6B7280;
+                flex-shrink: 0;
+            }
+
+            .section-header h4 {
+                margin: 0;
                 font-size: 14px;
                 font-weight: 600;
-                color: var(--gray-700);
+                color: #6B7280;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
 
             .detail-text {
-                line-height: 1.6;
-                color: var(--gray-900);
-                white-space: pre-wrap;
-                word-break: break-word;
+                font-size: 15px;
+                line-height: 1.7;
+                color: #1A1A1A;
             }
 
             .detail-footer {
-                padding: var(--space-4) var(--space-6);  /* 16px 24px */
-                border-top: 1px solid var(--gray-200);
+                padding: 10px 24px;
+                border-top: 1px solid #F0F0F0;
                 display: flex;
                 justify-content: flex-end;
+                background: white;
+                flex-shrink: 0;
+                border-radius: 0 0 16px 16px;
+                min-height: 44px;
             }
 
             .open-conversation-btn {
-                padding: var(--space-3) var(--space-5);  /* 12px 20px */
-                background: var(--primary-600);
-                color: var(--white);
+                padding: 8px 20px;
+                background: #2563EB;
+                color: white;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 font-size: 14px;
                 font-weight: 500;
                 cursor: pointer;
-                transition: background 0.2s;
+                transition: all 0.15s ease;
             }
 
             .open-conversation-btn:hover {
-                background: var(--primary-700);
+                background: #1D4ED8;
+                box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
             }
 
             /* ============================================================================
@@ -29040,82 +30021,73 @@ Tip: You can export your bookmarks first to create a backup.`
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-                z-index: var(--z-sticky);
-                
-                transform: translateY(100%);
-                transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-                opacity: 0;
-                pointer-events: none;
-            }
-            
-            .batch-actions-bar.visible {
-                transform: translateY(0);
-                opacity: 1;
-                pointer-events: auto;
-            }
-            
-            .batch-info {
+                padding: 16px 20px;
+                background: rgba(255, 255, 255, 0.85);
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+                border-top: 1px solid rgba(0, 0, 0, 0.08);
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
                 display: flex;
                 align-items: center;
-                gap: var(--space-3);  /* 12px */
+                gap: 12px;
+                z-index: 100;
+                transform: translateY(100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
-            
-            .select-all-checkbox {
-                width: 18px;
-                height: 18px;
-                cursor: pointer;
-                margin: 0;
+
+            .batch-actions-bar.visible {
+                transform: translateY(0);
             }
-            
+
             .batch-actions-bar .selected-count {
                 font-size: 14px;
                 font-weight: 500;
-                color: var(--gray-900);
+                color: var(--gray-700);
+                margin-right: auto;
+                white-space: nowrap;
             }
-            
-            .batch-buttons {
+
+            .batch-actions-bar button {
                 display: flex;
-                gap: var(--space-2);  /* 8px */
-            }
-            
-            .batch-buttons button {
-                padding: var(--space-2) var(--space-4);  /* 8px 16px */
-                border: 1px solid var(--gray-300);
-                border-radius: var(--radius-sm);
-                background: var(--white);
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 10px 16px;
+                background: white;
+                border: 1px solid var(--gray-200);
+                border-radius: var(--radius-medium);
                 cursor: pointer;
+                transition: all 0.2s ease;
                 font-size: 13px;
                 font-weight: 500;
-                transition: all 0.2s;
+                color: var(--gray-700);
+                white-space: nowrap;
             }
-            
-            .batch-buttons button:hover {
-                background: var(--gray-100);
+
+            .batch-actions-bar button:hover {
+                background: var(--gray-50);
+                border-color: var(--gray-300);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
-            
-            .batch-delete-btn:hover {
-                background: var(--danger-600) !important;
-                color: var(--white) !important;
-                border-color: var(--danger-600) !important;
+
+            .batch-actions-bar button:active {
+                transform: translateY(0);
             }
-            
-            .batch-move-btn:hover {
-                background: var(--primary-600) !important;
-                color: var(--white) !important;
-                border-color: var(--primary-600) !important;
+
+            .batch-actions-bar button svg {
+                width: 20px;
+                height: 20px;
             }
-            
-            .batch-export-btn:hover {
-                background: var(--success-600) !important;
-                color: var(--white) !important;
-                border-color: var(--success-600) !important;
+
+            .batch-actions-bar button.danger {
+                color: var(--danger-600);
             }
-            
-            .batch-clear-btn:hover {
-                background: var(--gray-600) !important;
-                color: var(--white) !important;
-                border-color: var(--gray-600) !important;
+
+            .batch-actions-bar button.danger:hover {
+                background: var(--danger-50);
+                border-color: var(--danger-200);
             }
             
             .bookmarks-tab .content {
@@ -29214,7 +30186,7 @@ Tip: You can export your bookmarks first to create a backup.`
 
             .folder-item.selected {
                 background: var(--primary-50);
-                border-left: 3px solid var(--primary-600);
+                box-shadow: inset 3px 0 0 var(--primary-600);
             }
 
             .folder-toggle {
@@ -29223,7 +30195,6 @@ Tip: You can export your bookmarks first to create a backup.`
                 justify-content: center;
                 width: 16px;
                 height: 16px;
-                margin-right: 4px;
                 font-size: 10px;
                 color: var(--gray-500);
                 cursor: pointer;
@@ -29634,13 +30605,7 @@ class PageHeaderIcon {
     button.className = "text-token-text-primary no-draggable hover:bg-token-surface-hover keyboard-focused:bg-token-surface-hover touch:h-10 touch:w-10 flex h-9 w-9 items-center justify-center rounded-lg focus:outline-none disabled:opacity-50";
     button.setAttribute("aria-label", "View Archive");
     button.setAttribute("type", "button");
-    button.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon">
-                <path d="M3 5C3 3.89543 3.89543 3 5 3H15C16.1046 3 17 3.89543 17 5V6H3V5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M3 6H17V16C17 17.1046 16.1046 18 15 18H5C3.89543 18 3 17.1046 3 16V6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M8 10H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        `;
+    button.innerHTML = Icons.bookMarked;
     button.addEventListener("click", () => this.handleClick());
     return button;
   }
@@ -29742,14 +30707,7 @@ class GeminiPanelButton {
     button.setAttribute("aria-label", "View Bookmarks");
     button.setAttribute("type", "button");
     button.style.cssText = "margin-left: 12px; color: var(--gem-sys-color--on-surface);";
-    button.innerHTML = `
-            <span class="mat-mdc-button-persistent-ripple mdc-icon-button__ripple"></span>
-            <mat-icon role="img" class="mat-icon notranslate gds-icon-l google-symbols mat-ligature-font mat-icon-no-color" 
-                      aria-hidden="true" data-mat-icon-type="font" data-mat-icon-name="bookmark" 
-                      fonticon="bookmark"></mat-icon>
-            <span class="mat-focus-indicator"></span>
-            <span class="mat-mdc-button-touch-target"></span>
-        `;
+    button.innerHTML = Icons.bookMarked;
     button.addEventListener("click", () => this.handleClick());
     return button;
   }
@@ -29951,40 +30909,49 @@ class ContentScript {
         this.updateToolbarState(messageElement, false);
         logger$1.info(`[handleBookmark] Removed bookmark at position ${position}`);
       } else {
-        const userMessage = this.getUserMessage(messageElement);
-        if (!userMessage) {
-          logger$1.error("[handleBookmark] Failed to extract user message");
-          return;
-        }
-        const adapter = adapterRegistry.getAdapter();
-        const platform = adapter && "isGemini" in adapter && typeof adapter.isGemini === "function" && adapter.isGemini() ? "Gemini" : "ChatGPT";
-        const aiResponse = this.getAiResponse(messageElement);
-        const defaultTitle = userMessage.substring(0, 50) + (userMessage.length > 50 ? "..." : "");
-        const lastUsedFolder = localStorage.getItem("lastUsedFolder") || "Import";
-        const saveModal = new BookmarkSaveModal();
-        saveModal.show({
-          defaultTitle,
-          lastUsedFolder,
-          onSave: async (title, folderPath) => {
-            await SimpleBookmarkStorage.save(
-              url,
-              position,
-              userMessage,
-              aiResponse,
-              title,
-              platform,
-              Date.now(),
-              folderPath
-            );
-            this.bookmarkedPositions.add(position);
-            this.updateToolbarState(messageElement, true);
-            localStorage.setItem("lastUsedFolder", folderPath);
-            logger$1.info(`[handleBookmark] Saved "${title}" to "${folderPath}"`);
+        try {
+          const userMessage = this.getUserMessage(messageElement);
+          logger$1.info("[handleBookmark] User message extracted:", userMessage ? userMessage.substring(0, 50) : "EMPTY");
+          if (!userMessage) {
+            logger$1.error("[handleBookmark] Failed to extract user message");
+            alert("Failed to extract user message. Please try again.");
+            return;
           }
-        });
+          const adapter = adapterRegistry.getAdapter();
+          const platform = adapter && "isGemini" in adapter && typeof adapter.isGemini === "function" && adapter.isGemini() ? "Gemini" : "ChatGPT";
+          const aiResponse = this.getMarkdown(messageElement);
+          logger$1.info("[handleBookmark] AI response extracted (first 200 chars):", aiResponse.substring(0, 200));
+          const defaultTitle = userMessage.substring(0, 50) + (userMessage.length > 50 ? "..." : "");
+          const lastUsedFolder = localStorage.getItem("lastUsedFolder") || "Import";
+          const saveModal = new BookmarkSaveModal();
+          saveModal.show({
+            defaultTitle,
+            lastUsedFolder,
+            onSave: async (title, folderPath) => {
+              await SimpleBookmarkStorage.save(
+                url,
+                position,
+                userMessage,
+                aiResponse,
+                title,
+                platform,
+                Date.now(),
+                folderPath
+              );
+              this.bookmarkedPositions.add(position);
+              this.updateToolbarState(messageElement, true);
+              localStorage.setItem("lastUsedFolder", folderPath);
+              logger$1.info(`[handleBookmark] Saved "${title}" to "${folderPath}"`);
+            }
+          });
+        } catch (error) {
+          logger$1.error("[handleBookmark] Failed to prepare bookmark:", error);
+          alert("Failed to prepare bookmark. Please try again.");
+        }
       }
     } catch (error) {
       logger$1.error("[handleBookmark] Failed to toggle bookmark:", error);
+      alert("Failed to toggle bookmark: " + (error instanceof Error ? error.message : String(error)));
     }
   }
   /**
@@ -30000,39 +30967,78 @@ class ContentScript {
   }
   /**
    * Get user message text from message element
+   * Based on real-world testing with ChatGPT and Gemini HTML
    */
   getUserMessage(messageElement) {
-    const adapter = adapterRegistry.getAdapter();
-    if (!adapter) return "";
-    const messageSelector = adapter.getMessageSelector();
-    const contentSelector = adapter.getMessageContentSelector();
-    if (!contentSelector) return "";
-    const currentContent = messageElement.querySelector(contentSelector);
-    if (currentContent) {
-      const text = currentContent.textContent?.trim() || "";
-      if (text && text.length < 5e3) {
+    try {
+      const adapter = adapterRegistry.getAdapter();
+      if (!adapter) {
+        logger$1.error("[getUserMessage] No adapter found");
+        return "";
+      }
+      if ("isGemini" in adapter && typeof adapter.isGemini === "function" && adapter.isGemini()) {
+        logger$1.debug("[getUserMessage] Gemini mode");
+        let userPrompts = Array.from(document.querySelectorAll('[data-test-id="user-query"]'));
+        if (userPrompts.length === 0) {
+          userPrompts = Array.from(document.querySelectorAll("user-query, .user-query"));
+          logger$1.debug(`[getUserMessage] Fallback selector found ${userPrompts.length} prompts`);
+        }
+        const aiResponses = Array.from(document.querySelectorAll("model-response"));
+        logger$1.debug(`[getUserMessage] Found ${userPrompts.length} user prompts, ${aiResponses.length} AI responses`);
+        if (userPrompts.length === 0) {
+          logger$1.error("[getUserMessage] No user prompts found in Gemini");
+          return "";
+        }
+        const currentAiIndex = aiResponses.indexOf(messageElement);
+        if (currentAiIndex < 0) {
+          logger$1.error("[getUserMessage] Current AI response not found in list");
+          return "";
+        }
+        if (currentAiIndex >= userPrompts.length) {
+          logger$1.error(`[getUserMessage] No matching user prompt for AI response ${currentAiIndex}`);
+          return "";
+        }
+        const userPrompt = userPrompts[currentAiIndex];
+        const text = userPrompt.textContent?.trim() || "";
+        logger$1.debug(`[getUserMessage] Extracted Gemini user message: ${text.substring(0, 50)}`);
+        return text;
+      } else {
+        logger$1.debug("[getUserMessage] ChatGPT mode");
+        const userMessages = Array.from(document.querySelectorAll('[data-message-author-role="user"]'));
+        const assistantMessages = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
+        logger$1.debug(`[getUserMessage] Found ${userMessages.length} user messages, ${assistantMessages.length} assistant messages`);
+        let currentIndex = assistantMessages.indexOf(messageElement);
+        if (currentIndex < 0) {
+          const assistantInside = messageElement.querySelector('[data-message-author-role="assistant"]');
+          if (assistantInside) {
+            currentIndex = assistantMessages.indexOf(assistantInside);
+            logger$1.debug(`[getUserMessage] Found assistant inside article, index: ${currentIndex}`);
+          }
+        }
+        if (currentIndex < 0) {
+          logger$1.error("[getUserMessage] Current assistant message not found in list");
+          return "";
+        }
+        logger$1.debug(`[getUserMessage] Current assistant index: ${currentIndex}`);
+        if (currentIndex >= userMessages.length) {
+          logger$1.error(`[getUserMessage] No matching user message for assistant ${currentIndex}`);
+          return "";
+        }
+        const userMessage = userMessages[currentIndex];
+        const whitespacePre = userMessage.querySelector(".whitespace-pre-wrap");
+        if (whitespacePre) {
+          const text2 = whitespacePre.textContent?.trim() || "";
+          logger$1.debug(`[getUserMessage] Extracted ChatGPT user message: ${text2.substring(0, 50)}`);
+          return text2;
+        }
+        const text = userMessage.textContent?.trim() || "";
+        logger$1.debug(`[getUserMessage] Extracted ChatGPT user message (fallback): ${text.substring(0, 50)}`);
         return text;
       }
+    } catch (error) {
+      logger$1.error("[getUserMessage] Exception:", error);
+      return "";
     }
-    const allMessages = Array.from(document.querySelectorAll(messageSelector));
-    const currentIndex = allMessages.indexOf(messageElement);
-    if (currentIndex <= 0) return "";
-    const prevMessage = allMessages[currentIndex - 1];
-    const prevContent = prevMessage.querySelector(contentSelector);
-    if (!prevContent) return "";
-    return prevContent.textContent?.trim() || "";
-  }
-  /**
-   * Get AI response text from message element
-   */
-  getAiResponse(messageElement) {
-    const adapter = adapterRegistry.getAdapter();
-    if (!adapter) return "";
-    const contentSelector = adapter.getMessageContentSelector();
-    if (!contentSelector) return "";
-    const content = messageElement.querySelector(contentSelector);
-    if (!content) return "";
-    return content.textContent?.trim() || "";
   }
   /**
    * Update toolbar bookmark state

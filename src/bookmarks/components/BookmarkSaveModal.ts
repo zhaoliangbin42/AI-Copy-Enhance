@@ -50,13 +50,12 @@ export class BookmarkSaveModal {
         this.title = options.defaultTitle || '';
 
         // Use currentFolder for edit mode, lastUsedFolder for create mode
-        this.selectedPath = mode === 'edit'
-            ? (options.currentFolder || null)
-            : (options.lastUsedFolder || null);
-
         // Load folders
         this.folders = await FolderStorage.getAll();
         logger.debug(`[BookmarkSaveModal] Loaded ${this.folders.length} folders`);
+
+        // Set selected path (for edit mode or last used folder)
+        this.selectedPath = options.currentFolder || options.lastUsedFolder || null;
 
         // Auto-expand folder path
         if (this.selectedPath) {
@@ -105,6 +104,10 @@ export class BookmarkSaveModal {
 
         // Render folder tree
         this.renderFolderTree();
+
+        // CRITICAL: Update Save button state after rendering tree
+        // This enables the button if selectedPath is already set (lastUsedFolder)
+        this.updateSaveButtonState();
 
         // Update header text based on mode
         const headerText = mode === 'edit' ? 'Edit Bookmark' : 'Save Bookmark';
@@ -216,8 +219,7 @@ export class BookmarkSaveModal {
                     --text-lg: 16px;
                     
                     /* Border Radius */
-                    --radius-xs: 4px;
-                    --radius-sm: 8px;  /* Alias for --radius-small */
+                    --radius-extra-small: 4px;
                     --radius-small: 8px;
                     --radius-large: 12px;
                     
@@ -369,7 +371,7 @@ export class BookmarkSaveModal {
 
                 .folder-tree-container {
                     border: 1px solid var(--gray-200);
-                    border-radius: var(--radius-sm);
+                    border-radius: var(--radius-small);
                     height: 300px;
                     overflow-y: auto;
                     font-size: var(--text-base);
@@ -453,7 +455,7 @@ export class BookmarkSaveModal {
                     border: none;
                     width: 24px;
                     height: 24px;
-                    border-radius: var(--radius-xs);
+                    border-radius: var(--radius-extra-small);
                     cursor: pointer;
                     opacity: 0;
                     transition: opacity 0.15s;
@@ -825,8 +827,17 @@ export class BookmarkSaveModal {
         // TODO: Implement in T3.3
         const name = prompt('Enter folder name:');
         if (!name) return;
-
         this.createFolder(name, parentPath);
+    }
+
+    /**
+     * Show simple notification (for BookmarkSaveModal errors)
+     * Uses browser alert as fallback since this modal is not in Shadow DOM
+     */
+    private showSimpleNotification(_type: 'error' | 'warning' | 'info', message: string): void {
+        // For now, use alert as it's simple and works everywhere
+        // TODO: Consider creating a lightweight toast notification
+        alert(message);
     }
 
     /**
@@ -835,12 +846,12 @@ export class BookmarkSaveModal {
     private async createFolder(name: string, parentPath: string | null): Promise<void> {
         // Validate name
         if (name.length > 50) {
-            alert('❌ Folder name too long (max 50 characters)');
+            this.showSimpleNotification('error', 'Folder name too long (max 50 characters)');
             return;
         }
 
         if (name.includes('/')) {
-            alert('❌ Folder name cannot contain "/"');
+            this.showSimpleNotification('error', 'Folder name cannot contain "/"');
             return;
         }
 
@@ -849,13 +860,13 @@ export class BookmarkSaveModal {
         // Check depth limit (max 4 levels: a/b/c/d, not a/b/c/d/e)
         const depth = newPath.split('/').length;
         if (depth > PathUtils.MAX_DEPTH) {
-            alert(`❌ Maximum folder depth is ${PathUtils.MAX_DEPTH} levels (e.g., Work/Projects/AI/ChatGPT)`);
+            this.showSimpleNotification('error', `Maximum folder depth is ${PathUtils.MAX_DEPTH} levels (e.g., Work/Projects/AI/ChatGPT)`);
             return;
         }
 
         const exists = this.folders.find(f => f.path === newPath);
         if (exists) {
-            alert(`❌ Folder "${name}" already exists`);
+            this.showSimpleNotification('error', `Folder "${name}" already exists`);
             return;
         }
 
@@ -879,7 +890,7 @@ export class BookmarkSaveModal {
             this.updateSaveButtonState();
         } catch (error) {
             logger.error('[BookmarkSaveModal] Failed to create folder:', error);
-            alert(`❌ Failed to create folder: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            this.showSimpleNotification('error', `Failed to create folder: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
@@ -1020,8 +1031,7 @@ export class BookmarkSaveModal {
                         --text-lg: 16px;
                         
                         /* Border Radius */
-                        --radius-xs: 4px;
-                        --radius-sm: 8px;  /* Alias for --radius-small */
+                        --radius-extra-small: 4px;
                         --radius-small: 8px;
                         --radius-large: 12px;
                         
