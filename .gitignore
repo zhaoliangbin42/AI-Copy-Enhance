@@ -9,6 +9,7 @@ test/
 # Files for Agent
 memory/
 private/
+prompts/
 *.private.md
 *-internal.md
 
@@ -46,7 +47,5 @@ tmp/
 
 # Others
 ARCHITECTURE.md
-CHANGELOG.md
-CONTRIBUTING.md
 bugs.md
 todo.md

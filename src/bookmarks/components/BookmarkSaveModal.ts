@@ -7,107 +7,11 @@ import { Icons } from '../../assets/icons';
 import { DesignTokens } from '../../utils/design-tokens';
 
 /**
- * Theme colors for modal
- */
-interface ModalTheme {
-    surface: string;
-    onSurface: string;
-    border: string;
-    borderLight: string;
-    hover: string;
-    selected: string;
-    selectedHover: string;
-    selectedAccent: string; // Left border for selected items
-    primary: string;
-    primaryHover: string;
-    primaryForeground: string;
-    secondary: string;
-    secondaryHover: string;
-    secondaryForeground: string;
-    danger: string;
-    textPrimary: string;
-    textSecondary: string;
-    textMuted: string;
-    infoSurface: string;
-    infoBorder: string;
-    radius: string;
-}
-
-const lightTheme: ModalTheme = {
-    surface: '#FFFFFF',
-    onSurface: '#1C1B1F',
-    border: '#E5E7EB',        // var(--gray-200)
-    borderLight: '#F3F4F6',   // var(--gray-100)
-    hover: '#F9FAFB',         // var(--gray-50)
-    selected: '#EFF6FF',      // var(--primary-50)
-    selectedHover: '#DBEAFE', // var(--primary-100)
-    selectedAccent: '#2563EB', // var(--primary-600)
-    primary: '#3B82F6',       // var(--primary-500)
-    primaryHover: '#2563EB',  // var(--primary-600)
-    primaryForeground: '#FFFFFF',
-    secondary: '#F3F4F6',     // var(--gray-100)
-    secondaryHover: '#E5E7EB', // var(--gray-200)
-    secondaryForeground: '#4B5563', // var(--gray-600)
-    danger: '#EF4444',
-    textPrimary: '#111827',   // var(--gray-900)
-    textSecondary: '#6B7280', // var(--gray-500)
-    textMuted: '#9CA3AF',     // var(--gray-400)
-    infoSurface: '#EFF6FF',   // var(--primary-50)
-    infoBorder: '#BFDBFE',    // var(--primary-200)
-    radius: '12px'
-};
-
-const darkTheme: ModalTheme = {
-    surface: '#1F2937',       // var(--gray-800) - MATCHES PANEL
-    onSurface: '#F9FAFB',     // var(--gray-50)
-    border: '#374151',        // var(--gray-700) - MATCHES PANEL
-    borderLight: '#4B5563',   // var(--gray-600)
-    hover: '#374151',         // var(--gray-700) - MATCHES PANEL
-    selected: 'rgba(59, 130, 246, 0.2)', // primary-500 @ 20% - MATCHES PANEL
-    selectedHover: 'rgba(59, 130, 246, 0.3)', // primary-500 @ 30%
-    selectedAccent: '#2563EB', // var(--primary-600) - MATCHES PANEL
-    primary: '#3B82F6',       // var(--primary-500)
-    primaryHover: '#2563EB',  // var(--primary-600)
-    primaryForeground: '#FFFFFF',
-    secondary: '#374151',     // var(--gray-700)
-    secondaryHover: '#4B5563', // var(--gray-600)
-    secondaryForeground: '#F9FAFB', // var(--gray-50)
-    danger: '#EF4444',
-    textPrimary: '#F9FAFB',   // var(--gray-50) - MATCHES PANEL
-    textSecondary: '#9CA3AF', // var(--gray-400)
-    textMuted: '#6B7280',     // var(--gray-500)
-    infoSurface: 'rgba(59, 130, 246, 0.1)', // primary-500 @ 10%
-    infoBorder: 'rgba(59, 130, 246, 0.2)',  // primary-500 @ 20%
-    radius: '12px'
-};
-
-/**
- * Get current theme based on dark mode
- */
-function getTheme(): ModalTheme {
-    // ✅ Use DesignTokens for consistent detection across ChatGPT & Gemini
-    const isDark = DesignTokens.isDarkMode();
-    return isDark ? darkTheme : lightTheme;
-}
-
-/**
- * Create style string from object
- */
-function styleToString(styles: Record<string, string | number>): string {
-    return Object.entries(styles)
-        .map(([key, value]) => {
-            // Convert camelCase to kebab-case
-            const kebabKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-            return `${kebabKey}: ${value}`;
-        })
-        .join('; ');
-}
-
-/**
- * Unified Bookmark Save Modal
+ * Unified Bookmark Save Modal - Shadow DOM Version
  * Combines title editing and folder selection in one modal
  * Pattern: Notion-style inline editing + VS Code tree view
  */
+
 export class BookmarkSaveModal {
     // ✅ Shadow DOM infrastructure
     private container: HTMLElement | null = null;
@@ -140,6 +44,75 @@ export class BookmarkSaveModal {
         this.container = document.createElement('div');
         this.container.className = 'bookmark-save-modal-host';
         this.shadowRoot = this.container.attachShadow({ mode: 'open' });
+    }
+
+    /**
+     * Inject complete styles into Shadow DOM
+     */
+    private injectStyles(): void {
+        if (!this.shadowRoot) return;
+
+        const existingStyle = this.shadowRoot.querySelector('style');
+        if (existingStyle) existingStyle.remove();
+
+        const isDark = DesignTokens.isDarkMode();
+        const tokens = isDark ? DesignTokens.getDarkTokens() : DesignTokens.getLightTokens();
+
+        const styleElement = document.createElement('style');
+        styleElement.textContent = `
+            :host { ${tokens} }
+            
+            * { box-sizing: border-box; }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-overlay); backdrop-filter: blur(6px); z-index: 2147483647; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease-out; }
+            .bookmark-save-modal { position: relative; width: 90%; max-width: 550px; max-height: 85vh; background: var(--md-surface); color: var(--md-on-surface); border-radius: 16px; box-shadow: var(--shadow-xl); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; animation: slideIn 0.2s ease-out; }
+            .save-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--gray-200); }
+            .save-modal-header h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--gray-900); }
+            .save-modal-close-btn { background: none; border: none; font-size: 24px; color: var(--gray-500); cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.15s ease; }
+            .save-modal-close-btn:hover { background: var(--gray-100); color: var(--gray-900); }
+            .save-modal-body { flex: 1; overflow-y: auto; padding: 24px; }
+            .title-section { margin-bottom: 24px; }
+            .title-label { display: block; font-size: 13px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; color: var(--gray-700); margin-bottom: 8px; }
+            .title-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 13px; background: var(--md-surface); color: var(--md-on-surface); box-shadow: inset 0 1px 2px rgba(0,0,0,0.04); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); outline: none; }
+            .title-input:focus { border-color: var(--primary-300); box-shadow: var(--shadow-focus); }
+            .title-input.error { border-color: var(--danger-500); }
+            .title-input::placeholder { color: var(--gray-400); font-weight: 400; }
+            .bookmark-count-info { margin-bottom: 16px; padding: 10px 14px; background: var(--info-bg); border-left: 3px solid var(--primary-500); border-radius: 8px; font-size: 13px; color: var(--gray-800); }
+            .title-error { margin-top: 8px; font-size: 12px; color: var(--danger-500); display: none; }
+            .title-error.visible { display: block; }
+            .folder-section { margin-bottom: 24px; }
+            .folder-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+            .folder-label { font-size: 13px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; color: var(--gray-700); }
+            .new-folder-btn { background: var(--button-icon-bg); color: var(--button-icon-text); border: none; padding: 8px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; }
+            .new-folder-btn:hover { background: var(--button-icon-hover); color: var(--button-icon-text-hover); transform: scale(1.05); }
+            .folder-tree-container { border-radius: 12px; height: 300px; overflow-y: auto; background: var(--modal-tree-bg); }
+            .folder-tree-body { padding: 0; }
+            .folder-item { display: flex; align-items: center; min-height: 40px; padding: 10px 16px; cursor: pointer; transition: background 0.15s ease; position: relative; background: transparent; border-left: 3px solid transparent; }
+            .folder-item:not(.selected):hover { background: var(--modal-tree-item-hover); }
+            .folder-item.selected { background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%); border-left: 3px solid var(--primary-400); }
+            .folder-item:hover .item-actions { opacity: 1; visibility: visible; }
+            .folder-toggle { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 4px; font-size: 10px; color: var(--gray-500); cursor: pointer; user-select: none; flex-shrink: 0; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+            .folder-toggle.expanded { transform: rotate(90deg); }
+            .folder-icon { margin-right: 8px; font-size: 16px; flex-shrink: 0; color: var(--modal-tree-item-icon); }
+            .folder-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--modal-tree-item-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .folder-check { color: var(--primary-600); font-size: 16px; font-weight: 600; margin-left: 8px; flex-shrink: 0; }
+            .item-actions { display: flex; gap: 4px; margin-left: 8px; opacity: 0; visibility: hidden; transition: all 150ms ease; }
+            .action-btn { background: var(--button-icon-bg); border: none; color: var(--button-icon-text); cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 150ms ease; }
+            .action-btn:hover { background: var(--button-icon-hover); color: var(--button-icon-text-hover); }
+            .folder-empty { padding: 40px 20px; text-align: center; color: var(--gray-400); }
+            .folder-empty-icon { font-size: 48px; margin-bottom: 12px; }
+            .folder-empty-text { font-size: 13px; }
+            .save-modal-footer { display: flex; gap: 8px; justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--gray-200); }
+            .save-modal-btn { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: var(--font-medium); cursor: pointer; transition: all 0.2s ease; border: none; transform: translateY(0); }
+            .save-modal-btn-cancel { background: var(--button-secondary-bg); color: var(--button-secondary-text); }
+            .save-modal-btn-cancel:hover { background: var(--button-secondary-hover); color: var(--button-secondary-text-hover); }
+            .save-modal-btn-save { background: var(--button-primary-bg); color: var(--button-primary-text); }
+            .save-modal-btn-save:hover:not(:disabled) { background: var(--button-primary-hover); color: var(--button-primary-text-hover); }
+            .save-modal-btn-save:disabled { background: var(--button-primary-disabled); color: var(--button-primary-disabled-text); cursor: not-allowed; opacity: 0.6; }
+        `;
+
+        this.shadowRoot.appendChild(styleElement);
     }
 
     /**
@@ -198,30 +171,25 @@ export class BookmarkSaveModal {
             this.expandPathToFolder(this.selectedPath);
         }
 
-        // Create overlay (NO Shadow DOM for better compatibility)
+        // Create AbortController for this modal instance (Web standard pattern)
+        this.abortController = new AbortController();
+
+        // Inject styles into Shadow DOM
+        this.injectStyles();
+
+        // Create overlay in Shadow DOM
         this.overlay = document.createElement('div');
-        this.overlay.className = 'bookmark-save-modal-overlay';
-        this.overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);  /* Keep for overlay */
-            backdrop-filter: blur(4px);
-            z-index: 2147483647;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.2s ease-out;
-        `;
+        this.overlay.className = 'modal-overlay';
 
         // Create modal
         this.modal = this.createModal();
         this.overlay.appendChild(this.modal);
 
-        // Add to body
-        document.body.appendChild(this.overlay);
+        // Add to Shadow DOM
+        this.shadowRoot!.appendChild(this.overlay);
+
+        // Mount container to body
+        document.body.appendChild(this.container!);
 
         // Click outside to close (use signal for automatic cleanup)
         this.overlay.addEventListener('click', (e) => {
@@ -309,9 +277,9 @@ export class BookmarkSaveModal {
         this.abortController?.abort();
         this.abortController = null;
 
-        // 2. Remove DOM
-        if (this.overlay && this.overlay.parentNode) {
-            this.overlay.remove();
+        // 2. Remove container (which contains Shadow DOM)
+        if (this.container && this.container.parentNode) {
+            this.container.remove();
         }
 
         // 3. Remove ESC key listener (not managed by AbortController)
@@ -320,7 +288,14 @@ export class BookmarkSaveModal {
             this.escKeyHandler = null;
         }
 
-        // 4. Clear all state to prevent memory leaks
+        // 4. Clear Shadow DOM
+        if (this.shadowRoot) {
+            this.shadowRoot.innerHTML = '';
+        }
+
+        // 5. Clear all state to prevent memory leaks
+        this.container = null;
+        this.shadowRoot = null;
         this.overlay = null;
         this.modal = null;
         this.folders = [];
@@ -337,27 +312,8 @@ export class BookmarkSaveModal {
      * Create modal structure with dynamic theme
      */
     private createModal(): HTMLElement {
-        // Use helper function for theme detection
-        const theme = getTheme();
-
         const modal = document.createElement('div');
         modal.className = 'bookmark-save-modal';
-
-        // Apply theme colors directly
-        modal.style.cssText = `
-            position: relative;
-            width: 90%;
-            max-width: 550px;
-            max-height: 85vh;
-            background: ${theme.surface} !important;
-            color: ${theme.onSurface};
-            border-radius: ${theme.radius};
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2), 0 1px 18px rgba(0, 0, 0, 0.12);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            animation: slideIn 0.2s ease-out;
-        `;
 
         // Stop propagation on modal content
         modal.addEventListener('click', (e) => {
@@ -365,229 +321,43 @@ export class BookmarkSaveModal {
         });
 
         modal.innerHTML = `
-            <style>
-                /* Minimal CSS - Only for what inline styles cannot do */
-                
-                /* Animations */
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                
-                @keyframes slideIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(-20px) scale(0.95);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0) scale(1);
-                    }
-                }
-
-                /* Box sizing */
-                .bookmark-save-modal * {
-                    box-sizing: border-box;
-                }
-                
-                /* Hover states - Cannot be done with inline styles */
-                .save-modal-close-btn:hover {
-                    background: ${theme.hover} !important;
-                    color: ${theme.textPrimary} !important;
-                }
-                
-                .title-input:focus {
-                    border-color: ${theme.primary} !important;
-                }
-                
-                .new-folder-btn:hover {
-                    background: ${theme.hover} !important;
-                }
-                
-                .folder-item:hover {
-                    background: ${theme.hover} !important;
-                }
-                
-                .folder-item.selected:hover {
-                    background: ${theme.selectedHover} !important;
-                }
-                
-                .save-modal-btn-cancel:hover {
-                    background: ${theme.secondaryHover} !important;
-                }
-                
-                .save-modal-btn-save:hover:not(:disabled) {
-                    background: ${theme.primaryHover} !important;
-                }
-                
-                .save-modal-btn-save:disabled {
-                    background: ${theme.borderLight} !important;
-                    color: ${theme.textMuted} !important;
-                    cursor: not-allowed;
-                    opacity: 0.8;
-                }
-                
-                
-                .folder-item:not(.selected):hover {
-                    background: var(--gray-100) !important;
-                }
-                
-                .folder-item:hover .item-actions {
-                    opacity: 1 !important;
-                    visibility: visible !important;
-                }
-                
-                .folder-add-btn:hover {
-                    background: ${theme.primaryHover} !important;
-                    color: ${theme.primaryForeground} !important;
-                }
-            </style>
-
-            <div class="save-modal-header" style="${styleToString({
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px 20px',
-            borderBottom: `1px solid ${theme.border}`
-        })}">
-                <h2 style="${styleToString({
-            margin: '0',
-            fontSize: '14px',
-            fontWeight: '600',
-            color: theme.textPrimary
-        })}">Save Bookmark</h2>
-                <button class="save-modal-close-btn" aria-label="Close" style="${styleToString({
-            background: 'none',
-            border: 'none',
-            fontSize: '24px',
-            color: theme.textSecondary,
-            cursor: 'pointer',
-            padding: '0',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '8px',
-            transition: 'all 0.15s ease'
-        })}">×</button>
+            <div class="save-modal-header">
+                <h2>Save Bookmark</h2>
+                <button class="save-modal-close-btn" aria-label="Close">×</button>
             </div>
 
-            <div class="save-modal-body" style="${styleToString({
-            flex: '1',
-            overflowY: 'auto',
-            padding: '20px'
-        })}">
+            <div class="save-modal-body">
                 <!-- Title Section -->
-                <div class="title-section" style="${styleToString({
-            marginBottom: '20px'
-        })}">
-                    <label class="title-label" style="${styleToString({
-            display: 'block',
-            fontSize: '13px',
-            fontWeight: '500',
-            color: theme.textSecondary,
-            marginBottom: '8px'
-        })}">Title</label>
+                <div class="title-section">
+                    <label class="title-label">Title</label>
                     <input type="text" 
                            class="title-input" 
                            value="${this.escapeAttr(this.title)}"
                            maxlength="100"
-                           placeholder="Enter bookmark title..."
-                           style="${styleToString({
-            width: '100%',
-            padding: '10px 12px',
-            border: `2px solid ${theme.border}`,
-            borderRadius: '8px',
-            fontSize: '13px',
-            background: theme.surface,
-            color: theme.onSurface,
-            transition: 'all 0.15s ease',
-            outline: 'none'
-        })}">
+                           placeholder="Enter bookmark title...">
                     <div class="title-error" style="display: none;"></div>
                 </div>
 
                 <!-- Folder Section -->
-                <div class="folder-section" style="${styleToString({
-            marginBottom: '20px'
-        })}">
-                    <div class="folder-header" style="${styleToString({
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '8px'
-        })}">
-                        <span class="folder-label" style="${styleToString({
-            fontSize: '13px',
-            fontWeight: '500',
-            color: theme.textSecondary
-        })}">Folder</span>
-                        <button class="new-folder-btn" title="New Folder" style="${styleToString({
-            background: 'transparent',
-            color: theme.primary,
-            border: 'none',
-            padding: '8px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            cursor: 'pointer',
-            transition: 'background 0.15s ease',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        })}">${Icons.folderPlus}</button>
+                <div class="folder-section">
+                    <div class="folder-header">
+                        <span class="folder-label">Folder</span>
+                        <button class="new-folder-btn" title="New Folder">${Icons.folderPlus}</button>
                     </div>
-                    <div class="folder-tree-container" style="${styleToString({
-            border: `1px solid ${theme.border}`,
-            borderRadius: '8px',
-            height: '300px',
-            overflowY: 'auto',
-            fontSize: '14px',
-            background: theme.hover
-        })}">
-                        <div class="folder-tree-body" style="padding: 8px 0;">
-                            <div class="folder-empty" style="${styleToString({
-            padding: '40px 20px',
-            textAlign: 'center',
-            color: theme.textMuted
-        })}">
-                                <div class="folder-empty-icon" style="font-size: 48px; margin-bottom: 12px;">${Icons.folder}</div>
-                                <div class="folder-empty-text" style="font-size: 13px;">Loading folders...</div>
+                    <div class="folder-tree-container">
+                        <div class="folder-tree-body">
+                            <div class="folder-empty">
+                                <div class="folder-empty-icon">${Icons.folder}</div>
+                                <div class="folder-empty-text">Loading folders...</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="save-modal-footer" style="${styleToString({
-            display: 'flex',
-            gap: '8px',
-            justifyContent: 'flex-end',
-            padding: '16px 20px',
-            borderTop: `1px solid ${theme.border}`
-        })}">
-                <button class="save-modal-btn save-modal-btn-cancel" style="${styleToString({
-            padding: '8px 16px',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            border: 'none',
-            background: theme.secondary,
-            color: theme.secondaryForeground
-        })}">Cancel</button>
-                <button class="save-modal-btn save-modal-btn-save" disabled style="${styleToString({
-            padding: '8px 16px',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            border: 'none',
-            background: theme.primary,
-            color: theme.primaryForeground
-        })}">Save</button>
+            <div class="save-modal-footer">
+                <button class="save-modal-btn save-modal-btn-cancel">Cancel</button>
+                <button class="save-modal-btn save-modal-btn-save" disabled>Save</button>
             </div>
         `;
 
@@ -711,8 +481,6 @@ export class BookmarkSaveModal {
      * Render tree nodes recursively
      */
     private renderTreeNodes(nodes: FolderTreeNode[], depth: number): string {
-        const theme = getTheme();
-
         return nodes.map(node => {
             const isExpanded = this.expandedPaths.has(node.folder.path);
             const isSelected = node.folder.path === this.selectedPath;
@@ -727,69 +495,20 @@ export class BookmarkSaveModal {
                 <div class="folder-item ${isSelected ? 'selected' : ''}"
                      data-path="${this.escapeAttr(node.folder.path)}"
                      data-depth="${depth}"
-                     data-selected="${isSelected}"
-                     style="display: flex; align-items: center; min-height: 36px; padding: var(--space-2) var(--space-3) var(--space-2) ${indent + 12}px; cursor: pointer; border-bottom: 1.5px solid var(--gray-300); transition: all var(--duration-fast) var(--ease-out); position: relative; border-radius: var(--radius-small); ${isSelected ? 'background: var(--primary-50); border-left: 3px solid var(--primary-600);' : ''}">
-                    <span class="folder-toggle" data-path="${this.escapeAttr(node.folder.path)}" aria-label="Toggle folder" style="${styleToString({
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '16px',
-                height: '16px',
-                marginRight: '4px',
-                fontSize: '10px',
-                color: theme.textSecondary,
-                cursor: 'pointer',
-                userSelect: 'none',
-                flexShrink: '0',
-                transition: 'transform 150ms ease',
-                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
-            })}">▶</span>
-                    <span class="folder-icon" style="${styleToString({
-                marginRight: '8px',
-                fontSize: '16px',
-                flexShrink: '0'
-            })}">${icon}</span>
-                    <span class="folder-name" style="${styleToString({
-                flex: '1',
-                fontSize: '13px',
-                fontWeight: '500',
-                color: theme.textPrimary,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-            })}">${this.escapeHtml(node.folder.name)}</span>
-                    ${isSelected ? `<span class="folder-check" style="${styleToString({
-                color: theme.selectedAccent,
-                fontSize: '16px',
-                fontWeight: '600',
-                marginLeft: '8px',
-                flexShrink: '0'
-            })}">✓</span>` : ''}
-                    <div class="item-actions" style="${styleToString({
-                display: 'flex',
-                gap: '4px',
-                marginLeft: '8px',
-                opacity: '0',
-                visibility: 'hidden',
-                transition: 'all 150ms ease'
-            })}">
-                        ${showAddButton ? `<button class="action-btn folder-add-btn" data-parent="${this.escapeAttr(node.folder.path)}" title="Create subfolder" style="${styleToString({
-                background: 'transparent',
-                border: 'none',
-                color: theme.textSecondary,
-                cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '14px',
-                transition: 'all 150ms ease'
-            })}">${Icons.plus}</button>` : ''}
-                    </div>
+                     style="padding-left: ${indent + 12}px;">
+                    <span class="folder-toggle ${isExpanded ? 'expanded' : ''}"
+                          data-path="${this.escapeAttr(node.folder.path)}"
+                          aria-label="Toggle folder">▶</span>
+                    <span class="folder-icon">${icon}</span>
+                    <span class="folder-name">${this.escapeHtml(node.folder.name)}</span>
+                    ${isSelected ? '<span class="folder-check">✓</span>' : ''}
+                    ${showAddButton ? `
+                        <div class="item-actions">
+                            <button class="action-btn folder-add-btn"
+                                    data-parent="${this.escapeAttr(node.folder.path)}"
+                                    title="Add subfolder">${Icons.plus}</button>
+                        </div>
+                    ` : ''}
                 </div>
             `;
 
@@ -969,7 +688,18 @@ export class BookmarkSaveModal {
 
             // Re-render
             this.renderFolderTree();
-            this.updateSaveButtonState();
+
+            // Update button state based on mode
+            if (this.currentMode === 'folder-select') {
+                // In Move mode, always enable button when folder is selected
+                const moveBtn = this.modal?.querySelector('.save-modal-btn-save') as HTMLButtonElement;
+                if (moveBtn) {
+                    moveBtn.disabled = false;
+                }
+            } else {
+                // In Save mode, check title validity
+                this.updateSaveButtonState();
+            }
         } catch (error) {
             logger.error('[BookmarkSaveModal] Failed to create folder:', error);
             this.showSimpleNotification('error', `Failed to create folder: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -1017,42 +747,19 @@ export class BookmarkSaveModal {
             this.folders = await FolderStorage.getAll();
             this.selectedPath = null;
 
-            // Create overlay
+            // Create AbortController
+            this.abortController = new AbortController();
+
+            // Inject styles into Shadow DOM (reuse injectStyles())
+            this.injectStyles();
+
+            // Create overlay in Shadow DOM
             this.overlay = document.createElement('div');
-            this.overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);  /* Keep for overlay */
-                backdrop-filter: blur(4px);
-                z-index: 2147483647;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                animation: fadeIn 0.2s ease-out;
-            `;
+            this.overlay.className = 'modal-overlay';
 
-            // Create modal with EXACT SAME structure as bookmark save modal
-            // Create modal with EXACT SAME structure as bookmark save modal
-            const theme = getTheme(); // Move theme initialization up
-
+            // Create modal (same structure as createModal but with "Move" title and button)
             const modal = document.createElement('div');
             modal.className = 'bookmark-save-modal';
-            // NOTE: background is controlled by CSS (html.dark) to support dark mode
-            modal.style.cssText = `
-                position: relative;
-                width: 90%;
-                max-width: 550px;
-                max-height: 85vh;
-                border-radius: ${theme.radius};
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                display: flex;
-                flex-direction: column;
-                animation: slideIn 0.2s ease-out;
-            `;
 
             // Stop propagation on modal content
             modal.addEventListener('click', (e) => {
@@ -1060,227 +767,43 @@ export class BookmarkSaveModal {
             });
 
             modal.innerHTML = `
-                <style>
-                    /* Minimal CSS - Same as createModal() */
-                    @keyframes fadeIn {
-                        from { opacity: 0; }
-                        to { opacity: 1; }
-                    }
-                    
-                    @keyframes slideIn {
-                        from {
-                            opacity: 0;
-                            transform: translateY(-20px) scale(0.95);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateY(0) scale(1);
-                        }
-                    }
-
-                    .bookmark-save-modal * {
-                        box-sizing: border-box;
-                    }
-
-                    /* Important: Force background color */
-                    .bookmark-save-modal {
-                        background: ${theme.surface} !important;
-                    }
-                    
-                    /* Hover states */
-                    .folder-item:hover {
-                        background: ${theme.hover} !important;
-                    }
-                    
-                    .folder-item.selected {
-                        background: ${theme.selected} !important;
-                        box-shadow: inset 3px 0 0 ${theme.selectedAccent} !important;
-                    }
-                    
-                    .folder-item.selected:hover {
-                        background: ${theme.selectedHover} !important;
-                    }
-                    
-                    /* Action buttons - show on hover */
-                    .folder-item:hover .item-actions {
-                        opacity: 1 !important;
-                        visibility: visible !important;
-                    }
-                    
-                    .action-btn:hover {
-                        background: rgba(255, 255, 255, 0.1) !important;
-                    }
-                    
-                    .action-btn.delete-folder:hover {
-                        background: ${theme.danger} !important;
-                        color: white !important;
-                    }
-                    
-                    .save-modal-close-btn:hover {
-                        background: ${theme.hover} !important;
-                        color: ${theme.textPrimary} !important;
-                    }
-                    
-                    .folder-item:hover {
-                        background: ${theme.hover} !important;
-                    }
-                    
-                    .folder-item.selected:hover {
-                        background: ${theme.selectedHover} !important;
-                    }
-                    
-                    .save-modal-btn-cancel:hover {
-                        background: ${theme.borderLight} !important;
-                    }
-                    
-                    .save-modal-btn-save:hover:not(:disabled) {
-                        background: ${theme.primaryHover} !important;
-                    }
-                    
-                    .save-modal-btn-save:disabled {
-                        background: ${theme.textMuted} !important;
-                        cursor: not-allowed;
-                        opacity: 0.6;
-                    }
-                    
-                    .folder-item:hover .folder-add-btn {
-                        opacity: 1 !important;
-                        visibility: visible !important;
-                    }
-                    
-                    .folder-add-btn:hover {
-                        background: ${theme.primaryHover} !important;
-                        color: ${theme.primaryForeground} !important;
-                    }
-                </style>
-
-                <div class="save-modal-header" style="${styleToString({
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px 20px',
-                borderBottom: `1px solid ${theme.border}`
-            })}">
-                    <h2 style="${styleToString({
-                margin: '0',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: theme.textPrimary
-            })}">Move Bookmarks to Folder</h2>
-                    <button class="save-modal-close-btn" aria-label="Close" style="${styleToString({
-                background: 'none',
-                border: 'none',
-                fontSize: '24px',
-                color: theme.textSecondary,
-                cursor: 'pointer',
-                padding: '0',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                transition: 'all 0.15s ease'
-            })}">×</button>
+                <div class="save-modal-header">
+                    <h2>Move Bookmarks to Folder</h2>
+                    <button class="save-modal-close-btn" aria-label="Close">×</button>
                 </div>
 
-                <div class="save-modal-body" style="${styleToString({
-                flex: '1',
-                overflowY: 'auto',
-                padding: '20px'
-            })}">
-                    <!-- Info Section -->
-                    <div class="move-info" style="${styleToString({
-                display: 'flex',
-                alignItems: 'center',
-                padding: '12px 16px',
-                background: theme.infoSurface,
-                border: `1px solid ${theme.infoBorder}`,
-                borderRadius: '8px',
-                marginBottom: '16px',
-                fontSize: '14px',
-                color: theme.textPrimary
-            })}">
-                        <span class="move-info-text" style="display: flex; align-items: center; gap: 8px;">
-                            <span style="flex-shrink: 0; color: ${theme.primary};">${Icons.alertTriangle}</span>
-                            <span style="font-size: 12px; color: ${theme.textPrimary}; font-weight: 500;">Moving ${bookmarkCount} bookmark${bookmarkCount > 1 ? 's' : ''}</span>
-                        </span>
+                <div class="save-modal-body">
+                    <div class="bookmark-count-info">
+                        Moving <strong>${bookmarkCount}</strong> bookmark${bookmarkCount !== 1 ? 's' : ''}
                     </div>
 
-                    <!-- Folder Section -->
-                    <div class="folder-section" style="${styleToString({
-                marginBottom: '20px'
-            })}">
-                        <div class="folder-header" style="${styleToString({
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '8px'
-            })}">
-                            <span class="folder-label" style="${styleToString({
-                fontSize: '13px',
-                fontWeight: '500',
-                color: theme.textSecondary
-            })}">Select Destination Folder</span>
+                    <div class="folder-section">
+                        <div class="folder-header">
+                            <span class="folder-label">Select Folder</span>
                         </div>
-                        <div class="folder-tree-container" style="${styleToString({
-                border: `1px solid ${theme.border}`,
-                borderRadius: '8px',
-                height: '300px',
-                overflowY: 'auto',
-                fontSize: '14px',
-                background: theme.hover
-            })}">
-                            <div class="folder-tree-body" style="padding: 8px 0;">
-                                <div class="folder-empty" style="${styleToString({
-                padding: '40px 20px',
-                textAlign: 'center',
-                color: theme.textMuted
-            })}">
-                                    <div class="folder-empty-icon" style="font-size: 48px; margin-bottom: 12px;">${Icons.folder}</div>
-                                    <div class="folder-empty-text" style="font-size: 13px;">Loading folders...</div>
+                        <div class="folder-tree-container">
+                            <div class="folder-tree-body">
+                                <div class="folder-empty">
+                                    <div class="folder-empty-icon">${Icons.folder}</div>
+                                    <div class="folder-empty-text">Loading folders...</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="save-modal-footer" style="${styleToString({
-                display: 'flex',
-                gap: '8px',
-                justifyContent: 'flex-end',
-                padding: '16px 20px',
-                borderTop: `1px solid ${theme.border}`
-            })}">
-
-                    <button class="save-modal-btn save-modal-btn-cancel" style="${styleToString({
-                padding: '8px 16px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                border: 'none',
-                background: theme.secondary,
-                color: theme.secondaryForeground
-            })}">Cancel</button>
-                    <button class="save-modal-btn save-modal-btn-save" disabled style="${styleToString({
-                padding: '8px 16px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                border: 'none',
-                background: theme.primary,
-                color: theme.primaryForeground
-            })}">Move</button>
+                <div class="save-modal-footer">
+                    <button class="save-modal-btn save-modal-btn-cancel">Cancel</button>
+                    <button class="save-modal-btn save-modal-btn-save" disabled>Move</button>
                 </div>
             `;
 
             this.modal = modal;
             this.overlay.appendChild(modal);
-            document.body.appendChild(this.overlay);
+
+            // Mount to Shadow DOM (same pattern as show())
+            this.shadowRoot!.appendChild(this.overlay);
+            document.body.appendChild(this.container!);
 
             // Render folder tree using EXISTING method
             this.renderFolderTree();

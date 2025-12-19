@@ -1817,119 +1817,484 @@ class DesignTokens {
     return false;
   }
   /**
-   * Get all design tokens for light mode
-   * Returns CSS custom properties ready to inject into :host selector
+   * Get primitive color tokens (Layer 1)
+   * These are base colors that NEVER change - globally unique
+   * @returns CSS custom properties string
    */
-  static getLightTokens() {
+  static getPrimitiveTokens() {
     return `
             /* ============================================
-               NEUTRAL COLORS (Gray Scale)
+               PRIMITIVE TOKENS - Base Colors (Immutable)
                ============================================ */
             
-            /* Lightest - Backgrounds, subtle dividers */
-            --gray-50: #F9FAFB;
-            
-            /* Hover states, disabled backgrounds */
-            --gray-100: #F3F4F6;
-            
-            /* Borders, dividers */
-            --gray-200: #E5E7EB;
-            
-            /* Inactive borders */
-            --gray-300: #D1D5DB;
-            
-            /* Placeholder text, tertiary icons */
-            --gray-400: #9CA3AF;
-            
-            /* Secondary text, default icons */
-            --gray-500: #6B7280;
-            
-            /* Primary text hover */
-            --gray-600: #4B5563;
-            
-            /* Headings, emphasized text */
-            --gray-700: #374151;
-            
-            /* Dark backgrounds */
-            --gray-800: #1F2937;
-            
-            /* Primary text, headings */
-            --gray-900: #111827;
+            /* Neutral Colors (Gray) - 10 levels */
+            --color-gray-50: #F9FAFB;
+            --color-gray-100: #F3F4F6;
+            --color-gray-200: #E5E7EB;
+            --color-gray-300: #D1D5DB;
+            --color-gray-400: #9CA3AF;
+            --color-gray-500: #6B7280;
+            --color-gray-600: #4B5563;
+            --color-gray-700: #374151;
+            --color-gray-800: #1F2937;
+            --color-gray-900: #111827;
 
+            /* Blue (Primary) - 10 levels */
+            --color-blue-50: #E3F2FD;
+            --color-blue-100: #BBDEFB;
+            --color-blue-200: #90CAF9;
+            --color-blue-300: #64B5F6;
+            --color-blue-400: #42A5F5;
+            --color-blue-500: #2196F3;
+            --color-blue-600: #1976D2;
+            --color-blue-700: #1565C0;
+            --color-blue-800: #0D47A1;
+            --color-blue-900: #0A3A7F;
 
+            /* Green - 10 levels */
+            --color-green-50: #F0FDF4;
+            --color-green-100: #DCFCE7;
+            --color-green-200: #BBF7D0;
+            --color-green-300: #86EFAC;
+            --color-green-400: #4ADE80;
+            --color-green-500: #22C55E;
+            --color-green-600: #16A34A;
+            --color-green-700: #15803D;
+            --color-green-800: #166534;
+            --color-green-900: #14532D;
+
+            /* Purple - 10 levels */
+            --color-purple-50: #FAF5FF;
+            --color-purple-100: #F3E8FF;
+            --color-purple-200: #E9D5FF;
+            --color-purple-300: #D8B4FE;
+            --color-purple-400: #C084FC;
+            --color-purple-500: #A855F7;
+            --color-purple-600: #9333EA;
+            --color-purple-700: #7E22CE;
+            --color-purple-800: #6B21A8;
+            --color-purple-900: #581C87;
+
+            /* Red - 10 levels */
+            --color-red-50: #FEF2F2;
+            --color-red-100: #FEE2E2;
+            --color-red-200: #FECACA;
+            --color-red-300: #FCA5A5;
+            --color-red-400: #F87171;
+            --color-red-500: #EF4444;
+            --color-red-600: #DC2626;
+            --color-red-700: #B91C1C;
+            --color-red-800: #991B1B;
+            --color-red-900: #7F1D1D;
+
+            /* Amber - 10 levels */
+            --color-amber-50: #FFFBEB;
+            --color-amber-100: #FEF3C7;
+            --color-amber-200: #FDE68A;
+            --color-amber-300: #FCD34D;
+            --color-amber-400: #FBBF24;
+            --color-amber-500: #F59E0B;
+            --color-amber-600: #D97706;
+            --color-amber-700: #B45309;
+            --color-amber-800: #92400E;
+            --color-amber-900: #78350F;
+
+            /* Special Colors */
+            --color-white: #FFFFFF;
+            --color-black: #000000;
+
+            /* Dark Mode Specific Grays */
+            --color-gray-dark-50: #18181B;
+            --color-gray-dark-100: #27272A;
+            --color-gray-dark-200: #3F3F46;
+            --color-gray-dark-300: #52525B;
+            --color-gray-dark-400: #A1A1AA;
+            --color-gray-dark-500: #D4D4D8;
+            --color-gray-dark-600: #E4E4E7;
+            --color-gray-dark-700: #F4F4F5;
+            --color-gray-dark-800: #FAFAFA;
+            --color-gray-dark-900: #FFFFFF;
+        `;
+  }
+  /**
+   * Get light mode semantic tokens (Layer 2)
+   * These reference primitive tokens based on light mode context
+   * @returns CSS custom properties string
+   */
+  static getLightSemanticTokens() {
+    return `
             /* ============================================
-               PRIMARY COLORS (Material Blue)
+               SEMANTIC TOKENS - Light Mode
                ============================================ */
-            
-            /* Material Design 3 - Primary Scale */
-            --primary-50: #E3F2FD;
-            --primary-100: #BBDEFB;
-            --primary-200: #90CAF9;
-            --primary-300: #64B5F6;
-            --primary-400: #42A5F5;
-            --primary-500: #2196F3;
-            --primary-600: #1976D2;
-            --primary-700: #1565C0;
-            --primary-800: #0D47A1;
-            
+
+            /* Background Colors */
+            --bg-primary: var(--color-white);
+            --bg-secondary: var(--color-gray-50);
+            --bg-tertiary: var(--color-gray-100);
+            --bg-surface: var(--color-white);
+            --bg-surface-elevated: var(--color-gray-50);
+            --bg-modal: var(--color-white);
+            --bg-overlay: rgba(0, 0, 0, 0.5);
+
+            /* Text Colors */
+            --text-primary: var(--color-gray-900);
+            --text-secondary: var(--color-gray-500);
+            --text-tertiary: var(--color-gray-400);
+            --text-link: var(--color-blue-600);
+            --text-link-hover: var(--color-blue-700);
+            --text-on-primary: var(--color-white);
+            --text-disabled: var(--color-gray-300);
+
+            /* Border Colors */
+            --border-default: var(--color-gray-200);
+            --border-subtle: var(--color-gray-100);
+            --border-strong: var(--color-gray-300);
+            --border-interactive: var(--color-blue-500);
+            --border-focus: var(--color-blue-300);
+            --border-error: var(--color-red-500);
+
+            /* Interactive Colors */
+            --interactive-primary: var(--color-blue-600);
+            --interactive-primary-hover: var(--color-blue-700);
+            --interactive-secondary: var(--color-gray-100);
+            --interactive-secondary-hover: var(--color-gray-200);
+            --interactive-hover: var(--color-gray-100);
+            --interactive-active: var(--color-gray-200);
+            --interactive-disabled: var(--color-gray-300);
+
+            /* Semantic States */
+            --success: var(--color-green-600);
+            --success-bg: var(--color-green-50);
+            --warning: var(--color-amber-600);
+            --warning-bg: var(--color-amber-50);
+            --error: var(--color-red-600);
+            --error-bg: var(--color-red-50);
+            --info: var(--color-blue-600);
+            --info-bg: var(--color-blue-50);
+
+            /* Platform Colors */
+            --platform-chatgpt-bg: var(--color-green-100);
+            --platform-chatgpt-text: var(--color-green-800);
+            --platform-gemini-bg: var(--color-blue-100);
+            --platform-gemini-text: var(--color-blue-800);
+
+            /* Legacy Support - Backward Compatible (will be phased out) */
+            --gray-50: var(--color-gray-50);
+            --gray-100: var(--color-gray-100);
+            --gray-200: var(--color-gray-200);
+            --gray-300: var(--color-gray-300);
+            --gray-400: var(--color-gray-400);
+            --gray-500: var(--color-gray-500);
+            --gray-600: var(--color-gray-600);
+            --gray-700: var(--color-gray-700);
+            --gray-800: var(--color-gray-800);
+            --gray-900: var(--color-gray-900);
+
+            --primary-50: var(--color-blue-50);
+            --primary-100: var(--color-blue-100);
+            --primary-200: var(--color-blue-200);
+            --primary-300: var(--color-blue-300);
+            --primary-400: var(--color-blue-400);
+            --primary-500: var(--color-blue-500);
+            --primary-600: var(--color-blue-600);
+            --primary-700: var(--color-blue-700);
+            --primary-800: var(--color-blue-800);
+
+            --success-50: var(--color-green-50);
+            --success-100: var(--color-green-100);
+            --success-500: var(--color-green-500);
+            --success-600: var(--color-green-600);
+            --success-700: var(--color-green-700);
+
+            --warning-50: var(--color-amber-50);
+            --warning-100: var(--color-amber-100);
+            --warning-500: var(--color-amber-500);
+            --warning-600: var(--color-amber-600);
+            --warning-700: var(--color-amber-700);
+
+            --danger-50: var(--color-red-50);
+            --danger-100: var(--color-red-100);
+            --danger-500: var(--color-red-500);
+            --danger-600: var(--color-red-600);
+            --danger-700: var(--color-red-700);
+
             /* Material Design 3 - Surface Colors */
-            --md-surface: #FFFFFF;
+            --md-surface: var(--color-white);
             --md-surface-variant: #F5F5F5;
             --md-surface-container: #FAFAFA;
             --md-surface-container-high: #EEEEEE;
             --md-on-surface: #1C1B1F;
             --md-on-surface-variant: #49454F;
-            
-            /* Material Design 3 - Primary Container */
-            --md-primary-container: #E3F2FD;
-            --md-on-primary-container: #0D47A1;
-            
-            /* Material Design 3 - Outline */
+            --md-primary-container: var(--color-blue-50);
+            --md-on-primary-container: var(--color-blue-800);
             --md-outline: #E0E0E0;
             --md-outline-variant: #EEEEEE;
 
-
-            /* ============================================
-               SEMANTIC COLORS
-               ============================================ */
-            
-            /* Success (Green) */
-            --success-50: #F0FDF4;
-            --success-100: #DCFCE7;
-            --success-500: #22C55E;
-            --success-600: #16A34A;
-            --success-700: #15803D;
-            
-            /* Warning (Amber) */
-            --warning-50: #FFFBEB;
-            --warning-100: #FEF3C7;
-            --warning-500: #F59E0B;
-            --warning-600: #D97706;
-            --warning-700: #B45309;
-            
-            /* Danger (Red) */
-            --danger-50: #FEF2F2;
-            --danger-100: #FEE2E2;
-            --danger-500: #EF4444;
-            --danger-600: #DC2626;
-            --danger-700: #B91C1C;
-
-
-            /* ============================================
-               PLATFORM COLORS
-               ============================================ */
-            
-            /* ChatGPT */
+            /* Platform Legacy */
             --chatgpt-light: #D1FAE5;
             --chatgpt-dark: #065F46;
             --chatgpt-icon: #10A37F;
-            
-            /* Gemini */
             --gemini-light: #DBEAFE;
             --gemini-dark: #1E40AF;
             --gemini-icon: #4285F4;
 
+            /* Component-Specific */
+            --modal-tree-bg: var(--bg-secondary);
+            --modal-tree-item-hover: var(--interactive-hover);
+            --modal-tree-item-text: var(--text-primary);
+            --modal-tree-item-icon: var(--color-gray-600);
 
+            /* Button Tokens - Primary */
+            --button-primary-bg: var(--color-blue-600);
+            --button-primary-hover: var(--color-blue-700);
+            --button-primary-active: var(--color-blue-800);
+            --button-primary-text: var(--color-white);
+            --button-primary-text-hover: var(--color-white);
+            --button-primary-disabled: var(--color-gray-300);
+            --button-primary-disabled-text: var(--color-gray-500);
+
+            /* Button Tokens - Secondary */
+            --button-secondary-bg: transparent;
+            --button-secondary-hover: var(--color-gray-100);
+            --button-secondary-active: var(--color-gray-200);
+            --button-secondary-text: var(--color-blue-600);
+            --button-secondary-text-hover: var(--color-blue-700);
+            --button-secondary-border: var(--color-gray-300);
+            --button-secondary-disabled: var(--color-gray-200);
+            --button-secondary-disabled-text: var(--color-gray-400);
+
+            /* Button Tokens - Danger */
+            --button-danger-bg: var(--color-red-600);
+            --button-danger-hover: var(--color-red-700);
+            --button-danger-active: var(--color-red-800);
+            --button-danger-text: var(--color-white);
+            --button-danger-text-hover: var(--color-white);
+            --button-danger-disabled: var(--color-red-300);
+            --button-danger-disabled-text: var(--color-red-100);
+
+            /* Button Tokens - Warning */
+            --button-warning-bg: var(--color-amber-500);
+            --button-warning-hover: var(--color-amber-600);
+            --button-warning-active: var(--color-amber-700);
+            --button-warning-text: var(--color-white);
+            --button-warning-text-hover: var(--color-white);
+            --button-warning-disabled: var(--color-amber-300);
+
+            /* Button Tokens - Ghost (Transparent) */
+            --button-ghost-bg: transparent;
+            --button-ghost-hover: var(--interactive-hover);
+            --button-ghost-active: var(--interactive-active);
+            --button-ghost-text: var(--text-primary);
+            --button-ghost-text-hover: var(--text-primary);
+
+            /* Button Tokens - Icon */
+            --button-icon-bg: transparent;
+            --button-icon-hover: var(--color-gray-100);
+            --button-icon-active: var(--color-gray-200);
+            --button-icon-text: var(--color-gray-600);
+            --button-icon-text-hover: var(--color-gray-900);
+
+            /* Button Tokens - Close */
+            --button-close-bg: transparent;
+            --button-close-hover: var(--color-gray-100);
+            --button-close-active: var(--color-gray-200);
+            --button-close-text: var(--color-gray-500);
+            --button-close-text-hover: var(--color-gray-900);
+        `;
+  }
+  /**
+   * Get dark mode semantic tokens (Layer 2)
+   * These reference primitive tokens based on dark mode context
+   * @returns CSS custom properties string
+   */
+  static getDarkSemanticTokens() {
+    return `
+            /* ============================================
+               SEMANTIC TOKENS - Dark Mode
+               ============================================ */
+
+            /* Background Colors */
+            --bg-primary: var(--color-gray-dark-50);
+            --bg-secondary: var(--color-gray-dark-100);
+            --bg-tertiary: var(--color-gray-dark-200);
+            --bg-surface: #121212;
+            --bg-surface-elevated: #1E1E1E;
+            --bg-modal: #121212;
+            --bg-overlay: rgba(0, 0, 0, 0.65);
+
+            /* Text Colors */
+            --text-primary: var(--color-white);
+            --text-secondary: var(--color-gray-dark-500);
+            --text-tertiary: var(--color-gray-dark-400);
+            --text-link: var(--color-blue-400);
+            --text-link-hover: var(--color-blue-300);
+            --text-on-primary: var(--color-white);
+            --text-disabled: var(--color-gray-dark-300);
+
+            /* Border Colors */
+            --border-default: var(--color-gray-dark-200);
+            --border-subtle: var(--color-gray-dark-100);
+            --border-strong: var(--color-gray-dark-300);
+            --border-interactive: var(--color-blue-400);
+            --border-focus: var(--color-blue-200);
+            --border-error: var(--color-red-400);
+
+            /* Interactive Colors */
+            --interactive-primary: var(--color-blue-400);
+            --interactive-primary-hover: var(--color-blue-500);
+            --interactive-secondary: var(--color-gray-dark-100);
+            --interactive-secondary-hover: var(--color-gray-dark-200);
+            --interactive-hover: var(--color-gray-dark-100);
+            --interactive-active: var(--color-gray-dark-200);
+            --interactive-disabled: var(--color-gray-dark-300);
+
+            /* Semantic States */
+            --success: var(--color-green-400);
+            --success-bg: var(--color-green-900);
+            --warning: var(--color-amber-400);
+            --warning-bg: var(--color-amber-900);
+            --error: var(--color-red-400);
+            --error-bg: var(--color-red-900);
+            --info: var(--color-blue-400);
+            --info-bg: var(--color-blue-900);
+
+            /* Platform Colors */
+            --platform-chatgpt-bg: var(--color-green-900);
+            --platform-chatgpt-text: var(--color-green-200);
+            --platform-gemini-bg: var(--color-blue-900);
+            --platform-gemini-text: var(--color-blue-200);
+
+            /* Legacy Support - Backward Compatible (will be phased out) */
+            --gray-50: var(--color-gray-dark-50);
+            --gray-100: var(--color-gray-dark-100);
+            --gray-200: var(--color-gray-dark-200);
+            --gray-300: var(--color-gray-dark-300);
+            --gray-400: var(--color-gray-dark-400);
+            --gray-500: var(--color-gray-dark-500);
+            --gray-600: var(--color-gray-dark-600);
+            --gray-700: var(--color-gray-dark-700);
+            --gray-800: var(--color-gray-dark-800);
+            --gray-900: var(--color-gray-dark-900);
+
+            --primary-50: var(--color-blue-50);
+            --primary-100: var(--color-blue-100);
+            --primary-200: var(--color-blue-200);
+            --primary-300: var(--color-blue-300);
+            --primary-400: var(--color-blue-400);
+            --primary-500: var(--color-blue-500);
+            --primary-600: var(--color-blue-600);
+            --primary-700: var(--color-blue-700);
+            --primary-800: var(--color-blue-800);
+
+            --success-50: var(--color-green-50);
+            --success-100: var(--color-green-100);
+            --success-500: var(--color-green-500);
+            --success-600: var(--color-green-600);
+            --success-700: var(--color-green-700);
+
+            --warning-50: var(--color-amber-50);
+            --warning-100: var(--color-amber-100);
+            --warning-500: var(--color-amber-500);
+            --warning-600: var(--color-amber-600);
+            --warning-700: var(--color-amber-700);
+
+            --danger-50: var(--color-red-50);
+            --danger-100: var(--color-red-100);
+            --danger-500: var(--color-red-500);
+            --danger-600: var(--color-red-600);
+            --danger-700: var(--color-red-700);
+
+            /* Material Design 3 - Surface Colors (Dark) */
+            --md-surface: #121212;
+            --md-surface-variant: #1E1E1E;
+            --md-surface-container: #2C2C2C;
+            --md-surface-container-high: #3A3A3A;
+            --md-on-surface: #E3E3E3;
+            --md-on-surface-variant: #CAC4D0;
+            --md-primary-container: #004A77;
+            --md-on-primary-container: #C5E7FF;
+            --md-outline: #938F99;
+            --md-outline-variant: #49454F;
+
+            /* Platform Legacy */
+            --chatgpt-light: #065F46;
+            --chatgpt-dark: #10B981;
+            --chatgpt-icon: #34D399;
+            --gemini-light: #1E40AF;
+            --gemini-dark: #60A5FA;
+            --gemini-icon: #93C5FD;
+
+            /* Component-Specific */
+            --modal-tree-bg: var(--color-gray-dark-50);
+            --modal-tree-item-hover: var(--color-gray-dark-100);
+            --modal-tree-item-text: var(--color-gray-dark-900);
+            --modal-tree-item-icon: var(--color-gray-dark-400);
+
+            /* Button Tokens - Primary */
+            --button-primary-bg: var(--color-blue-400);
+            --button-primary-hover: var(--color-blue-500);
+            --button-primary-active: var(--color-blue-600);
+            --button-primary-text: var(--color-white);
+            --button-primary-text-hover: var(--color-white);
+            --button-primary-disabled: var(--color-gray-dark-300);
+            --button-primary-disabled-text: var(--color-gray-dark-500);
+
+            /* Button Tokens - Secondary */
+            --button-secondary-bg: transparent;
+            --button-secondary-hover: var(--color-gray-dark-100);
+            --button-secondary-active: var(--color-gray-dark-200);
+            --button-secondary-text: var(--color-blue-400);
+            --button-secondary-text-hover: var(--color-blue-300);
+            --button-secondary-border: var(--color-gray-dark-300);
+            --button-secondary-disabled: var(--color-gray-dark-200);
+            --button-secondary-disabled-text: var(--color-gray-dark-400);
+
+            /* Button Tokens - Danger */
+            --button-danger-bg: var(--color-red-500);
+            --button-danger-hover: var(--color-red-600);
+            --button-danger-active: var(--color-red-700);
+            --button-danger-text: var(--color-white);
+            --button-danger-text-hover: var(--color-white);
+            --button-danger-disabled: var(--color-red-dark-300);
+            --button-danger-disabled-text: var(--color-red-dark-100);
+
+            /* Button Tokens - Warning */
+            --button-warning-bg: var(--color-amber-500);
+            --button-warning-hover: var(--color-amber-600);
+            --button-warning-active: var(--color-amber-700);
+            --button-warning-text: var(--color-gray-900);
+            --button-warning-text-hover: var(--color-gray-900);
+            --button-warning-disabled: var(--color-amber-dark-300);
+
+            /* Button Tokens - Ghost (Transparent) */
+            --button-ghost-bg: transparent;
+            --button-ghost-hover: var(--interactive-hover);
+            --button-ghost-active: var(--interactive-active);
+            --button-ghost-text: var(--text-primary);
+            --button-ghost-text-hover: var(--text-primary);
+
+            /* Button Tokens - Icon */
+            --button-icon-bg: transparent;
+            --button-icon-hover: var(--color-gray-dark-100);
+            --button-icon-active: var(--color-gray-dark-200);
+            --button-icon-text: var(--color-gray-dark-400);
+            --button-icon-text-hover: var(--color-white);
+
+            /* Button Tokens - Close */
+            --button-close-bg: transparent;
+            --button-close-hover: var(--color-gray-dark-100);
+            --button-close-active: var(--color-gray-dark-200);
+            --button-close-text: var(--color-gray-dark-400);
+            --button-close-text-hover: var(--color-white);
+        `;
+  }
+  /**
+   * Get non-color tokens (spacing, typography, etc.)
+   * These are mode-independent
+   * @returns CSS custom properties string
+   */
+  static getCommonTokens() {
+    return `
             /* ============================================
                SPACING SCALE (8px Grid)
                ============================================ */
@@ -1947,7 +2312,6 @@ class DesignTokens {
             --space-16: 64px;
             --space-20: 80px;
             --space-24: 96px;
-
 
             /* ============================================
                TYPOGRAPHY
@@ -1979,7 +2343,6 @@ class DesignTokens {
             --leading-normal: 1.5;
             --leading-relaxed: 1.75;
 
-
             /* ============================================
                BORDER RADIUS
                ============================================ */
@@ -1994,23 +2357,17 @@ class DesignTokens {
             --radius-xl: 16px;
             --radius-full: 9999px;
 
-
             /* ============================================
-               SHADOWS
+               Z-INDEX SCALE
                ============================================ */
             
-            --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
-                         0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                         0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-                         0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-                         0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.1);
-
+            --z-dropdown: 1000;
+            --z-sticky: 1020;
+            --z-fixed: 1030;
+            --z-modal-backdrop: 1040;
+            --z-modal: 1050;
+            --z-popover: 1060;
+            --z-tooltip: 1070;
 
             /* ============================================
                ANIMATIONS
@@ -2028,301 +2385,93 @@ class DesignTokens {
             --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
             --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-
-            /* ============================================
-               ELEVATION LEVELS
-               ============================================ */
-            
-            --elevation-0: 0 0 0 0 rgba(0, 0, 0, 0);
-            --elevation-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            --elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-
-
-            /* ============================================
-               Z-INDEX SCALE
-               ============================================ */
-            
-            --z-dropdown: 1000;
-            --z-sticky: 1020;
-            --z-fixed: 1030;
-            --z-modal-backdrop: 1040;
-            --z-modal: 1050;
-            --z-popover: 1060;
-            --z-tooltip: 1070;
-
-
-            /* ============================================
-               GLASSMORPHISM
-               ============================================ */
-            
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.18);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-
-
-            /* ============================================
-               CONVENIENCE ALIASES
-               ============================================ */
-            
-            --white: #FFFFFF;
-            --black: #000000;
+            /* Aliases */
+            --white: var(--color-white);
+            --black: var(--color-black);
         `;
   }
   /**
-   * Get all design tokens for dark mode
-   * Returns CSS custom properties ready to inject into :host selector
+   * Get mode-specific shadow tokens
+   * @param isDark Whether dark mode is active
+   * @returns CSS custom properties string
+   */
+  static getShadowTokens(isDark) {
+    if (isDark) {
+      return `
+                /* Dark Mode Shadows */
+                --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+                --shadow-sm: 0 1px 5px rgba(0, 0, 0, 0.4), 0 2px 2px rgba(0, 0, 0, 0.28);
+                --shadow-md: 0 3px 5px rgba(0, 0, 0, 0.4), 0 1px 18px rgba(0, 0, 0, 0.24);
+                --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 5px rgba(0, 0, 0, 0.28);
+                --shadow-xl: 0 8px 10px rgba(0, 0, 0, 0.28), 0 3px 14px rgba(0, 0, 0, 0.24);
+                --shadow-2xl: 0 24px 38px rgba(0, 0, 0, 0.28), 0 9px 46px rgba(0, 0, 0, 0.24);
+                --shadow-focus: 0 0 0 3px rgba(90, 202, 249, 0.2);
+
+                --elevation-0: 0 0 0 0 rgba(0, 0, 0, 0);
+                --elevation-1: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+                --elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+                --elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+                --elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+
+                --glass-bg: rgba(30, 30, 30, 0.7);
+                --glass-border: rgba(255, 255, 255, 0.1);
+                --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            `;
+    } else {
+      return `
+                /* Light Mode Shadows */
+                --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+                --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.1);
+
+                --elevation-0: 0 0 0 0 rgba(0, 0, 0, 0);
+                --elevation-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+                --elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                --elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                --elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+                --glass-bg: rgba(255, 255, 255, 0.7);
+                --glass-border: rgba(255, 255, 255, 0.18);
+                --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            `;
+    }
+  }
+  /**
+   * Get complete token set for current mode
+   * Combines primitive tokens + semantic tokens + common tokens
+   * @deprecated Use getCompleteTokens() instead
+   */
+  static getLightTokens() {
+    return this.getCompleteTokens(false);
+  }
+  /**
+   * Get complete token set for current mode
+   * Combines primitive tokens + semantic tokens + common tokens
+   * @deprecated Use getCompleteTokens() instead
    */
   static getDarkTokens() {
+    return this.getCompleteTokens(true);
+  }
+  /**
+   * Get complete token set for specified mode
+   * Combines: Primitive Tokens + Semantic Tokens + Common Tokens + Shadows
+   * @param isDark Whether to get dark mode tokens
+   * @returns Complete CSS custom properties string
+   */
+  static getCompleteTokens(isDark) {
+    const primitiveTokens = this.getPrimitiveTokens();
+    const semanticTokens = isDark ? this.getDarkSemanticTokens() : this.getLightSemanticTokens();
+    const commonTokens = this.getCommonTokens();
+    const shadowTokens = this.getShadowTokens(isDark);
     return `
-            /* ============================================
-               NEUTRAL COLORS (Dark Mode)
-               ============================================ */
-            
-            /* Darkest - Backgrounds, subtle dividers */
-            --gray-50: #18181B;
-            
-            /* Elevated surfaces */
-            --gray-100: #27272A;
-            
-            /* Borders, dividers */
-            --gray-200: #3F3F46;
-            
-            /* Inactive borders */
-            --gray-300: #52525B;
-            
-            /* Tertiary text, icons */
-            --gray-400: #A1A1AA;
-            
-            /* Secondary text, default icons */
-            --gray-500: #D4D4D8;
-            
-            /* Primary text hover */
-            --gray-600: #E4E4E7;
-            
-            /* Emphasized text */
-            --gray-700: #F4F4F5;
-            
-            /* High contrast backgrounds */
-            --gray-800: #FAFAFA;
-            
-            /* Primary text, headings */
-            --gray-900: #FFFFFF;
-
-
-            /* ============================================
-               PRIMARY COLORS (Dark Mode - Blue)
-               ============================================ */
-            
-            --primary-50: #0D47A1;
-            --primary-100: #1565C0;
-            --primary-200: #1976D2;
-            --primary-300: #42A5F5;
-            --primary-400: #64B5F6;
-            --primary-500: #90CAF9;
-            --primary-600: #BBDEFB;
-            --primary-700: #E3F2FD;
-            --primary-800: #E3F2FD;
-
-
-            /* ============================================
-               MATERIAL DESIGN 3 - SURFACE COLORS (Dark)
-               ============================================ */
-            
-            --md-surface: #121212;
-            --md-surface-variant: #1E1E1E;
-            --md-surface-container: #2C2C2C;
-            --md-surface-container-high: #3A3A3A;
-            --md-on-surface: #E3E3E3;
-            --md-on-surface-variant: #CAC4D0;
-
-
-            /* ============================================
-               MATERIAL DESIGN 3 - PRIMARY CONTAINER (Dark)
-               ============================================ */
-            
-            --md-primary-container: #004A77;
-            --md-on-primary-container: #C5E7FF;
-
-
-            /* ============================================
-               MATERIAL DESIGN 3 - OUTLINE (Dark)
-               ============================================ */
-            
-            --md-outline: #938F99;
-            --md-outline-variant: #49454F;
-
-
-            /* ============================================
-               SEMANTIC COLORS (Dark Mode)
-               ============================================ */
-            
-            /* Success (Green) */
-            --success-50: #15803D;
-            --success-100: #16A34A;
-            --success-500: #4ADE80;
-            --success-600: #86EFAC;
-            --success-700: #BBF7D0;
-            
-            /* Warning (Amber) */
-            --warning-50: #B45309;
-            --warning-100: #D97706;
-            --warning-500: #FCD34D;
-            --warning-600: #FDE68A;
-            --warning-700: #FEF3C7;
-            
-            /* Danger (Red) */
-            --danger-50: #B91C1C;
-            --danger-100: #DC2626;
-            --danger-500: #F87171;
-            --danger-600: #FCA5A5;
-            --danger-700: #FECACA;
-
-
-            /* ============================================
-               PLATFORM COLORS (Dark Mode)
-               ============================================ */
-            
-            /* ChatGPT */
-            --chatgpt-light: #065F46;
-            --chatgpt-dark: #10B981;
-            --chatgpt-icon: #34D399;
-            
-            /* Gemini */
-            --gemini-light: #1E40AF;
-            --gemini-dark: #60A5FA;
-            --gemini-icon: #93C5FD;
-
-
-            /* ============================================
-               SPACING SCALE (8px Grid) - Same as light mode
-               ============================================ */
-            
-            --space-0: 0px;
-            --space-1: 4px;
-            --space-2: 8px;
-            --space-3: 12px;
-            --space-4: 16px;
-            --space-5: 20px;
-            --space-6: 24px;
-            --space-8: 32px;
-            --space-10: 40px;
-            --space-12: 48px;
-            --space-16: 64px;
-            --space-20: 80px;
-            --space-24: 96px;
-
-
-            /* ============================================
-               TYPOGRAPHY - Same as light mode
-               ============================================ */
-            
-            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-            --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
-                "Courier New", monospace;
-            
-            --text-xs: 12px;
-            --text-sm: 13px;
-            --text-base: 14px;
-            --text-lg: 16px;
-            --text-xl: 18px;
-            --text-2xl: 20px;
-            --text-3xl: 24px;
-            
-            --font-normal: 400;
-            --font-medium: 500;
-            --font-semibold: 600;
-            --font-bold: 700;
-            
-            --leading-tight: 1.25;
-            --leading-normal: 1.5;
-            --leading-relaxed: 1.75;
-
-
-            /* ============================================
-               BORDER RADIUS - Same as light mode
-               ============================================ */
-            
-            --radius-none: 0px;
-            --radius-sm: 6px;
-            --radius-small: 6px;
-            --radius-md: 8px;
-            --radius-medium: 8px;
-            --radius-lg: 12px;
-            --radius-large: 12px;
-            --radius-xl: 16px;
-            --radius-full: 9999px;
-
-
-            /* ============================================
-               SHADOWS (Dark Mode - Enhanced)
-               ============================================ */
-            
-            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
-            --shadow-sm: 0 1px 5px rgba(0, 0, 0, 0.4), 0 2px 2px rgba(0, 0, 0, 0.28);
-            --shadow-md: 0 3px 5px rgba(0, 0, 0, 0.4), 0 1px 18px rgba(0, 0, 0, 0.24);
-            --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 5px rgba(0, 0, 0, 0.28);
-            --shadow-xl: 0 8px 10px rgba(0, 0, 0, 0.28), 0 3px 14px rgba(0, 0, 0, 0.24);
-            --shadow-2xl: 0 24px 38px rgba(0, 0, 0, 0.28), 0 9px 46px rgba(0, 0, 0, 0.24);
-            --shadow-focus: 0 0 0 3px rgba(90, 202, 249, 0.2);
-
-
-            /* ============================================
-               ANIMATIONS - Same as light mode
-               ============================================ */
-            
-            --duration-fast: 150ms;
-            --duration-base: 200ms;
-            --duration-slow: 300ms;
-            --duration-slower: 500ms;
-            
-            --ease-in: cubic-bezier(0.4, 0, 1, 1);
-            --ease-out: cubic-bezier(0, 0, 0.2, 1);
-            --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-            --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-
-            /* ============================================
-               ELEVATION LEVELS (Dark Mode)
-               ============================================ */
-            
-            --elevation-0: 0 0 0 0 rgba(0, 0, 0, 0);
-            --elevation-1: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-            --elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-            --elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-            --elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
-
-
-            /* ============================================
-               Z-INDEX SCALE - Same as light mode
-               ============================================ */
-            
-            --z-dropdown: 1000;
-            --z-sticky: 1020;
-            --z-fixed: 1030;
-            --z-modal-backdrop: 1040;
-            --z-modal: 1050;
-            --z-popover: 1060;
-            --z-tooltip: 1070;
-
-
-            /* ============================================
-               GLASSMORPHISM (Dark Mode)
-               ============================================ */
-            
-            --glass-bg: rgba(30, 30, 30, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-
-
-            /* ============================================
-               CONVENIENCE ALIASES
-               ============================================ */
-            
-            --white: #FFFFFF;
-            --black: #000000;
+            ${primitiveTokens}
+            ${semanticTokens}
+            ${commonTokens}
+            ${shadowTokens}
         `;
   }
 }
@@ -2345,21 +2494,21 @@ class Modal {
     const styleElement = document.createElement("style");
     styleElement.textContent = modalStyles + `
       ${isDark ? `
-        .modal-overlay { background: rgba(0, 0, 0, 0.8); }
+        .modal-overlay { background: rgba(0, 0, 0, 0.8); }  /* Dark overlay */
         .modal-container { 
-          background: #1E1E1E;
-          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.5);
+          background: #1E1E1E;  /* Dark surface */
+          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.5);  /* Subtle border + shadow */
         }
-        .modal-header { border-bottom-color: #3F3F46; }
-        .modal-title { color: #FFFFFF; }
-        .modal-close { color: #A1A1AA; }
-        .modal-close:hover { background: #27272A; color: #FFFFFF; }
-        .modal-content { background: #1E1E1E; color: #E3E3E3; }
-        .modal-footer { border-top-color: #3F3F46; background: #1E1E1E; }
-        .modal-button { background: #27272A; color: #E3E3E3; }
-        .modal-button:hover { background: #3F3F46; }
-        .modal-button.primary { background: #3B82F6; color: white; }
-        .modal-button.primary:hover { background: #2563EB; }
+        .modal-header { border-bottom-color: #3F3F46; }  /* Gray-600 */
+        .modal-title { color: #FFFFFF; }  /* White text */
+        .modal-close { color: #A1A1AA; }  /* Gray-400 */
+        .modal-close:hover { background: #27272A; color: #FFFFFF; }  /* Gray-800 hover */
+        .modal-content { background: #1E1E1E; color: #E3E3E3; }  /* Dark surface + light text */
+        .modal-footer { border-top-color: #3F3F46; background: #1E1E1E; }  /* Gray-600 border */
+        .modal-button { background: #27272A; color: #E3E3E3; }  /* Gray-800 button */
+        .modal-button:hover { background: #3F3F46; }  /* Gray-600 hover */
+        .modal-button.primary { background: #3B82F6; color: white; }  /* Blue primary */
+        .modal-button.primary:hover { background: #2563EB; }  /* Darker blue on hover */
       ` : ""}
     `;
     this.shadowRoot.appendChild(styleElement);
@@ -23405,7 +23554,7 @@ class TooltipHelper {
     tooltip.textContent = text;
     tooltip.style.cssText = `
       position: absolute;
-      background: rgba(60, 64, 67, 0.9);
+      background: rgba(60, 64, 67, 0.9);  /* Dark gray tooltip */
       color: white;
       padding: 6px 8px;
       border-radius: 4px;
@@ -23414,7 +23563,7 @@ class TooltipHelper {
       white-space: nowrap;
       opacity: 0;
       transition: opacity 0.15s ease-in-out;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);  /* Subtle shadow */
     `;
     this.tooltipContainer.appendChild(tooltip);
     const rect = anchor.getBoundingClientRect();
@@ -24860,97 +25009,11 @@ class TreeBuilder {
   }
 }
 
-const lightTheme = {
-  surface: "#FFFFFF",
-  onSurface: "#1C1B1F",
-  border: "#E5E7EB",
-  // var(--gray-200)
-  borderLight: "#F3F4F6",
-  // var(--gray-100)
-  hover: "#F9FAFB",
-  // var(--gray-50)
-  selected: "#EFF6FF",
-  // var(--primary-50)
-  selectedHover: "#DBEAFE",
-  // var(--primary-100)
-  selectedAccent: "#2563EB",
-  // var(--primary-600)
-  primary: "#3B82F6",
-  // var(--primary-500)
-  primaryHover: "#2563EB",
-  // var(--primary-600)
-  primaryForeground: "#FFFFFF",
-  secondary: "#F3F4F6",
-  // var(--gray-100)
-  secondaryHover: "#E5E7EB",
-  // var(--gray-200)
-  secondaryForeground: "#4B5563",
-  // var(--gray-600)
-  danger: "#EF4444",
-  textPrimary: "#111827",
-  // var(--gray-900)
-  textSecondary: "#6B7280",
-  // var(--gray-500)
-  textMuted: "#9CA3AF",
-  // var(--gray-400)
-  infoSurface: "#EFF6FF",
-  // var(--primary-50)
-  infoBorder: "#BFDBFE",
-  // var(--primary-200)
-  radius: "12px"
-};
-const darkTheme = {
-  surface: "#1F2937",
-  // var(--gray-800) - MATCHES PANEL
-  onSurface: "#F9FAFB",
-  // var(--gray-50)
-  border: "#374151",
-  // var(--gray-700) - MATCHES PANEL
-  borderLight: "#4B5563",
-  // var(--gray-600)
-  hover: "#374151",
-  // var(--gray-700) - MATCHES PANEL
-  selected: "rgba(59, 130, 246, 0.2)",
-  // primary-500 @ 20% - MATCHES PANEL
-  selectedHover: "rgba(59, 130, 246, 0.3)",
-  // primary-500 @ 30%
-  selectedAccent: "#2563EB",
-  // var(--primary-600) - MATCHES PANEL
-  primary: "#3B82F6",
-  // var(--primary-500)
-  primaryHover: "#2563EB",
-  // var(--primary-600)
-  primaryForeground: "#FFFFFF",
-  secondary: "#374151",
-  // var(--gray-700)
-  secondaryHover: "#4B5563",
-  // var(--gray-600)
-  secondaryForeground: "#F9FAFB",
-  // var(--gray-50)
-  danger: "#EF4444",
-  textPrimary: "#F9FAFB",
-  // var(--gray-50) - MATCHES PANEL
-  textSecondary: "#9CA3AF",
-  // var(--gray-400)
-  textMuted: "#6B7280",
-  // var(--gray-500)
-  infoSurface: "rgba(59, 130, 246, 0.1)",
-  // primary-500 @ 10%
-  infoBorder: "rgba(59, 130, 246, 0.2)",
-  // primary-500 @ 20%
-  radius: "12px"
-};
-function getTheme() {
-  const isDark = DesignTokens.isDarkMode();
-  return isDark ? darkTheme : lightTheme;
-}
-function styleToString(styles) {
-  return Object.entries(styles).map(([key, value]) => {
-    const kebabKey = key.replace(/([A-Z])/g, "-$1").toLowerCase();
-    return `${kebabKey}: ${value}`;
-  }).join("; ");
-}
 class BookmarkSaveModal {
+  // ✅ Shadow DOM infrastructure
+  container = null;
+  shadowRoot = null;
+  // DOM references (now inside Shadow DOM)
   overlay = null;
   modal = null;
   // State
@@ -24965,6 +25028,78 @@ class BookmarkSaveModal {
   escKeyHandler = null;
   // Event listener management (AbortController pattern - Web standard)
   abortController = null;
+  /**
+   * Constructor - Initialize Shadow DOM container
+   */
+  constructor() {
+    this.container = document.createElement("div");
+    this.container.className = "bookmark-save-modal-host";
+    this.shadowRoot = this.container.attachShadow({ mode: "open" });
+  }
+  /**
+   * Inject complete styles into Shadow DOM
+   */
+  injectStyles() {
+    if (!this.shadowRoot) return;
+    const existingStyle = this.shadowRoot.querySelector("style");
+    if (existingStyle) existingStyle.remove();
+    const isDark = DesignTokens.isDarkMode();
+    const tokens = isDark ? DesignTokens.getDarkTokens() : DesignTokens.getLightTokens();
+    const styleElement = document.createElement("style");
+    styleElement.textContent = `
+            :host { ${tokens} }
+            
+            * { box-sizing: border-box; }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-overlay); backdrop-filter: blur(6px); z-index: 2147483647; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease-out; }
+            .bookmark-save-modal { position: relative; width: 90%; max-width: 550px; max-height: 85vh; background: var(--md-surface); color: var(--md-on-surface); border-radius: 16px; box-shadow: var(--shadow-xl); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; animation: slideIn 0.2s ease-out; }
+            .save-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--gray-200); }
+            .save-modal-header h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--gray-900); }
+            .save-modal-close-btn { background: none; border: none; font-size: 24px; color: var(--gray-500); cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.15s ease; }
+            .save-modal-close-btn:hover { background: var(--gray-100); color: var(--gray-900); }
+            .save-modal-body { flex: 1; overflow-y: auto; padding: 24px; }
+            .title-section { margin-bottom: 24px; }
+            .title-label { display: block; font-size: 13px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; color: var(--gray-700); margin-bottom: 8px; }
+            .title-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 13px; background: var(--md-surface); color: var(--md-on-surface); box-shadow: inset 0 1px 2px rgba(0,0,0,0.04); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); outline: none; }
+            .title-input:focus { border-color: var(--primary-300); box-shadow: var(--shadow-focus); }
+            .title-input.error { border-color: var(--danger-500); }
+            .title-input::placeholder { color: var(--gray-400); font-weight: 400; }
+            .bookmark-count-info { margin-bottom: 16px; padding: 10px 14px; background: var(--info-bg); border-left: 3px solid var(--primary-500); border-radius: 8px; font-size: 13px; color: var(--gray-800); }
+            .title-error { margin-top: 8px; font-size: 12px; color: var(--danger-500); display: none; }
+            .title-error.visible { display: block; }
+            .folder-section { margin-bottom: 24px; }
+            .folder-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+            .folder-label { font-size: 13px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; color: var(--gray-700); }
+            .new-folder-btn { background: var(--button-icon-bg); color: var(--button-icon-text); border: none; padding: 8px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; }
+            .new-folder-btn:hover { background: var(--button-icon-hover); color: var(--button-icon-text-hover); transform: scale(1.05); }
+            .folder-tree-container { border-radius: 12px; height: 300px; overflow-y: auto; background: var(--modal-tree-bg); }
+            .folder-tree-body { padding: 0; }
+            .folder-item { display: flex; align-items: center; min-height: 40px; padding: 10px 16px; cursor: pointer; transition: background 0.15s ease; position: relative; background: transparent; border-left: 3px solid transparent; }
+            .folder-item:not(.selected):hover { background: var(--modal-tree-item-hover); }
+            .folder-item.selected { background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%); border-left: 3px solid var(--primary-400); }
+            .folder-item:hover .item-actions { opacity: 1; visibility: visible; }
+            .folder-toggle { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 4px; font-size: 10px; color: var(--gray-500); cursor: pointer; user-select: none; flex-shrink: 0; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+            .folder-toggle.expanded { transform: rotate(90deg); }
+            .folder-icon { margin-right: 8px; font-size: 16px; flex-shrink: 0; color: var(--modal-tree-item-icon); }
+            .folder-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--modal-tree-item-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .folder-check { color: var(--primary-600); font-size: 16px; font-weight: 600; margin-left: 8px; flex-shrink: 0; }
+            .item-actions { display: flex; gap: 4px; margin-left: 8px; opacity: 0; visibility: hidden; transition: all 150ms ease; }
+            .action-btn { background: var(--button-icon-bg); border: none; color: var(--button-icon-text); cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 150ms ease; }
+            .action-btn:hover { background: var(--button-icon-hover); color: var(--button-icon-text-hover); }
+            .folder-empty { padding: 40px 20px; text-align: center; color: var(--gray-400); }
+            .folder-empty-icon { font-size: 48px; margin-bottom: 12px; }
+            .folder-empty-text { font-size: 13px; }
+            .save-modal-footer { display: flex; gap: 8px; justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--gray-200); }
+            .save-modal-btn { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: var(--font-medium); cursor: pointer; transition: all 0.2s ease; border: none; transform: translateY(0); }
+            .save-modal-btn-cancel { background: var(--button-secondary-bg); color: var(--button-secondary-text); }
+            .save-modal-btn-cancel:hover { background: var(--button-secondary-hover); color: var(--button-secondary-text-hover); }
+            .save-modal-btn-save { background: var(--button-primary-bg); color: var(--button-primary-text); }
+            .save-modal-btn-save:hover:not(:disabled) { background: var(--button-primary-hover); color: var(--button-primary-text-hover); }
+            .save-modal-btn-save:disabled { background: var(--button-primary-disabled); color: var(--button-primary-disabled-text); cursor: not-allowed; opacity: 0.6; }
+        `;
+    this.shadowRoot.appendChild(styleElement);
+  }
   /**
    * Show save modal
    */
@@ -24995,25 +25130,14 @@ class BookmarkSaveModal {
     if (this.selectedPath) {
       this.expandPathToFolder(this.selectedPath);
     }
+    this.abortController = new AbortController();
+    this.injectStyles();
     this.overlay = document.createElement("div");
-    this.overlay.className = "bookmark-save-modal-overlay";
-    this.overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);  /* Keep for overlay */
-            backdrop-filter: blur(4px);
-            z-index: 2147483647;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.2s ease-out;
-        `;
+    this.overlay.className = "modal-overlay";
     this.modal = this.createModal();
     this.overlay.appendChild(this.modal);
-    document.body.appendChild(this.overlay);
+    this.shadowRoot.appendChild(this.overlay);
+    document.body.appendChild(this.container);
     this.overlay.addEventListener("click", (e) => {
       if (e.target === this.overlay) {
         this.hide();
@@ -25071,13 +25195,18 @@ class BookmarkSaveModal {
   hide() {
     this.abortController?.abort();
     this.abortController = null;
-    if (this.overlay && this.overlay.parentNode) {
-      this.overlay.remove();
+    if (this.container && this.container.parentNode) {
+      this.container.remove();
     }
     if (this.escKeyHandler) {
       document.removeEventListener("keydown", this.escKeyHandler);
       this.escKeyHandler = null;
     }
+    if (this.shadowRoot) {
+      this.shadowRoot.innerHTML = "";
+    }
+    this.container = null;
+    this.shadowRoot = null;
     this.overlay = null;
     this.modal = null;
     this.folders = [];
@@ -25092,250 +25221,49 @@ class BookmarkSaveModal {
    * Create modal structure with dynamic theme
    */
   createModal() {
-    const theme = getTheme();
     const modal = document.createElement("div");
     modal.className = "bookmark-save-modal";
-    modal.style.cssText = `
-            position: relative;
-            width: 90%;
-            max-width: 550px;
-            max-height: 85vh;
-            background: ${theme.surface} !important;
-            color: ${theme.onSurface};
-            border-radius: ${theme.radius};
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2), 0 1px 18px rgba(0, 0, 0, 0.12);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            animation: slideIn 0.2s ease-out;
-        `;
     modal.addEventListener("click", (e) => {
       e.stopPropagation();
     });
     modal.innerHTML = `
-            <style>
-                /* Minimal CSS - Only for what inline styles cannot do */
-                
-                /* Animations */
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                
-                @keyframes slideIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(-20px) scale(0.95);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0) scale(1);
-                    }
-                }
-
-                /* Box sizing */
-                .bookmark-save-modal * {
-                    box-sizing: border-box;
-                }
-                
-                /* Hover states - Cannot be done with inline styles */
-                .save-modal-close-btn:hover {
-                    background: ${theme.hover} !important;
-                    color: ${theme.textPrimary} !important;
-                }
-                
-                .title-input:focus {
-                    border-color: ${theme.primary} !important;
-                }
-                
-                .new-folder-btn:hover {
-                    background: ${theme.hover} !important;
-                }
-                
-                .folder-item:hover {
-                    background: ${theme.hover} !important;
-                }
-                
-                .folder-item.selected:hover {
-                    background: ${theme.selectedHover} !important;
-                }
-                
-                .save-modal-btn-cancel:hover {
-                    background: ${theme.secondaryHover} !important;
-                }
-                
-                .save-modal-btn-save:hover:not(:disabled) {
-                    background: ${theme.primaryHover} !important;
-                }
-                
-                .save-modal-btn-save:disabled {
-                    background: ${theme.borderLight} !important;
-                    color: ${theme.textMuted} !important;
-                    cursor: not-allowed;
-                    opacity: 0.8;
-                }
-                
-                
-                .folder-item:not(.selected):hover {
-                    background: var(--gray-100) !important;
-                }
-                
-                .folder-item:hover .item-actions {
-                    opacity: 1 !important;
-                    visibility: visible !important;
-                }
-                
-                .folder-add-btn:hover {
-                    background: ${theme.primaryHover} !important;
-                    color: ${theme.primaryForeground} !important;
-                }
-            </style>
-
-            <div class="save-modal-header" style="${styleToString({
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "16px 20px",
-      borderBottom: `1px solid ${theme.border}`
-    })}">
-                <h2 style="${styleToString({
-      margin: "0",
-      fontSize: "14px",
-      fontWeight: "600",
-      color: theme.textPrimary
-    })}">Save Bookmark</h2>
-                <button class="save-modal-close-btn" aria-label="Close" style="${styleToString({
-      background: "none",
-      border: "none",
-      fontSize: "24px",
-      color: theme.textSecondary,
-      cursor: "pointer",
-      padding: "0",
-      width: "32px",
-      height: "32px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: "8px",
-      transition: "all 0.15s ease"
-    })}">×</button>
+            <div class="save-modal-header">
+                <h2>Save Bookmark</h2>
+                <button class="save-modal-close-btn" aria-label="Close">×</button>
             </div>
 
-            <div class="save-modal-body" style="${styleToString({
-      flex: "1",
-      overflowY: "auto",
-      padding: "20px"
-    })}">
+            <div class="save-modal-body">
                 <!-- Title Section -->
-                <div class="title-section" style="${styleToString({
-      marginBottom: "20px"
-    })}">
-                    <label class="title-label" style="${styleToString({
-      display: "block",
-      fontSize: "13px",
-      fontWeight: "500",
-      color: theme.textSecondary,
-      marginBottom: "8px"
-    })}">Title</label>
+                <div class="title-section">
+                    <label class="title-label">Title</label>
                     <input type="text" 
                            class="title-input" 
                            value="${this.escapeAttr(this.title)}"
                            maxlength="100"
-                           placeholder="Enter bookmark title..."
-                           style="${styleToString({
-      width: "100%",
-      padding: "10px 12px",
-      border: `2px solid ${theme.border}`,
-      borderRadius: "8px",
-      fontSize: "13px",
-      background: theme.surface,
-      color: theme.onSurface,
-      transition: "all 0.15s ease",
-      outline: "none"
-    })}">
+                           placeholder="Enter bookmark title...">
                     <div class="title-error" style="display: none;"></div>
                 </div>
 
                 <!-- Folder Section -->
-                <div class="folder-section" style="${styleToString({
-      marginBottom: "20px"
-    })}">
-                    <div class="folder-header" style="${styleToString({
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: "8px"
-    })}">
-                        <span class="folder-label" style="${styleToString({
-      fontSize: "13px",
-      fontWeight: "500",
-      color: theme.textSecondary
-    })}">Folder</span>
-                        <button class="new-folder-btn" title="New Folder" style="${styleToString({
-      background: "transparent",
-      color: theme.primary,
-      border: "none",
-      padding: "8px",
-      borderRadius: "8px",
-      fontSize: "14px",
-      cursor: "pointer",
-      transition: "background 0.15s ease",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    })}">${Icons.folderPlus}</button>
+                <div class="folder-section">
+                    <div class="folder-header">
+                        <span class="folder-label">Folder</span>
+                        <button class="new-folder-btn" title="New Folder">${Icons.folderPlus}</button>
                     </div>
-                    <div class="folder-tree-container" style="${styleToString({
-      border: `1px solid ${theme.border}`,
-      borderRadius: "8px",
-      height: "300px",
-      overflowY: "auto",
-      fontSize: "14px",
-      background: theme.hover
-    })}">
-                        <div class="folder-tree-body" style="padding: 8px 0;">
-                            <div class="folder-empty" style="${styleToString({
-      padding: "40px 20px",
-      textAlign: "center",
-      color: theme.textMuted
-    })}">
-                                <div class="folder-empty-icon" style="font-size: 48px; margin-bottom: 12px;">${Icons.folder}</div>
-                                <div class="folder-empty-text" style="font-size: 13px;">Loading folders...</div>
+                    <div class="folder-tree-container">
+                        <div class="folder-tree-body">
+                            <div class="folder-empty">
+                                <div class="folder-empty-icon">${Icons.folder}</div>
+                                <div class="folder-empty-text">Loading folders...</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="save-modal-footer" style="${styleToString({
-      display: "flex",
-      gap: "8px",
-      justifyContent: "flex-end",
-      padding: "16px 20px",
-      borderTop: `1px solid ${theme.border}`
-    })}">
-                <button class="save-modal-btn save-modal-btn-cancel" style="${styleToString({
-      padding: "8px 16px",
-      borderRadius: "8px",
-      fontSize: "13px",
-      fontWeight: "600",
-      cursor: "pointer",
-      transition: "all 0.15s ease",
-      border: "none",
-      background: theme.secondary,
-      color: theme.secondaryForeground
-    })}">Cancel</button>
-                <button class="save-modal-btn save-modal-btn-save" disabled style="${styleToString({
-      padding: "8px 16px",
-      borderRadius: "8px",
-      fontSize: "13px",
-      fontWeight: "600",
-      cursor: "pointer",
-      transition: "all 0.15s ease",
-      border: "none",
-      background: theme.primary,
-      color: theme.primaryForeground
-    })}">Save</button>
+            <div class="save-modal-footer">
+                <button class="save-modal-btn save-modal-btn-cancel">Cancel</button>
+                <button class="save-modal-btn save-modal-btn-save" disabled>Save</button>
             </div>
         `;
     this.bindEvents(modal);
@@ -25425,7 +25353,6 @@ class BookmarkSaveModal {
    * Render tree nodes recursively
    */
   renderTreeNodes(nodes, depth) {
-    const theme = getTheme();
     return nodes.map((node) => {
       const isExpanded = this.expandedPaths.has(node.folder.path);
       const isSelected = node.folder.path === this.selectedPath;
@@ -25436,69 +25363,20 @@ class BookmarkSaveModal {
                 <div class="folder-item ${isSelected ? "selected" : ""}"
                      data-path="${this.escapeAttr(node.folder.path)}"
                      data-depth="${depth}"
-                     data-selected="${isSelected}"
-                     style="display: flex; align-items: center; min-height: 36px; padding: var(--space-2) var(--space-3) var(--space-2) ${indent + 12}px; cursor: pointer; border-bottom: 1.5px solid var(--gray-300); transition: all var(--duration-fast) var(--ease-out); position: relative; border-radius: var(--radius-small); ${isSelected ? "background: var(--primary-50); border-left: 3px solid var(--primary-600);" : ""}">
-                    <span class="folder-toggle" data-path="${this.escapeAttr(node.folder.path)}" aria-label="Toggle folder" style="${styleToString({
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "16px",
-        height: "16px",
-        marginRight: "4px",
-        fontSize: "10px",
-        color: theme.textSecondary,
-        cursor: "pointer",
-        userSelect: "none",
-        flexShrink: "0",
-        transition: "transform 150ms ease",
-        transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)"
-      })}">▶</span>
-                    <span class="folder-icon" style="${styleToString({
-        marginRight: "8px",
-        fontSize: "16px",
-        flexShrink: "0"
-      })}">${icon}</span>
-                    <span class="folder-name" style="${styleToString({
-        flex: "1",
-        fontSize: "13px",
-        fontWeight: "500",
-        color: theme.textPrimary,
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-        display: "flex",
-        alignItems: "center",
-        gap: "6px"
-      })}">${this.escapeHtml(node.folder.name)}</span>
-                    ${isSelected ? `<span class="folder-check" style="${styleToString({
-        color: theme.selectedAccent,
-        fontSize: "16px",
-        fontWeight: "600",
-        marginLeft: "8px",
-        flexShrink: "0"
-      })}">✓</span>` : ""}
-                    <div class="item-actions" style="${styleToString({
-        display: "flex",
-        gap: "4px",
-        marginLeft: "8px",
-        opacity: "0",
-        visibility: "hidden",
-        transition: "all 150ms ease"
-      })}">
-                        ${showAddButton ? `<button class="action-btn folder-add-btn" data-parent="${this.escapeAttr(node.folder.path)}" title="Create subfolder" style="${styleToString({
-        background: "transparent",
-        border: "none",
-        color: theme.textSecondary,
-        cursor: "pointer",
-        padding: "4px",
-        borderRadius: "4px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "14px",
-        transition: "all 150ms ease"
-      })}">${Icons.plus}</button>` : ""}
-                    </div>
+                     style="padding-left: ${indent + 12}px;">
+                    <span class="folder-toggle ${isExpanded ? "expanded" : ""}"
+                          data-path="${this.escapeAttr(node.folder.path)}"
+                          aria-label="Toggle folder">▶</span>
+                    <span class="folder-icon">${icon}</span>
+                    <span class="folder-name">${this.escapeHtml(node.folder.name)}</span>
+                    ${isSelected ? '<span class="folder-check">✓</span>' : ""}
+                    ${showAddButton ? `
+                        <div class="item-actions">
+                            <button class="action-btn folder-add-btn"
+                                    data-parent="${this.escapeAttr(node.folder.path)}"
+                                    title="Add subfolder">${Icons.plus}</button>
+                        </div>
+                    ` : ""}
                 </div>
             `;
       if (isExpanded && node.children.length > 0) {
@@ -25629,7 +25507,14 @@ class BookmarkSaveModal {
       }
       this.expandPathToFolder(newPath);
       this.renderFolderTree();
-      this.updateSaveButtonState();
+      if (this.currentMode === "folder-select") {
+        const moveBtn = this.modal?.querySelector(".save-modal-btn-save");
+        if (moveBtn) {
+          moveBtn.disabled = false;
+        }
+      } else {
+        this.updateSaveButtonState();
+      }
     } catch (error) {
       logger$1.error("[BookmarkSaveModal] Failed to create folder:", error);
       this.showSimpleNotification("error", `Failed to create folder: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -25667,260 +25552,50 @@ class BookmarkSaveModal {
       const bookmarkCount = options.bookmarkCount || 0;
       this.folders = await FolderStorage.getAll();
       this.selectedPath = null;
+      this.abortController = new AbortController();
+      this.injectStyles();
       this.overlay = document.createElement("div");
-      this.overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);  /* Keep for overlay */
-                backdrop-filter: blur(4px);
-                z-index: 2147483647;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                animation: fadeIn 0.2s ease-out;
-            `;
-      const theme = getTheme();
+      this.overlay.className = "modal-overlay";
       const modal = document.createElement("div");
       modal.className = "bookmark-save-modal";
-      modal.style.cssText = `
-                position: relative;
-                width: 90%;
-                max-width: 550px;
-                max-height: 85vh;
-                border-radius: ${theme.radius};
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                display: flex;
-                flex-direction: column;
-                animation: slideIn 0.2s ease-out;
-            `;
       modal.addEventListener("click", (e) => {
         e.stopPropagation();
       });
       modal.innerHTML = `
-                <style>
-                    /* Minimal CSS - Same as createModal() */
-                    @keyframes fadeIn {
-                        from { opacity: 0; }
-                        to { opacity: 1; }
-                    }
-                    
-                    @keyframes slideIn {
-                        from {
-                            opacity: 0;
-                            transform: translateY(-20px) scale(0.95);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateY(0) scale(1);
-                        }
-                    }
-
-                    .bookmark-save-modal * {
-                        box-sizing: border-box;
-                    }
-
-                    /* Important: Force background color */
-                    .bookmark-save-modal {
-                        background: ${theme.surface} !important;
-                    }
-                    
-                    /* Hover states */
-                    .folder-item:hover {
-                        background: ${theme.hover} !important;
-                    }
-                    
-                    .folder-item.selected {
-                        background: ${theme.selected} !important;
-                        box-shadow: inset 3px 0 0 ${theme.selectedAccent} !important;
-                    }
-                    
-                    .folder-item.selected:hover {
-                        background: ${theme.selectedHover} !important;
-                    }
-                    
-                    /* Action buttons - show on hover */
-                    .folder-item:hover .item-actions {
-                        opacity: 1 !important;
-                        visibility: visible !important;
-                    }
-                    
-                    .action-btn:hover {
-                        background: rgba(255, 255, 255, 0.1) !important;
-                    }
-                    
-                    .action-btn.delete-folder:hover {
-                        background: ${theme.danger} !important;
-                        color: white !important;
-                    }
-                    
-                    .save-modal-close-btn:hover {
-                        background: ${theme.hover} !important;
-                        color: ${theme.textPrimary} !important;
-                    }
-                    
-                    .folder-item:hover {
-                        background: ${theme.hover} !important;
-                    }
-                    
-                    .folder-item.selected:hover {
-                        background: ${theme.selectedHover} !important;
-                    }
-                    
-                    .save-modal-btn-cancel:hover {
-                        background: ${theme.borderLight} !important;
-                    }
-                    
-                    .save-modal-btn-save:hover:not(:disabled) {
-                        background: ${theme.primaryHover} !important;
-                    }
-                    
-                    .save-modal-btn-save:disabled {
-                        background: ${theme.textMuted} !important;
-                        cursor: not-allowed;
-                        opacity: 0.6;
-                    }
-                    
-                    .folder-item:hover .folder-add-btn {
-                        opacity: 1 !important;
-                        visibility: visible !important;
-                    }
-                    
-                    .folder-add-btn:hover {
-                        background: ${theme.primaryHover} !important;
-                        color: ${theme.primaryForeground} !important;
-                    }
-                </style>
-
-                <div class="save-modal-header" style="${styleToString({
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "16px 20px",
-        borderBottom: `1px solid ${theme.border}`
-      })}">
-                    <h2 style="${styleToString({
-        margin: "0",
-        fontSize: "14px",
-        fontWeight: "600",
-        color: theme.textPrimary
-      })}">Move Bookmarks to Folder</h2>
-                    <button class="save-modal-close-btn" aria-label="Close" style="${styleToString({
-        background: "none",
-        border: "none",
-        fontSize: "24px",
-        color: theme.textSecondary,
-        cursor: "pointer",
-        padding: "0",
-        width: "32px",
-        height: "32px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: "8px",
-        transition: "all 0.15s ease"
-      })}">×</button>
+                <div class="save-modal-header">
+                    <h2>Move Bookmarks to Folder</h2>
+                    <button class="save-modal-close-btn" aria-label="Close">×</button>
                 </div>
 
-                <div class="save-modal-body" style="${styleToString({
-        flex: "1",
-        overflowY: "auto",
-        padding: "20px"
-      })}">
-                    <!-- Info Section -->
-                    <div class="move-info" style="${styleToString({
-        display: "flex",
-        alignItems: "center",
-        padding: "12px 16px",
-        background: theme.infoSurface,
-        border: `1px solid ${theme.infoBorder}`,
-        borderRadius: "8px",
-        marginBottom: "16px",
-        fontSize: "14px",
-        color: theme.textPrimary
-      })}">
-                        <span class="move-info-text" style="display: flex; align-items: center; gap: 8px;">
-                            <span style="flex-shrink: 0; color: ${theme.primary};">${Icons.alertTriangle}</span>
-                            <span style="font-size: 12px; color: ${theme.textPrimary}; font-weight: 500;">Moving ${bookmarkCount} bookmark${bookmarkCount > 1 ? "s" : ""}</span>
-                        </span>
+                <div class="save-modal-body">
+                    <div class="bookmark-count-info">
+                        Moving <strong>${bookmarkCount}</strong> bookmark${bookmarkCount !== 1 ? "s" : ""}
                     </div>
 
-                    <!-- Folder Section -->
-                    <div class="folder-section" style="${styleToString({
-        marginBottom: "20px"
-      })}">
-                        <div class="folder-header" style="${styleToString({
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: "8px"
-      })}">
-                            <span class="folder-label" style="${styleToString({
-        fontSize: "13px",
-        fontWeight: "500",
-        color: theme.textSecondary
-      })}">Select Destination Folder</span>
+                    <div class="folder-section">
+                        <div class="folder-header">
+                            <span class="folder-label">Select Folder</span>
                         </div>
-                        <div class="folder-tree-container" style="${styleToString({
-        border: `1px solid ${theme.border}`,
-        borderRadius: "8px",
-        height: "300px",
-        overflowY: "auto",
-        fontSize: "14px",
-        background: theme.hover
-      })}">
-                            <div class="folder-tree-body" style="padding: 8px 0;">
-                                <div class="folder-empty" style="${styleToString({
-        padding: "40px 20px",
-        textAlign: "center",
-        color: theme.textMuted
-      })}">
-                                    <div class="folder-empty-icon" style="font-size: 48px; margin-bottom: 12px;">${Icons.folder}</div>
-                                    <div class="folder-empty-text" style="font-size: 13px;">Loading folders...</div>
+                        <div class="folder-tree-container">
+                            <div class="folder-tree-body">
+                                <div class="folder-empty">
+                                    <div class="folder-empty-icon">${Icons.folder}</div>
+                                    <div class="folder-empty-text">Loading folders...</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="save-modal-footer" style="${styleToString({
-        display: "flex",
-        gap: "8px",
-        justifyContent: "flex-end",
-        padding: "16px 20px",
-        borderTop: `1px solid ${theme.border}`
-      })}">
-
-                    <button class="save-modal-btn save-modal-btn-cancel" style="${styleToString({
-        padding: "8px 16px",
-        borderRadius: "8px",
-        fontSize: "13px",
-        fontWeight: "600",
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-        border: "none",
-        background: theme.secondary,
-        color: theme.secondaryForeground
-      })}">Cancel</button>
-                    <button class="save-modal-btn save-modal-btn-save" disabled style="${styleToString({
-        padding: "8px 16px",
-        borderRadius: "8px",
-        fontSize: "13px",
-        fontWeight: "600",
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-        border: "none",
-        background: theme.primary,
-        color: theme.primaryForeground
-      })}">Move</button>
+                <div class="save-modal-footer">
+                    <button class="save-modal-btn save-modal-btn-cancel">Cancel</button>
+                    <button class="save-modal-btn save-modal-btn-save" disabled>Move</button>
                 </div>
             `;
       this.modal = modal;
       this.overlay.appendChild(modal);
-      document.body.appendChild(this.overlay);
+      this.shadowRoot.appendChild(this.overlay);
+      document.body.appendChild(this.container);
       this.renderFolderTree();
       const closeBtn = modal.querySelector(".save-modal-close-btn");
       const cancelBtn = modal.querySelector(".save-modal-btn-cancel");
@@ -26832,7 +26507,7 @@ class SimpleBookmarkPanel {
     this.overlay.style.display = "flex";
     this.overlay.style.alignItems = "center";
     this.overlay.style.justifyContent = "center";
-    this.overlay.style.background = "rgba(0, 0, 0, 0.5)";
+    this.overlay.style.background = "var(--bg-overlay)";
     this.shadowRoot = this.overlay.attachShadow({ mode: "open" });
     const styles = document.createElement("style");
     styles.textContent = this.getStyles();
@@ -27006,8 +26681,6 @@ class SimpleBookmarkPanel {
                         </div>
                         <div class="platform-selector-wrapper">
                             <button class="platform-selector" data-selected="all">
-                                ${Icons.grid}
-                                <span class="platform-selector-label">All Platforms</span>
                                 <span class="platform-selector-icon">${Icons.chevronDown}</span>
                             </button>
                             <div class="platform-dropdown" style="display: none;">
@@ -27324,10 +26997,21 @@ class SimpleBookmarkPanel {
           const value = option.getAttribute("data-value") || "";
           const platform = option.getAttribute("data-platform") || "all";
           const label = option.querySelector(".platform-option-label")?.textContent || "All Platforms";
+          const iconEl = option.querySelector(".platform-option-icon");
           this.platformFilter = value;
           const selectorLabel = platformSelector.querySelector(".platform-selector-label");
           if (selectorLabel) {
             selectorLabel.textContent = label;
+          }
+          const oldIcons = platformSelector.querySelectorAll("span:not(.platform-selector-label):not(.platform-selector-icon)");
+          oldIcons.forEach((icon) => icon.remove());
+          if (platform !== "all" && iconEl && selectorLabel) {
+            const iconClone = iconEl.cloneNode(true);
+            platformSelector.insertBefore(iconClone, selectorLabel);
+          } else if (platform === "all" && selectorLabel) {
+            const gridSpan = document.createElement("span");
+            gridSpan.innerHTML = option.querySelector("span:first-child")?.innerHTML || "";
+            platformSelector.insertBefore(gridSpan, selectorLabel);
           }
           platformSelector.setAttribute("data-selected", platform);
           options.forEach((opt) => opt.setAttribute("data-selected", "false"));
@@ -27338,6 +27022,40 @@ class SimpleBookmarkPanel {
           this.refreshContent();
         });
       });
+      const currentPlatform = this.platformFilter || "";
+      options.forEach((opt) => {
+        const optValue = opt.getAttribute("data-value") || "";
+        opt.setAttribute("data-selected", optValue === currentPlatform ? "true" : "false");
+      });
+      const selectedOption = Array.from(options).find(
+        (opt) => (opt.getAttribute("data-value") || "") === currentPlatform
+      );
+      if (selectedOption) {
+        const platform = selectedOption.getAttribute("data-platform") || "all";
+        const label = selectedOption.querySelector(".platform-option-label")?.textContent || "All Platforms";
+        const iconEl = selectedOption.querySelector(".platform-option-icon");
+        const selectorLabel = platformSelector.querySelector(".platform-selector-label");
+        if (!selectorLabel) {
+          const newLabel = document.createElement("span");
+          newLabel.className = "platform-selector-label";
+          newLabel.textContent = label;
+          const chevron = platformSelector.querySelector(".platform-selector-icon");
+          platformSelector.insertBefore(newLabel, chevron);
+        } else {
+          selectorLabel.textContent = label;
+        }
+        if (platform !== "all" && iconEl) {
+          const iconClone = iconEl.cloneNode(true);
+          const selectorLabel2 = platformSelector.querySelector(".platform-selector-label");
+          platformSelector.insertBefore(iconClone, selectorLabel2);
+        } else if (platform === "all") {
+          const gridSpan = document.createElement("span");
+          gridSpan.innerHTML = Icons.grid;
+          const selectorLabel2 = platformSelector.querySelector(".platform-selector-label");
+          platformSelector.insertBefore(gridSpan, selectorLabel2);
+        }
+        platformSelector.setAttribute("data-selected", platform);
+      }
       const panelContainer = this.shadowRoot?.querySelector(".bookmarks-tab");
       if (panelContainer) {
         panelContainer.addEventListener("click", (e) => {
@@ -28495,10 +28213,6 @@ Tip: You can export your bookmarks first to create a backup.`
       };
       const config = configs[options.type];
       const title = options.title || config.defaultTitle;
-      const isDark = DesignTokens.isDarkMode();
-      const bgColor = isDark ? "#27272A" : "#FFFFFF";
-      const textColor = isDark ? "#D4D4D8" : "#374151";
-      const borderColor = isDark ? "#52525B" : "#E5E7EB";
       const overlay = document.createElement("div");
       overlay.style.cssText = `
                 position: fixed;
@@ -28506,7 +28220,7 @@ Tip: You can export your bookmarks first to create a backup.`
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5) !important;
+                background: var(--bg-overlay) !important;
                 z-index: 2147483647;
                 display: flex;
                 align-items: center;
@@ -28515,36 +28229,27 @@ Tip: You can export your bookmarks first to create a backup.`
             `;
       const modal = document.createElement("div");
       modal.style.cssText = `
-                background: ${bgColor};
+                background: var(--bg-surface);
+                color: var(--text-primary);
                 border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
             `;
       modal.innerHTML = `
-<div style="padding: 24px 24px 20px;">
-    <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: 16px;">
-        <span style="color: ${config.iconColor}; display: flex; align-items: center;">${config.icon}</span>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 500; color: ${config.titleColor};">
+<div class="info-dialog-content">
+    <div class="info-dialog-header">
+        <span class="info-dialog-icon" style="color: ${config.iconColor};">${config.icon}</span>
+        <h3 class="info-dialog-title" style="color: ${config.titleColor};">
             ${title}
         </h3>
     </div>
-    <div style="color: ${textColor}; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">
+    <div class="info-dialog-message">
 ${options.message}
     </div>
 </div>
-<div style="padding: 12px 24px; display: flex; justify-content: flex-end; border-top: 1px solid ${borderColor};">
-    <button class="ok-btn" style="
-        padding: 8px 24px;
-        border: none;
-        border-radius: var(--radius-small);
-        background: var(--primary-600);
-        color: white;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s;
-    ">OK</button>
+<div class="info-dialog-footer">
+    <button class="ok-btn">OK</button>
 </div>
             `;
       overlay.appendChild(modal);
@@ -28562,10 +28267,10 @@ ${options.message}
       });
       const okBtn = modal.querySelector(".ok-btn");
       okBtn.addEventListener("mouseenter", () => {
-        okBtn.style.background = "var(--primary-700)";
+        okBtn.style.background = "var(--button-primary-hover)";
       });
       okBtn.addEventListener("mouseleave", () => {
-        okBtn.style.background = "var(--primary-600)";
+        okBtn.style.background = "var(--button-primary-bg)";
       });
       const closeDialog = () => {
         overlay.remove();
@@ -28599,7 +28304,7 @@ ${options.message}
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5) !important;
+                background: var(--bg-overlay) !important;
                 z-index: 2147483647;
                 display: flex;
                 align-items: center;
@@ -28609,57 +28314,34 @@ ${options.message}
       const modal = document.createElement("div");
       modal.className = "delete-confirmation-modal";
       modal.style.cssText = `
-                background: var(--md-surface);
+                background: var(--bg-surface);
+                color: var(--text-primary);
                 border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
             `;
-      const isDark = DesignTokens.isDarkMode();
-      const titleColor = isDark ? "#F4F4F5" : "#111827";
-      const textColor = isDark ? "#D4D4D8" : "#6B7280";
-      const borderColor = isDark ? "#52525B" : "#E5E7EB";
       modal.innerHTML = `
-            <div style="padding: 20px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
-                    <span style="color: var(--warning-600); font-size: 24px; line-height: 1; flex-shrink: 0;">${Icons.alertTriangle}</span>
-                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: ${titleColor}; line-height: 1.2;">Delete Selected Items</h3>
+            <div class="delete-dialog-content">
+                <div class="delete-dialog-header">
+                    <span class="delete-dialog-icon">${Icons.alertTriangle}</span>
+                    <h3 class="delete-dialog-title">Delete Selected Items</h3>
                 </div>
-                <div style="color: ${textColor}; font-size: 14px; line-height: 1.5;">
-                    <p style="margin: 0 0 12px 0;">This will permanently delete:</p>
-                    <ul style="margin: 0; padding-left: 24px; list-style: none;">
-                        ${analysis.folders.length > 0 ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="flex-shrink: 0;">${Icons.folder}</span><span>${analysis.folders.length} root folder${analysis.folders.length > 1 ? "s" : ""}</span></li>` : ""}
-                        ${analysis.subfolders.length > 0 ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="flex-shrink: 0;">${Icons.folder}</span><span>${analysis.subfolders.length} subfolder${analysis.subfolders.length > 1 ? "s" : ""}</span></li>` : ""}
-                        ${analysis.bookmarks.length > 0 ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="flex-shrink: 0;">${Icons.bookmark}</span><span>${analysis.bookmarks.length} bookmark${analysis.bookmarks.length > 1 ? "s" : ""}</span></li>` : ""}
+                <div class="delete-dialog-body">
+                    <p class="delete-dialog-text">This will permanently delete:</p>
+                    <ul class="delete-dialog-list">
+                        ${analysis.folders.length > 0 ? `<li class="delete-dialog-list-item"><span class="delete-dialog-list-icon">${Icons.folder}</span><span>${analysis.folders.length} root folder${analysis.folders.length > 1 ? "s" : ""}</span></li>` : ""}
+                        ${analysis.subfolders.length > 0 ? `<li class="delete-dialog-list-item"><span class="delete-dialog-list-icon">${Icons.folder}</span><span>${analysis.subfolders.length} subfolder${analysis.subfolders.length > 1 ? "s" : ""}</span></li>` : ""}
+                        ${analysis.bookmarks.length > 0 ? `<li class="delete-dialog-list-item"><span class="delete-dialog-list-icon">${Icons.bookmark}</span><span>${analysis.bookmarks.length} bookmark${analysis.bookmarks.length > 1 ? "s" : ""}</span></li>` : ""}
                     </ul>
-                    <p style="margin: 12px 0 0 0; font-weight: 500; color: var(--danger-600);">
+                    <p class="delete-dialog-warning">
                         This action cannot be undone.
                     </p>
                 </div>
             </div>
-            <div style="padding: 12px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid ${borderColor};">
-                <button class="cancel-btn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 4px;
-                    background: transparent;
-                    color: var(--primary-600);
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">Cancel</button>
-                <button class="delete-btn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 4px;
-                    background: var(--danger-100);
-                    color: #FFFFFF;
-                    font-size: 14px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">Delete</button>
+            <div class="delete-dialog-footer">
+                <button class="cancel-btn">Cancel</button>
+                <button class="delete-btn">Delete</button>
             </div>
         `;
       overlay.appendChild(modal);
@@ -28753,10 +28435,6 @@ ${options.message}
   showErrorSummary(errors) {
     const isDark = document.documentElement.classList.contains("dark");
     const bgColor = isDark ? "var(--gray-800)" : "white";
-    const titleColor = isDark ? "var(--gray-50)" : "var(--gray-900)";
-    const textColor = isDark ? "var(--gray-400)" : "var(--gray-500)";
-    const borderColor = isDark ? "var(--gray-700)" : "var(--gray-200)";
-    const listBg = isDark ? "var(--gray-900)" : "var(--gray-50)";
     const overlay = document.createElement("div");
     overlay.style.cssText = `
             position: fixed;
@@ -28764,7 +28442,7 @@ ${options.message}
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: var(--bg-overlay);
             z-index: 2147483647;
             display: flex;
             align-items: center;
@@ -28782,42 +28460,26 @@ ${options.message}
             flex-direction: column;
         `;
     modal.innerHTML = `
-            <div style="padding: 24px 24px 20px;">
-                <div style="display: flex; align-items: center; gap: var(--space-4);  /* 16px */ margin-bottom: 16px;">
+            <div class="error-dialog-content">
+                <div class="error-dialog-header">
                     <span class="warning-icon">${Icons.alertTriangle}</span>
-                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: ${titleColor};">
+                    <h3 class="error-dialog-title">
                         Deletion Completed with Errors
                     </h3>
                 </div>
-                <div style="color: ${textColor}; font-size: 14px; line-height: 1.5;">
-                    <p style="margin: 0 0 12px 0;">
+                <div class="error-dialog-body">
+                    <p class="error-dialog-text">
                         Completed with <strong>${errors.length}</strong> error${errors.length > 1 ? "s" : ""}:
                     </p>
-                    <div style="
-                        max-height: 300px;
-                        overflow-y: auto;
-                        background: ${listBg};
-                        border-radius: 4px;
-                        padding: 12px;
-                    ">
-                        <ul style="margin: 0; padding-left: 20px;">
-                            ${errors.map((err) => `<li style="margin-bottom: 8px;">${err}</li>`).join("")}
+                    <div class="error-list-container">
+                        <ul class="error-list">
+                            ${errors.map((err) => `<li class="error-list-item">${err}</li>`).join("")}
                         </ul>
                     </div>
                 </div>
             </div>
-            <div style="padding: 8px; display: flex; justify-content: flex-end; border-top: 1px solid ${borderColor};">
-                <button class="ok-btn" style="
-                    padding: 8px 24px;
-                    border: none;
-                    border-radius: 4px;
-                    background: var(--primary-200);
-                    color: white;
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">OK</button>
+            <div class="error-dialog-footer">
+                <button class="ok-btn">OK</button>
             </div>
         `;
     overlay.appendChild(modal);
@@ -28932,10 +28594,6 @@ ${options.message}
    */
   async showExportOptionsDialog() {
     return new Promise((resolve) => {
-      const isDark = DesignTokens.isDarkMode();
-      const bgColor = isDark ? "#27272A" : "#FFFFFF";
-      const textColor = isDark ? "#D4D4D8" : "#374151";
-      const borderColor = isDark ? "#52525B" : "#E5E7EB";
       const overlay = document.createElement("div");
       overlay.style.cssText = `
                 position: fixed;
@@ -28943,7 +28601,7 @@ ${options.message}
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
+                background: var(--bg-overlay);
                 z-index: 2147483647;
                 display: flex;
                 align-items: center;
@@ -28951,85 +28609,40 @@ ${options.message}
             `;
       const modal = document.createElement("div");
       modal.style.cssText = `
-                background: ${bgColor};
+                background: var(--bg-surface);
+                color: var(--text-primary);
                 border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 500px;
                 width: 90%;
             `;
       modal.innerHTML = `
-                <div style="padding: 24px;">
-                    <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: ${textColor};">
+                <div class="export-dialog-content">
+                    <h3 class="export-dialog-title">
                         导出选项
                     </h3>
-                    <div style="margin-bottom: 20px; color: ${textColor}; font-size: 14px; line-height: 1.5;">
-                        <p style="margin: 0 0 12px 0;">选择导出方式:</p>
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            <label style="
-                                display: flex;
-                                align-items: center;
-                                gap: 12px;
-                                padding: 12px;
-                                border: 1px solid ${borderColor};
-                                border-radius: var(--radius-medium);
-                                cursor: pointer;
-                                transition: all 0.2s;
-                            " class="export-option">
-                                <input type="radio" name="exportType" value="preserve" checked style="
-                                    width: 16px;
-                                    height: 16px;
-                                    cursor: pointer;
-                                ">
+                    <div class="export-dialog-body">
+                        <p class="export-dialog-text">选择导出方式:</p>
+                        <div class="export-options-container">
+                            <label class="export-option">
+                                <input type="radio" name="exportType" value="preserve" checked class="export-option-radio">
                                 <div>
-                                    <div style="font-weight: 500; color: ${textColor};">保留文件夹结构</div>
-                                    <div style="font-size: 12px; color: ${textColor}; opacity: 0.7;">导出为分层的文件夹和书签</div>
+                                    <div class="export-option-label">保留文件夹结构</div>
+                                    <div class="export-option-desc">导出为分层的文件夹和书签</div>
                                 </div>
                             </label>
-                            <label style="
-                                display: flex;
-                                align-items: center;
-                                gap: 12px;
-                                padding: 12px;
-                                border: 1px solid ${borderColor};
-                                border-radius: var(--radius-medium);
-                                cursor: pointer;
-                                transition: all 0.2s;
-                            " class="export-option">
-                                <input type="radio" name="exportType" value="flat" style="
-                                    width: 16px;
-                                    height: 16px;
-                                    cursor: pointer;
-                                ">
+                            <label class="export-option">
+                                <input type="radio" name="exportType" value="flat" class="export-option-radio">
                                 <div>
-                                    <div style="font-weight: 500; color: ${textColor};">扁平列表</div>
-                                    <div style="font-size: 12px; color: ${textColor}; opacity: 0.7;">仅导出所有书签，不含文件夹</div>
+                                    <div class="export-option-label">扁平列表</div>
+                                    <div class="export-option-desc">仅导出所有书签，不含文件夹</div>
                                 </div>
                             </label>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                        <button class="cancel-btn" style="
-                            padding: 8px 16px;
-                            border: none;
-                            border-radius: var(--radius-medium);
-                            background: transparent;
-                            color: var(--primary-600);
-                            font-size: 14px;
-                            font-weight: 500;
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        ">取消</button>
-                        <button class="confirm-btn" style="
-                            padding: 8px 16px;
-                            border: none;
-                            border-radius: var(--radius-medium);
-                            background: #2563EB;
-                            color: #FFFFFF;
-                            font-size: 14px;
-                            font-weight: 600;
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        ">导出</button>
+                    <div class="export-dialog-footer">
+                        <button class="cancel-btn">取消</button>
+                        <button class="confirm-btn">导出</button>
                     </div>
                 </div>
             `;
@@ -29228,8 +28841,6 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
   async showImportSummary(analysis) {
     const isDark = document.documentElement.classList.contains("dark");
     const bgColor = isDark ? "var(--gray-800)" : "white";
-    const titleColor = isDark ? "var(--gray-50)" : "var(--gray-900)";
-    const textColor = isDark ? "var(--gray-400)" : "var(--gray-500)";
     return new Promise((resolve) => {
       const overlay = document.createElement("div");
       overlay.style.cssText = `
@@ -29256,50 +28867,30 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
             `;
       const totalIssues = analysis.noFolder.length + analysis.tooDeep.length;
       modal.innerHTML = `
-                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: ${titleColor};">
+                <h3 class="import-summary-title">
                     📥 导入摘要
                 </h3>
-                <div style="font-size: 14px; color: ${textColor}; line-height: 1.6;">
-                    <p style="margin: 0 0 12px 0;">
+                <div class="import-summary-content">
+                    <p class="import-summary-text">
                         准备导入 <strong>${analysis.valid.length + analysis.noFolder.length + analysis.tooDeep.length}</strong> 个书签：
                     </p>
-                    <ul style="margin: 0 0 16px 0; padding-left: 24px;">
+                    <ul class="import-summary-list">
                         <li>${Icons.check} ${analysis.valid.length} 个书签将正常导入</li>
                         ${analysis.noFolder.length > 0 ? `<li>${Icons.folder} ${analysis.noFolder.length} 个书签无文件夹 → 将导入到 <strong>Import</strong> 文件夹</li>` : ""}
                         ${analysis.tooDeep.length > 0 ? `<li>${Icons.folder} ${analysis.tooDeep.length} 个书签文件夹层级过深 → 将导入到 <strong>Import</strong> 文件夹</li>` : ""}
                     </ul>
                     ${totalIssues > 0 ? `
-                        <div style="background: var(--warning-100); border-left: 3px solid var(--warning-500); padding: 12px; border-radius: 4px; margin-bottom: 16px;">
-                            <div style="font-weight: 500; color: var(--warning-800); margin-bottom: 4px;">ℹ️ 注意</div>
-                            <div style="color: var(--warning-800); font-size: 13px;">
+                        <div class="import-summary-warning">
+                            <div class="import-summary-warning-title">ℹ️ 注意</div>
+                            <div class="import-summary-warning-text">
                                 ${analysis.noFolder.length + analysis.tooDeep.length} 个书签将自动归类到 Import 文件夹
                             </div>
                         </div>
                     ` : ""}
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-2);  /* 8px */ margin-top: 20px;">
-                    <button class="cancel-btn" style="
-                        padding: 8px 16px;
-                        border: 1px solid var(--gray-300);
-                        border-radius: 4px;
-                        background: white;
-                        color: var(--gray-500);
-                        font-size: 14px;
-                        font-weight: 500;
-                        cursor: pointer;
-                        transition: background 0.2s;
-                    ">取消</button>
-                    <button class="proceed-btn" style="
-                        padding: 8px 16px;
-                        border: none;
-                        border-radius: 4px;
-                        background: var(--primary-600);
-                        color: white;
-                        font-size: 14px;
-                        font-weight: 500;
-                        cursor: pointer;
-                        transition: background 0.2s;
-                    ">继续导入</button>
+                <div class="import-summary-footer">
+                    <button class="cancel-btn">Cancel</button>
+                    <button class="proceed-btn">Continue</button>
                 </div>
             `;
       overlay.appendChild(modal);
@@ -29407,90 +28998,100 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
    */
   async showConflictDialog(conflicts, allBookmarks) {
     return new Promise((resolve) => {
-      const isDark = DesignTokens.isDarkMode();
-      const bgColor = isDark ? "#27272A" : "#FFFFFF";
-      const titleColor = isDark ? "#F4F4F5" : "#111827";
-      const textColor = isDark ? "#D4D4D8" : "#374151";
-      const strongColor = isDark ? "#FAFAFA" : "#111827";
-      const listBg = isDark ? "#18181B" : "#F9FAFB";
-      const borderColor = isDark ? "#52525B" : "#E5E7EB";
-      const chatgptBg = isDark ? "#10A37F" : "#74AA9C";
-      const chatgptText = isDark ? "#FFFFFF" : "#1A7A5E";
-      const geminiBg = isDark ? "#8E9CF5" : "#A8C5FF";
-      const geminiText = isDark ? "#FFFFFF" : "#1A73E8";
       const overlay = document.createElement("div");
+      const isDark = document.documentElement.classList.contains("dark");
       overlay.style.cssText = `
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5) !important;
+                background: ${isDark ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.5)"} !important;
                 z-index: 2147483647;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color-scheme: light dark;
+                
+                /* Define CSS Variables for modal */
+                --bg-surface: ${isDark ? "#121212" : "white"};
+                --text-primary: ${isDark ? "#f5f5f5" : "#1f2937"};
+                --border-default: ${isDark ? "#374151" : "#d1d5db"};
+                --radius-large: 12px;
+                --shadow-2xl: 0 25px 50px -12px ${isDark ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.25)"};
+                --warning-600: #d97706;
+                --bg-tertiary: ${isDark ? "#1f2937" : "#f3f4f6"};
+                --border-subtle: ${isDark ? "#1f2937" : "#e5e7eb"};
+                --platform-chatgpt-bg: ${isDark ? "#064e3b" : "#d1fae5"};
+                --platform-chatgpt-text: ${isDark ? "#6ee7b7" : "#065f46"};
+                --platform-gemini-bg: ${isDark ? "#1e3a8a" : "#dbeafe"};
+                --platform-gemini-text: ${isDark ? "#93c5fd" : "#1e40af"};
+                --interactive-primary: #2563eb;
             `;
       const modal = document.createElement("div");
       modal.style.cssText = `
-                background: ${bgColor};
-                color: ${textColor};
-                border-radius: 12px;
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                background: var(--bg-surface);
+                color: var(--text-primary);
+                border-radius: var(--radius-large);
+                box-shadow: var(--shadow-2xl);
                 max-width: 500px;
                 width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
             `;
       modal.innerHTML = `
-            <div style="padding: 20px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
-                    <span style="color: var(--warning-600); font-size: 24px; line-height: 1; flex-shrink: 0;">${Icons.alertTriangle}</span>
-                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: ${titleColor}; line-height: 1.2;">Duplicate Bookmarks Detected</h3>
+            <style>
+                /* Duplicate Dialog Styles */
+                .duplicate-dialog-content { padding: 20px; }
+                .duplicate-dialog-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+                .duplicate-dialog-icon { color: var(--warning-600); font-size: 24px; line-height: 1; flex-shrink: 0; }
+                .duplicate-dialog-title { margin: 0; font-size: 20px; font-weight: 500; color: var(--text-primary); line-height: 1.2; }
+                .duplicate-dialog-body { color: var(--text-primary); font-size: 14px; line-height: 1.5; }
+                .duplicate-dialog-text { margin: 0 0 10px 0; }
+                .duplicate-list-container { background: var(--bg-tertiary); border-radius: 8px; padding: 12px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+                .duplicate-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-subtle); }
+                .duplicate-list-item:last-child { border-bottom: none; }
+                .duplicate-platform-badge { flex-shrink: 0; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+                .duplicate-platform-badge.platform-chatgpt { background: var(--platform-chatgpt-bg); color: var(--platform-chatgpt-text); }
+                .duplicate-platform-badge.platform-gemini { background: var(--platform-gemini-bg); color: var(--platform-gemini-text); }
+                .duplicate-bookmark-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+                .duplicate-highlight { color: var(--interactive-primary); font-weight: 600; }
+                .duplicate-dialog-hint { margin: 6px 0 0 0; color: ${isDark ? "#9ca3af" : "#6b7280"}; font-size: 13px; font-style: italic; opacity: 0.9; }
+                .import-summary-footer { padding: 12px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-default); }
+                .cancel-btn { padding: 8px 16px; border: 1px solid var(--border-default); border-radius: 6px; background: transparent; color: var(--text-primary); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+                .cancel-btn:hover { background: ${isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)"}; border-color: ${isDark ? "#4b5563" : "#9ca3af"}; }
+                .merge-btn { padding: 8px 16px; border: none; border-radius: 6px; background: ${isDark ? "#2563eb" : "#3b82f6"}; color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+                .merge-btn:hover { background: ${isDark ? "#1d4ed8" : "#2563eb"}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transform: translateY(-1px); }
+            </style>
+            <div class="duplicate-dialog-content">
+                <div class="duplicate-dialog-header">
+                    <span class="duplicate-dialog-icon">${Icons.alertTriangle}</span>
+                    <h3 class="duplicate-dialog-title">Duplicate Bookmarks Detected</h3>
                 </div>
-                <div style="color: ${textColor}; font-size: 14px; line-height: 1.5;">
-                    <p style="margin: 0 0 10px 0;">Found <strong style="color: ${strongColor};">${conflicts.length}</strong> bookmark(s) that already exist.</p>
-                    <p style="margin: 0 0 12px 0;">Total bookmarks to import: <strong style="color: ${strongColor};">${allBookmarks.length}</strong></p>
+                <div class="duplicate-dialog-body">
+                    <p class="duplicate-dialog-text">Found <strong>${conflicts.length}</strong> bookmark(s) that already exist.</p>
+                    <p class="duplicate-dialog-text">Total bookmarks to import: <strong>${allBookmarks.length}</strong></p>
                     
-                    <div style="background: ${listBg}; border-radius: 8px; padding: 12px; margin-bottom: 14px; max-height: 300px; overflow-y: auto;">
+                    <div class="duplicate-list-container">
                         ${conflicts.map((b) => `
-                            <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid ${borderColor};">
-                                <span style="flex-shrink: 0; padding: 3px 8px; background: ${b.platform?.toLowerCase() === "gemini" ? geminiBg : chatgptBg}; color: ${b.platform?.toLowerCase() === "gemini" ? geminiText : chatgptText}; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                            <div class="duplicate-list-item">
+                                <span class="duplicate-platform-badge platform-${b.platform?.toLowerCase() === "gemini" ? "gemini" : "chatgpt"}">
                                     ${b.platform || "ChatGPT"}
                                 </span>
-                                <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor};">
+                                <span class="duplicate-bookmark-title">
                                     ${this.escapeHtml(this.truncate(b.title || b.userMessage, 40))}
                                 </span>
                             </div>
                         `).join("")}
                     </div>
                     
-                    <p style="margin: 0 0 6px 0; color: ${textColor};">Click <strong style="color: var(--primary-600);">Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
-                    <p style="margin: 0; color: ${textColor}; font-size: 13px; font-style: italic; opacity: 0.8;">💡 Items without folders will be imported to the <strong>Import</strong> folder.</p>
+                    <p class="duplicate-dialog-text">Click <strong class="duplicate-highlight">Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
+                    <p class="duplicate-dialog-hint">💡 Items without folders will be imported to the <strong>Import</strong> folder.</p>
                 </div>
             </div>
-            <div style="padding: 12px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid ${borderColor};">
-                <button class="cancel-btn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 4px;
-                    background: transparent;
-                    color: var(--primary-600);
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">Cancel</button>
-                <button class="merge-btn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 4px;
-                    background: #2563EB;
-                    color: #FFFFFF;
-                    font-size: 14px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">Merge</button>
+            <div class="import-summary-footer">
+                <button class="cancel-btn">Cancel</button>
+                <button class="merge-btn">Merge</button>
             </div>
         `;
       overlay.appendChild(modal);
@@ -29502,12 +29103,6 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
       });
       cancelBtn.addEventListener("mouseleave", () => {
         cancelBtn.style.background = "transparent";
-      });
-      mergeBtn.addEventListener("mouseenter", () => {
-        mergeBtn.style.background = "var(--primary-700)";
-      });
-      mergeBtn.addEventListener("mouseleave", () => {
-        mergeBtn.style.background = "var(--primary-600)";
       });
       cancelBtn.addEventListener("click", () => {
         overlay.remove();
@@ -30024,10 +29619,10 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
             }
 
             .close-btn {
-                background: none;
+                background: var(--button-close-bg);
                 border: none;
                 font-size: 24px;  /* Slightly smaller */
-                color: var(--gray-500);
+                color: var(--button-close-text);
                 cursor: pointer;
                 padding: var(--space-1);  /* 4px */
                 width: 32px;
@@ -30040,12 +29635,13 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
             }
 
             .close-btn:hover {
-                background: var(--gray-100);
-                color: var(--gray-900);
+                background: var(--button-close-hover);
+                color: var(--button-close-text-hover);
                 transform: scale(1.05);  /* Micro-animation */
             }
 
             .close-btn:active {
+                background: var(--button-close-active);
                 transform: scale(0.95);  /* Press feedback */
             }
 
@@ -30053,7 +29649,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 /* Layout properties (from Line 5003) */
                 display: flex;
                 align-items: center;
-                min-height: 36px;
+                min-height: 30px;
                 padding: var(--space-2) var(--space-3);  /* 8px 12px */
                 position: relative;
                 cursor: pointer;
@@ -30068,7 +29664,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 /* Critical: Explicit background */
                 background: transparent;
                 border: none;
-                border-bottom: 1.5px solid var(--gray-300);  /* From Line 5003 */
+                border-bottom: 1.8px solid var(--gray-300);  /* From Line 5003 */
             }
 
             .tree-item:hover {
@@ -30188,17 +29784,19 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 justify-content: center;
                 border: none;
                 border-radius: var(--radius-small);  /* 8px */
-                background: transparent;
-                color: var(--md-on-surface);
+                background: var(--button-icon-bg);
+                color: var(--button-icon-text);
                 cursor: pointer;
                 transition: all var(--duration-base) var(--ease-out);
             }
 
             .toolbar-icon-btn:hover {
-                background: var(--md-surface-container);
+                background: var(--button-icon-hover);
+                color: var(--button-icon-text-hover);
             }
 
             .toolbar-icon-btn:active {
+                background: var(--button-icon-active);
                 transform: scale(0.95);
             }
 
@@ -30230,24 +29828,26 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
 
             /* Mac tag风格 - 根据选中平台改变背景色 */
             .platform-selector[data-selected="all"] {
-                background: var(--gray-100);  /* 中性灰 */
-                border-color: var(--gray-300);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                border-color: var(--border-default);
             }
 
             .platform-selector[data-selected="chatgpt"] {
-                background: var(--success-50);  /* 浅绿色 */
-                border-color: var(--success-200);
-                color: var(--success-900);
+                background: var(--platform-chatgpt-bg);
+                color: var(--platform-chatgpt-text);
+                border-color: var(--platform-chatgpt-bg);
             }
 
             .platform-selector[data-selected="gemini"] {
-                background: var(--primary-50);  /* 浅蓝色 */
-                border-color: var(--primary-200);
-                color: var(--primary-900);
+                background: var(--platform-gemini-bg);
+                color: var(--platform-gemini-text);
+                border-color: var(--platform-gemini-bg);
             }
 
             .platform-selector:hover {
-                border-color: var(--primary-600);
+                background: var(--interactive-hover);
+                border-color: var(--interactive-primary);
                 box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
             }
 
@@ -30291,12 +29891,14 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
             }
 
             .platform-option:hover {
-                background: var(--md-surface-container);
+                background: var(--interactive-hover);
             }
 
             .platform-option[data-selected="true"] {
-                background: var(--primary-100);
-                color: var(--primary-900);
+                background: var(--interactive-selected);
+                color: var(--text-primary);
+                font-weight: 600;
+                box-shadow: inset 3px 0 0 var(--interactive-primary);
             }
 
             .platform-option-icon {
@@ -30354,7 +29956,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
             }
 
             .bookmark-item {
-                padding: var(--space-3) var(--space-4);
+                padding: var(--space-2) var(--space-4);
                 margin: var(--space-1) 3px;
                 border: none;
                 border-radius: var(--radius-small);
@@ -30362,11 +29964,10 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 cursor: pointer;
                 transition: all var(--duration-base) var(--ease-out);
                 
-                /* ✅ Match folder height */
-                min-height: 36px;
+                min-height: 28px;
                 
                 /* ✅ Bottom border + subtle shadow (like folders) */
-                border-bottom: 1px solid var(--md-outline-variant);
+                border-bottom: 1px solid var(--gray-200);
                 box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
                 
                 display: flex;
@@ -30409,7 +30010,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 left: 50%;
                 transform: translate(-50%, -50%);
                 background: var(--md-surface);  /* ✅ Dark mode */
-                padding: 24px;
+                padding: 12px;
                 border-radius: 12px;
                 box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
                 z-index: 10001;
@@ -30688,21 +30289,433 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
             }
 
             .merge-btn {
-                background: var(--primary-600);
+                background: var(--button-primary-bg);
                 color: var(--white);
             }
 
             .merge-btn:hover {
-                background: var(--primary-700);
+                background: var(--button-primary-hover);
             }
 
             .cancel-btn {
-                background: var(--gray-200);
-                color: var(--gray-700);
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: var(--font-medium);
+                cursor: pointer;
+                transition: background 0.2s;
+                background: var(--button-secondary-bg); 
+                color: var(--button-secondary-text);
             }
 
             .cancel-btn:hover {
-                background: var(--gray-300);
+                background: var(--button-secondary-hover); 
+                color: var(--button-secondary-text-hover);
+            }
+            
+            .confirm-btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: var(--radius-small);
+                background: var(--button-primary-bg);
+                color: var(--button-primary-text);
+                font-size: 14px;
+                font-weight: var(--font-medium);
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            
+            .confirm-btn:hover {
+                background: var(--button-primary-hover);
+            }
+
+            /* Import Summary Dialog */
+            .import-summary-title {
+                margin: 0 0 16px 0;
+                font-size: 18px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .import-summary-content {
+                font-size: 14px;
+                color: var(--text-primary);
+                line-height: 1.6;
+            }
+
+            .import-summary-text {
+                margin: 0 0 12px 0;
+            }
+
+            .import-summary-list {
+                margin: 0 0 16px 0;
+                padding-left: 24px;
+            }
+
+            .import-summary-warning {
+                background: var(--warning-bg);
+                border-left: 3px solid var(--warning-border);
+                padding: 12px;
+                border-radius: var(--radius-small);
+                margin-bottom: 16px;
+            }
+
+            .import-summary-warning-title {
+                font-weight: var(--font-medium);
+                color: var(--warning-text);
+                margin-bottom: 4px;
+            }
+
+            .import-summary-warning-text {
+                color: var(--warning-text);
+                font-size: 13px;
+            }
+
+            .import-summary-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: var(--space-2);
+                margin-top: 20px;
+            }
+
+            .proceed-btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: var(--radius-small);
+                background: var(--button-primary-bg);
+                color: var(--button-primary-text);
+                font-size: 14px;
+                font-weight: var(--font-medium);
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+
+            .proceed-btn:hover {
+                background: var(--button-primary-hover);
+            }
+
+            /* Duplicate Bookmarks Dialog */
+            .duplicate-dialog-content {
+                padding: 20px;
+            }
+
+            .duplicate-dialog-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 14px;
+            }
+
+            .duplicate-dialog-icon {
+                color: var(--warning-600);
+                font-size: 24px;
+                line-height: 1;
+                flex-shrink: 0;
+            }
+
+            .duplicate-dialog-title {
+                margin: 0;
+                font-size: 20px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+                line-height: 1.2;
+            }
+
+            .duplicate-dialog-body {
+                color: var(--text-primary);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .duplicate-dialog-text {
+                margin: 0 0 10px 0;
+            }
+
+            .duplicate-list-container {
+                background: var(--bg-tertiary);
+                border-radius: 8px;
+                padding: 12px;
+                margin-bottom: 14px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            .duplicate-list-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 0;
+                border-bottom: 1px solid var(--border-subtle);
+            }
+
+            .duplicate-list-item:last-child {
+                border-bottom: none;
+            }
+
+            .duplicate-platform-badge {
+                flex-shrink: 0;
+                padding: 3px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: var(--font-semibold);
+            }
+
+            .duplicate-platform-badge.platform-chatgpt {
+                background: var(--platform-chatgpt-bg);
+                color: var(--platform-chatgpt-text);
+            }
+
+            .duplicate-platform-badge.platform-gemini {
+                background: var(--platform-gemini-bg);
+                color: var(--platform-gemini-text);
+            }
+
+            .duplicate-bookmark-title {
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                color: var(--text-primary);
+            }
+
+            .duplicate-highlight {
+                color: var(--interactive-primary);
+            }
+
+            .duplicate-dialog-hint {
+                margin: 6px 0 0 0;
+                color: var(--text-secondary);
+                font-size: 13px;
+                font-style: italic;
+                opacity: 0.9;
+            }
+
+            /* Info Dialog */
+            .info-dialog-content {
+                padding: 24px 24px 20px;
+            }
+
+            .info-dialog-header {
+                display: flex;
+                align-items: center;
+                gap: var(--space-3);
+                margin-bottom: 16px;
+            }
+
+            .info-dialog-icon {
+                display: flex;
+                align-items: center;
+            }
+
+            .info-dialog-title {
+                margin: 0;
+                font-size: 18px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .info-dialog-message {
+                color: var(--text-primary);
+                font-size: 14px;
+                line-height: 1.6;
+                white-space: pre-wrap;
+            }
+
+            .info-dialog-footer {
+                padding: 12px 24px;
+                display: flex;
+                justify-content: flex-end;
+                border-top: 1px solid var(--border-default);
+            }
+
+            /* Delete Confirmation Dialog */
+            .delete-dialog-content {
+                padding: 20px;
+            }
+
+            .delete-dialog-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 14px;
+            }
+
+            .delete-dialog-icon {
+                color: var(--warning-600);
+                font-size: 24px;
+                line-height: 1;
+                flex-shrink: 0;
+            }
+
+            .delete-dialog-title {
+                margin: 0;
+                font-size: 20px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+                line-height: 1.2;
+            }
+
+            .delete-dialog-body {
+                color: var(--text-secondary);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .delete-dialog-text {
+                margin: 0 0 12px 0;
+            }
+
+            .delete-dialog-list {
+                margin: 0;
+                padding-left: 24px;
+                list-style: none;
+            }
+
+            .delete-dialog-list-item {
+                margin-bottom: 6px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .delete-dialog-list-icon {
+                flex-shrink: 0;
+            }
+
+            .delete-dialog-warning {
+                margin: 12px 0 0 0;
+                font-weight: var(--font-medium);
+                color: var(--error);
+            }
+
+            .delete-dialog-footer {
+                padding: 12px 16px;
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                border-top: 1px solid var(--border-default);
+            }
+
+            /* Error Dialog */
+            .error-dialog-content {
+                padding: 24px 24px 20px;
+            }
+
+            .error-dialog-header {
+                display: flex;
+                align-items: center;
+                gap: var(--space-4);
+                margin-bottom: 16px;
+            }
+
+            .error-dialog-title {
+                margin: 0;
+                font-size: 20px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .error-dialog-body {
+                color: var(--text-primary);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .error-dialog-text {
+                margin: 0 0 12px 0;
+            }
+
+            .error-list-container {
+                max-height: 300px;
+                overflow-y: auto;
+                background: var(--bg-tertiary);
+                border-radius: 4px;
+                padding: 12px;
+            }
+
+            .error-list {
+                margin: 0;
+                padding-left: 20px;
+            }
+
+            .error-list-item {
+                margin-bottom: 8px;
+            }
+
+            .error-dialog-footer {
+                padding: 8px;
+                display: flex;
+                justify-content: flex-end;
+                border-top: 1px solid var(--border-default);
+            }
+
+            /* Export Options Dialog */
+            .export-dialog-content {
+                padding: 24px;
+            }
+
+            .export-dialog-title {
+                margin: 0 0 16px 0;
+                font-size: 18px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .export-dialog-body {
+                margin-bottom: 20px;
+                color: var(--text-primary);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .export-dialog-text {
+                margin: 0 0 12px 0;
+            }
+
+            .export-options-container {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .export-option {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                border: 1px solid var(--border-default);
+                border-radius: var(--radius-medium);
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .export-option:hover {
+                border-color: var(--interactive-primary);
+                background: var(--interactive-hover);
+            }
+
+            .export-option-radio {
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+
+            .export-option-label {
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .export-option-desc {
+                font-size: 12px;
+                color: var(--text-secondary);
+                opacity: 0.9;
+            }
+
+            .export-dialog-footer {
+                display: flex;
+                gap: 12px;
+                justify-content: flex-end;
             }
 
             /* Detail Modal - Modern & Clean */
@@ -31128,10 +31141,10 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
             }
 
             .folder-item.selected {
-                background: var(--primary-50);  /* Light blue in light mode, dark blue in dark mode */
-                color: var(--primary-700);  /* Ensure text contrast */
+                background: var(--interactive-selected);
+                color: var(--text-primary);
                 /* Left accent bar instead of full border */
-                box-shadow: inset 3px 0 0 var(--primary-500);
+                box-shadow: inset 3px 0 0 var(--interactive-primary);
             }
 
             .folder-toggle {
@@ -31217,7 +31230,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
 
             .bookmark-title {
                 flex: 1;
-                font-size: 13px;
+                font-size: 14px;
                 color: var(--gray-700);
                 overflow: hidden;
                 text-overflow: ellipsis;

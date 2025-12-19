@@ -129,7 +129,7 @@ export class MathClickHandler {
 
         // Create named event listeners (so we can remove them later)
         const mouseenterHandler = () => {
-            targetEl.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+            targetEl.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';  // Blue highlight on hover
         };
 
         const mouseleaveHandler = () => {
@@ -203,7 +203,7 @@ export class MathClickHandler {
     private showCopyFeedback(element: HTMLElement): void {
         // Don't save originalBg - it might be the hover color
         // We'll clear it completely and re-apply if needed
-        element.style.backgroundColor = 'rgba(139, 92, 246, 0.2)';
+        element.style.backgroundColor = 'rgba(139, 92, 246, 0.2)';  // Purple feedback on copy
 
         // Create tooltip
         const tooltip = document.createElement('div');
@@ -248,7 +248,7 @@ export class MathClickHandler {
 
             // Re-apply hover effect if mouse is still over element
             if (element.matches(':hover')) {
-                element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';  // Re-apply hover
             }
         }, 1500);
     }

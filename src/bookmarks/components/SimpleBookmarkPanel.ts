@@ -93,7 +93,7 @@ export class SimpleBookmarkPanel {
         this.overlay.style.display = 'flex';
         this.overlay.style.alignItems = 'center';
         this.overlay.style.justifyContent = 'center';
-        this.overlay.style.background = 'rgba(0, 0, 0, 0.5)';
+        this.overlay.style.background = 'var(--bg-overlay)';
 
         this.shadowRoot = this.overlay.attachShadow({ mode: 'open' });
 
@@ -328,8 +328,6 @@ export class SimpleBookmarkPanel {
                         </div>
                         <div class="platform-selector-wrapper">
                             <button class="platform-selector" data-selected="all">
-                                ${Icons.grid}
-                                <span class="platform-selector-label">All Platforms</span>
                                 <span class="platform-selector-icon">${Icons.chevronDown}</span>
                             </button>
                             <div class="platform-dropdown" style="display: none;">
@@ -701,6 +699,7 @@ export class SimpleBookmarkPanel {
                     const value = option.getAttribute('data-value') || '';
                     const platform = option.getAttribute('data-platform') || 'all';
                     const label = option.querySelector('.platform-option-label')?.textContent || 'All Platforms';
+                    const iconEl = option.querySelector('.platform-option-icon');
 
                     // 更新选中状态
                     this.platformFilter = value;
@@ -709,6 +708,22 @@ export class SimpleBookmarkPanel {
                     const selectorLabel = platformSelector.querySelector('.platform-selector-label');
                     if (selectorLabel) {
                         selectorLabel.textContent = label;
+                    }
+
+                    // 更新按钮图标
+                    // 先移除旧的平台图标（不包括chevron图标）
+                    const oldIcons = platformSelector.querySelectorAll('span:not(.platform-selector-label):not(.platform-selector-icon)');
+                    oldIcons.forEach(icon => icon.remove());
+
+                    // 如果不是"All Platforms"，添加新图标
+                    if (platform !== 'all' && iconEl && selectorLabel) {
+                        const iconClone = iconEl.cloneNode(true) as HTMLElement;
+                        platformSelector.insertBefore(iconClone, selectorLabel);
+                    } else if (platform === 'all' && selectorLabel) {
+                        // 如果是All Platforms，添加grid图标
+                        const gridSpan = document.createElement('span');
+                        gridSpan.innerHTML = option.querySelector('span:first-child')?.innerHTML || '';
+                        platformSelector.insertBefore(gridSpan, selectorLabel);
                     }
 
                     // 更新按钮背景色
@@ -727,6 +742,52 @@ export class SimpleBookmarkPanel {
                     this.refreshContent();
                 });
             });
+
+            // 初始化：根据当前platformFilter设置正确的选中状态和按钮显示
+            const currentPlatform = this.platformFilter || '';
+
+            options.forEach(opt => {
+                const optValue = opt.getAttribute('data-value') || '';
+                opt.setAttribute('data-selected', optValue === currentPlatform ? 'true' : 'false');
+            });
+
+            // 查找选中的选项
+            const selectedOption = Array.from(options).find(opt =>
+                (opt.getAttribute('data-value') || '') === currentPlatform
+            );
+
+            // 初始化按钮显示：设置正确的图标和文字
+            if (selectedOption) {
+                const platform = selectedOption.getAttribute('data-platform') || 'all';
+                const label = selectedOption.querySelector('.platform-option-label')?.textContent || 'All Platforms';
+                const iconEl = selectedOption.querySelector('.platform-option-icon');
+
+                const selectorLabel = platformSelector.querySelector('.platform-selector-label');
+                if (!selectorLabel) {
+                    // 创建label元素
+                    const newLabel = document.createElement('span');
+                    newLabel.className = 'platform-selector-label';
+                    newLabel.textContent = label;
+                    const chevron = platformSelector.querySelector('.platform-selector-icon');
+                    platformSelector.insertBefore(newLabel, chevron);
+                } else {
+                    selectorLabel.textContent = label;
+                }
+
+                // 添加对应的图标
+                if (platform !== 'all' && iconEl) {
+                    const iconClone = iconEl.cloneNode(true) as HTMLElement;
+                    const selectorLabel2 = platformSelector.querySelector('.platform-selector-label');
+                    platformSelector.insertBefore(iconClone, selectorLabel2);
+                } else if (platform === 'all') {
+                    const gridSpan = document.createElement('span');
+                    gridSpan.innerHTML = Icons.grid;
+                    const selectorLabel2 = platformSelector.querySelector('.platform-selector-label');
+                    platformSelector.insertBefore(gridSpan, selectorLabel2);
+                }
+
+                platformSelector.setAttribute('data-selected', platform);
+            }
 
             // 点击 panel 内任意位置关闭下拉菜单
             const panelContainer = this.shadowRoot?.querySelector('.bookmarks-tab');
@@ -2239,12 +2300,6 @@ export class SimpleBookmarkPanel {
             const config = configs[options.type];
             const title = options.title || config.defaultTitle;
 
-            // ✅ Dark mode detection
-            const isDark = DesignTokens.isDarkMode();
-            const bgColor = isDark ? '#27272A' : '#FFFFFF';        // gray-800 : white
-            const textColor = isDark ? '#D4D4D8' : '#374151';      // gray-300 : gray-700
-            const borderColor = isDark ? '#52525B' : '#E5E7EB';   // gray-600 : gray-200
-
             const overlay = document.createElement('div');
             overlay.style.cssText = `
                 position: fixed;
@@ -2252,7 +2307,7 @@ export class SimpleBookmarkPanel {
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5) !important;
+                background: var(--bg-overlay) !important;
                 z-index: 2147483647;
                 display: flex;
                 align-items: center;
@@ -2262,7 +2317,8 @@ export class SimpleBookmarkPanel {
 
             const modal = document.createElement('div');
             modal.style.cssText = `
-                background: ${bgColor};
+                background: var(--bg-surface);
+                color: var(--text-primary);
                 border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 400px;
@@ -2270,29 +2326,19 @@ export class SimpleBookmarkPanel {
             `;
 
             modal.innerHTML = `
-<div style="padding: 24px 24px 20px;">
-    <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: 16px;">
-        <span style="color: ${config.iconColor}; display: flex; align-items: center;">${config.icon}</span>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 500; color: ${config.titleColor};">
+<div class="info-dialog-content">
+    <div class="info-dialog-header">
+        <span class="info-dialog-icon" style="color: ${config.iconColor};">${config.icon}</span>
+        <h3 class="info-dialog-title" style="color: ${config.titleColor};">
             ${title}
         </h3>
     </div>
-    <div style="color: ${textColor}; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">
+    <div class="info-dialog-message">
 ${options.message}
     </div>
 </div>
-<div style="padding: 12px 24px; display: flex; justify-content: flex-end; border-top: 1px solid ${borderColor};">
-    <button class="ok-btn" style="
-        padding: 8px 24px;
-        border: none;
-        border-radius: var(--radius-small);
-        background: var(--primary-600);
-        color: white;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s;
-    ">OK</button>
+<div class="info-dialog-footer">
+    <button class="ok-btn">OK</button>
 </div>
             `;
 
@@ -2317,10 +2363,10 @@ ${options.message}
             const okBtn = modal.querySelector('.ok-btn') as HTMLElement;
 
             okBtn.addEventListener('mouseenter', () => {
-                okBtn.style.background = 'var(--primary-700)';
+                okBtn.style.background = 'var(--button-primary-hover)';
             });
             okBtn.addEventListener('mouseleave', () => {
-                okBtn.style.background = 'var(--primary-600)';
+                okBtn.style.background = 'var(--button-primary-bg)';
             });
 
             const closeDialog = () => {
@@ -2363,7 +2409,7 @@ ${options.message}
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5) !important;
+                background: var(--bg-overlay) !important;
                 z-index: 2147483647;
                 display: flex;
                 align-items: center;
@@ -2373,63 +2419,36 @@ ${options.message}
 
             const modal = document.createElement('div');
             modal.className = 'delete-confirmation-modal';
-
-            // ✅ Use CSS variables for dark mode support
             modal.style.cssText = `
-                background: var(--md-surface);
+                background: var(--bg-surface);
+                color: var(--text-primary);
                 border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 400px;
                 width: 90%;
             `;
 
-            // Detect theme for conditional styles
-            const isDark = DesignTokens.isDarkMode();
-            const titleColor = isDark ? '#F4F4F5' : '#111827';  // gray-700 : gray-900
-            const textColor = isDark ? '#D4D4D8' : '#6B7280';   // gray-500 : gray-500
-            const borderColor = isDark ? '#52525B' : '#E5E7EB'; // gray-300 : gray-200
-
             modal.innerHTML = `
-            <div style="padding: 20px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
-                    <span style="color: var(--warning-600); font-size: 24px; line-height: 1; flex-shrink: 0;">${Icons.alertTriangle}</span>
-                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: ${titleColor}; line-height: 1.2;">Delete Selected Items</h3>
+            <div class="delete-dialog-content">
+                <div class="delete-dialog-header">
+                    <span class="delete-dialog-icon">${Icons.alertTriangle}</span>
+                    <h3 class="delete-dialog-title">Delete Selected Items</h3>
                 </div>
-                <div style="color: ${textColor}; font-size: 14px; line-height: 1.5;">
-                    <p style="margin: 0 0 12px 0;">This will permanently delete:</p>
-                    <ul style="margin: 0; padding-left: 24px; list-style: none;">
-                        ${analysis.folders.length > 0 ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="flex-shrink: 0;">${Icons.folder}</span><span>${analysis.folders.length} root folder${analysis.folders.length > 1 ? 's' : ''}</span></li>` : ''}
-                        ${analysis.subfolders.length > 0 ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="flex-shrink: 0;">${Icons.folder}</span><span>${analysis.subfolders.length} subfolder${analysis.subfolders.length > 1 ? 's' : ''}</span></li>` : ''}
-                        ${analysis.bookmarks.length > 0 ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="flex-shrink: 0;">${Icons.bookmark}</span><span>${analysis.bookmarks.length} bookmark${analysis.bookmarks.length > 1 ? 's' : ''}</span></li>` : ''}
+                <div class="delete-dialog-body">
+                    <p class="delete-dialog-text">This will permanently delete:</p>
+                    <ul class="delete-dialog-list">
+                        ${analysis.folders.length > 0 ? `<li class="delete-dialog-list-item"><span class="delete-dialog-list-icon">${Icons.folder}</span><span>${analysis.folders.length} root folder${analysis.folders.length > 1 ? 's' : ''}</span></li>` : ''}
+                        ${analysis.subfolders.length > 0 ? `<li class="delete-dialog-list-item"><span class="delete-dialog-list-icon">${Icons.folder}</span><span>${analysis.subfolders.length} subfolder${analysis.subfolders.length > 1 ? 's' : ''}</span></li>` : ''}
+                        ${analysis.bookmarks.length > 0 ? `<li class="delete-dialog-list-item"><span class="delete-dialog-list-icon">${Icons.bookmark}</span><span>${analysis.bookmarks.length} bookmark${analysis.bookmarks.length > 1 ? 's' : ''}</span></li>` : ''}
                     </ul>
-                    <p style="margin: 12px 0 0 0; font-weight: 500; color: var(--danger-600);">
+                    <p class="delete-dialog-warning">
                         This action cannot be undone.
                     </p>
                 </div>
             </div>
-            <div style="padding: 12px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid ${borderColor};">
-                <button class="cancel-btn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 4px;
-                    background: transparent;
-                    color: var(--primary-600);
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">Cancel</button>
-                <button class="delete-btn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 4px;
-                    background: var(--danger-100);
-                    color: #FFFFFF;
-                    font-size: 14px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">Delete</button>
+            <div class="delete-dialog-footer">
+                <button class="cancel-btn">Cancel</button>
+                <button class="delete-btn">Delete</button>
             </div>
         `;
 
@@ -2550,10 +2569,7 @@ ${options.message}
         // Dark mode detection
         const isDark = document.documentElement.classList.contains('dark');
         const bgColor = isDark ? 'var(--gray-800)' : 'white';
-        const titleColor = isDark ? 'var(--gray-50)' : 'var(--gray-900)';
-        const textColor = isDark ? 'var(--gray-400)' : 'var(--gray-500)';
-        const borderColor = isDark ? 'var(--gray-700)' : 'var(--gray-200)';
-        const listBg = isDark ? 'var(--gray-900)' : 'var(--gray-50)';
+
 
         const overlay = document.createElement('div');
         overlay.style.cssText = `
@@ -2562,7 +2578,7 @@ ${options.message}
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: var(--bg-overlay);
             z-index: 2147483647;
             display: flex;
             align-items: center;
@@ -2582,42 +2598,26 @@ ${options.message}
         `;
 
         modal.innerHTML = `
-            <div style="padding: 24px 24px 20px;">
-                <div style="display: flex; align-items: center; gap: var(--space-4);  /* 16px */ margin-bottom: 16px;">
+            <div class="error-dialog-content">
+                <div class="error-dialog-header">
                     <span class="warning-icon">${Icons.alertTriangle}</span>
-                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: ${titleColor};">
+                    <h3 class="error-dialog-title">
                         Deletion Completed with Errors
                     </h3>
                 </div>
-                <div style="color: ${textColor}; font-size: 14px; line-height: 1.5;">
-                    <p style="margin: 0 0 12px 0;">
+                <div class="error-dialog-body">
+                    <p class="error-dialog-text">
                         Completed with <strong>${errors.length}</strong> error${errors.length > 1 ? 's' : ''}:
                     </p>
-                    <div style="
-                        max-height: 300px;
-                        overflow-y: auto;
-                        background: ${listBg};
-                        border-radius: 4px;
-                        padding: 12px;
-                    ">
-                        <ul style="margin: 0; padding-left: 20px;">
-                            ${errors.map(err => `<li style="margin-bottom: 8px;">${err}</li>`).join('')}
+                    <div class="error-list-container">
+                        <ul class="error-list">
+                            ${errors.map(err => `<li class="error-list-item">${err}</li>`).join('')}
                         </ul>
                     </div>
                 </div>
             </div>
-            <div style="padding: 8px; display: flex; justify-content: flex-end; border-top: 1px solid ${borderColor};">
-                <button class="ok-btn" style="
-                    padding: 8px 24px;
-                    border: none;
-                    border-radius: 4px;
-                    background: var(--primary-200);
-                    color: white;
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">OK</button>
+            <div class="error-dialog-footer">
+                <button class="ok-btn">OK</button>
             </div>
         `;
 
@@ -2761,12 +2761,6 @@ ${options.message}
      */
     private async showExportOptionsDialog(): Promise<boolean | null> {
         return new Promise((resolve) => {
-            // ✅ Dark mode detection
-            const isDark = DesignTokens.isDarkMode();
-            const bgColor = isDark ? '#27272A' : '#FFFFFF';
-            const textColor = isDark ? '#D4D4D8' : '#374151';
-            const borderColor = isDark ? '#52525B' : '#E5E7EB';
-
             const overlay = document.createElement('div');
             overlay.style.cssText = `
                 position: fixed;
@@ -2774,7 +2768,7 @@ ${options.message}
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
+                background: var(--bg-overlay);
                 z-index: 2147483647;
                 display: flex;
                 align-items: center;
@@ -2783,7 +2777,8 @@ ${options.message}
 
             const modal = document.createElement('div');
             modal.style.cssText = `
-                background: ${bgColor};
+                background: var(--bg-surface);
+                color: var(--text-primary);
                 border-radius: var(--radius-medium);
                 box-shadow: var(--shadow-2xl);
                 max-width: 500px;
@@ -2791,78 +2786,32 @@ ${options.message}
             `;
 
             modal.innerHTML = `
-                <div style="padding: 24px;">
-                    <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: ${textColor};">
+                <div class="export-dialog-content">
+                    <h3 class="export-dialog-title">
                         导出选项
                     </h3>
-                    <div style="margin-bottom: 20px; color: ${textColor}; font-size: 14px; line-height: 1.5;">
-                        <p style="margin: 0 0 12px 0;">选择导出方式:</p>
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            <label style="
-                                display: flex;
-                                align-items: center;
-                                gap: 12px;
-                                padding: 12px;
-                                border: 1px solid ${borderColor};
-                                border-radius: var(--radius-medium);
-                                cursor: pointer;
-                                transition: all 0.2s;
-                            " class="export-option">
-                                <input type="radio" name="exportType" value="preserve" checked style="
-                                    width: 16px;
-                                    height: 16px;
-                                    cursor: pointer;
-                                ">
+                    <div class="export-dialog-body">
+                        <p class="export-dialog-text">选择导出方式:</p>
+                        <div class="export-options-container">
+                            <label class="export-option">
+                                <input type="radio" name="exportType" value="preserve" checked class="export-option-radio">
                                 <div>
-                                    <div style="font-weight: 500; color: ${textColor};">保留文件夹结构</div>
-                                    <div style="font-size: 12px; color: ${textColor}; opacity: 0.7;">导出为分层的文件夹和书签</div>
+                                    <div class="export-option-label">保留文件夹结构</div>
+                                    <div class="export-option-desc">导出为分层的文件夹和书签</div>
                                 </div>
                             </label>
-                            <label style="
-                                display: flex;
-                                align-items: center;
-                                gap: 12px;
-                                padding: 12px;
-                                border: 1px solid ${borderColor};
-                                border-radius: var(--radius-medium);
-                                cursor: pointer;
-                                transition: all 0.2s;
-                            " class="export-option">
-                                <input type="radio" name="exportType" value="flat" style="
-                                    width: 16px;
-                                    height: 16px;
-                                    cursor: pointer;
-                                ">
+                            <label class="export-option">
+                                <input type="radio" name="exportType" value="flat" class="export-option-radio">
                                 <div>
-                                    <div style="font-weight: 500; color: ${textColor};">扁平列表</div>
-                                    <div style="font-size: 12px; color: ${textColor}; opacity: 0.7;">仅导出所有书签，不含文件夹</div>
+                                    <div class="export-option-label">扁平列表</div>
+                                    <div class="export-option-desc">仅导出所有书签，不含文件夹</div>
                                 </div>
                             </label>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                        <button class="cancel-btn" style="
-                            padding: 8px 16px;
-                            border: none;
-                            border-radius: var(--radius-medium);
-                            background: transparent;
-                            color: var(--primary-600);
-                            font-size: 14px;
-                            font-weight: 500;
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        ">取消</button>
-                        <button class="confirm-btn" style="
-                            padding: 8px 16px;
-                            border: none;
-                            border-radius: var(--radius-medium);
-                            background: #2563EB;
-                            color: #FFFFFF;
-                            font-size: 14px;
-                            font-weight: 600;
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        ">导出</button>
+                    <div class="export-dialog-footer">
+                        <button class="cancel-btn">取消</button>
+                        <button class="confirm-btn">导出</button>
                     </div>
                 </div>
             `; overlay.appendChild(modal);
@@ -3134,8 +3083,7 @@ ${options.message}
         // Dark mode detection
         const isDark = document.documentElement.classList.contains('dark');
         const bgColor = isDark ? 'var(--gray-800)' : 'white';
-        const titleColor = isDark ? 'var(--gray-50)' : 'var(--gray-900)';
-        const textColor = isDark ? 'var(--gray-400)' : 'var(--gray-500)';
+
 
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
@@ -3166,50 +3114,30 @@ ${options.message}
             const totalIssues = analysis.noFolder.length + analysis.tooDeep.length;
 
             modal.innerHTML = `
-                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 500; color: ${titleColor};">
+                <h3 class="import-summary-title">
                     📥 导入摘要
                 </h3>
-                <div style="font-size: 14px; color: ${textColor}; line-height: 1.6;">
-                    <p style="margin: 0 0 12px 0;">
+                <div class="import-summary-content">
+                    <p class="import-summary-text">
                         准备导入 <strong>${analysis.valid.length + analysis.noFolder.length + analysis.tooDeep.length}</strong> 个书签：
                     </p>
-                    <ul style="margin: 0 0 16px 0; padding-left: 24px;">
+                    <ul class="import-summary-list">
                         <li>${Icons.check} ${analysis.valid.length} 个书签将正常导入</li>
                         ${analysis.noFolder.length > 0 ? `<li>${Icons.folder} ${analysis.noFolder.length} 个书签无文件夹 → 将导入到 <strong>Import</strong> 文件夹</li>` : ''}
                         ${analysis.tooDeep.length > 0 ? `<li>${Icons.folder} ${analysis.tooDeep.length} 个书签文件夹层级过深 → 将导入到 <strong>Import</strong> 文件夹</li>` : ''}
                     </ul>
                     ${totalIssues > 0 ? `
-                        <div style="background: var(--warning-100); border-left: 3px solid var(--warning-500); padding: 12px; border-radius: 4px; margin-bottom: 16px;">
-                            <div style="font-weight: 500; color: var(--warning-800); margin-bottom: 4px;">ℹ️ 注意</div>
-                            <div style="color: var(--warning-800); font-size: 13px;">
+                        <div class="import-summary-warning">
+                            <div class="import-summary-warning-title">ℹ️ 注意</div>
+                            <div class="import-summary-warning-text">
                                 ${analysis.noFolder.length + analysis.tooDeep.length} 个书签将自动归类到 Import 文件夹
                             </div>
                         </div>
                     ` : ''}
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-2);  /* 8px */ margin-top: 20px;">
-                    <button class="cancel-btn" style="
-                        padding: 8px 16px;
-                        border: 1px solid var(--gray-300);
-                        border-radius: 4px;
-                        background: white;
-                        color: var(--gray-500);
-                        font-size: 14px;
-                        font-weight: 500;
-                        cursor: pointer;
-                        transition: background 0.2s;
-                    ">取消</button>
-                    <button class="proceed-btn" style="
-                        padding: 8px 16px;
-                        border: none;
-                        border-radius: 4px;
-                        background: var(--primary-600);
-                        color: white;
-                        font-size: 14px;
-                        font-weight: 500;
-                        cursor: pointer;
-                        transition: background 0.2s;
-                    ">继续导入</button>
+                <div class="import-summary-footer">
+                    <button class="cancel-btn">Cancel</button>
+                    <button class="proceed-btn">Continue</button>
                 </div>
             `;
 
@@ -3350,96 +3278,105 @@ ${options.message}
         allBookmarks: Bookmark[]
     ): Promise<boolean> {
         return new Promise((resolve) => {
-            // ✅ Dark mode detection
-            const isDark = DesignTokens.isDarkMode();
-            const bgColor = isDark ? '#27272A' : '#FFFFFF';
-            const titleColor = isDark ? '#F4F4F5' : '#111827';
-            const textColor = isDark ? '#D4D4D8' : '#374151';
-            const strongColor = isDark ? '#FAFAFA' : '#111827';
-            const listBg = isDark ? '#18181B' : '#F9FAFB';
-            const borderColor = isDark ? '#52525B' : '#E5E7EB';
-
-            // ✅ Platform badge colors (must work in dark mode)
-            const chatgptBg = isDark ? '#10A37F' : '#74AA9C';
-            const chatgptText = isDark ? '#FFFFFF' : '#1A7A5E';
-            const geminiBg = isDark ? '#8E9CF5' : '#A8C5FF';
-            const geminiText = isDark ? '#FFFFFF' : '#1A73E8';
-
             const overlay = document.createElement('div');
+
+            // Detect dark mode
+            const isDark = document.documentElement.classList.contains('dark');
+
             overlay.style.cssText = `
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5) !important;
+                background: ${isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)'} !important;
                 z-index: 2147483647;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color-scheme: light dark;
+                
+                /* Define CSS Variables for modal */
+                --bg-surface: ${isDark ? '#121212' : 'white'};
+                --text-primary: ${isDark ? '#f5f5f5' : '#1f2937'};
+                --border-default: ${isDark ? '#374151' : '#d1d5db'};
+                --radius-large: 12px;
+                --shadow-2xl: 0 25px 50px -12px ${isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.25)'};
+                --warning-600: #d97706;
+                --bg-tertiary: ${isDark ? '#1f2937' : '#f3f4f6'};
+                --border-subtle: ${isDark ? '#1f2937' : '#e5e7eb'};
+                --platform-chatgpt-bg: ${isDark ? '#064e3b' : '#d1fae5'};
+                --platform-chatgpt-text: ${isDark ? '#6ee7b7' : '#065f46'};
+                --platform-gemini-bg: ${isDark ? '#1e3a8a' : '#dbeafe'};
+                --platform-gemini-text: ${isDark ? '#93c5fd' : '#1e40af'};
+                --interactive-primary: #2563eb;
             `;
 
             const modal = document.createElement('div');
             modal.style.cssText = `
-                background: ${bgColor};
-                color: ${textColor};
-                border-radius: 12px;
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                background: var(--bg-surface);
+                color: var(--text-primary);
+                border-radius: var(--radius-large);
+                box-shadow: var(--shadow-2xl);
                 max-width: 500px;
                 width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
             `;
 
             modal.innerHTML = `
-            <div style="padding: 20px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
-                    <span style="color: var(--warning-600); font-size: 24px; line-height: 1; flex-shrink: 0;">${Icons.alertTriangle}</span>
-                    <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: ${titleColor}; line-height: 1.2;">Duplicate Bookmarks Detected</h3>
+            <style>
+                /* Duplicate Dialog Styles */
+                .duplicate-dialog-content { padding: 20px; }
+                .duplicate-dialog-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+                .duplicate-dialog-icon { color: var(--warning-600); font-size: 24px; line-height: 1; flex-shrink: 0; }
+                .duplicate-dialog-title { margin: 0; font-size: 20px; font-weight: 500; color: var(--text-primary); line-height: 1.2; }
+                .duplicate-dialog-body { color: var(--text-primary); font-size: 14px; line-height: 1.5; }
+                .duplicate-dialog-text { margin: 0 0 10px 0; }
+                .duplicate-list-container { background: var(--bg-tertiary); border-radius: 8px; padding: 12px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+                .duplicate-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-subtle); }
+                .duplicate-list-item:last-child { border-bottom: none; }
+                .duplicate-platform-badge { flex-shrink: 0; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+                .duplicate-platform-badge.platform-chatgpt { background: var(--platform-chatgpt-bg); color: var(--platform-chatgpt-text); }
+                .duplicate-platform-badge.platform-gemini { background: var(--platform-gemini-bg); color: var(--platform-gemini-text); }
+                .duplicate-bookmark-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+                .duplicate-highlight { color: var(--interactive-primary); font-weight: 600; }
+                .duplicate-dialog-hint { margin: 6px 0 0 0; color: ${isDark ? '#9ca3af' : '#6b7280'}; font-size: 13px; font-style: italic; opacity: 0.9; }
+                .import-summary-footer { padding: 12px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-default); }
+                .cancel-btn { padding: 8px 16px; border: 1px solid var(--border-default); border-radius: 6px; background: transparent; color: var(--text-primary); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+                .cancel-btn:hover { background: ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'}; border-color: ${isDark ? '#4b5563' : '#9ca3af'}; }
+                .merge-btn { padding: 8px 16px; border: none; border-radius: 6px; background: ${isDark ? '#2563eb' : '#3b82f6'}; color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+                .merge-btn:hover { background: ${isDark ? '#1d4ed8' : '#2563eb'}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transform: translateY(-1px); }
+            </style>
+            <div class="duplicate-dialog-content">
+                <div class="duplicate-dialog-header">
+                    <span class="duplicate-dialog-icon">${Icons.alertTriangle}</span>
+                    <h3 class="duplicate-dialog-title">Duplicate Bookmarks Detected</h3>
                 </div>
-                <div style="color: ${textColor}; font-size: 14px; line-height: 1.5;">
-                    <p style="margin: 0 0 10px 0;">Found <strong style="color: ${strongColor};">${conflicts.length}</strong> bookmark(s) that already exist.</p>
-                    <p style="margin: 0 0 12px 0;">Total bookmarks to import: <strong style="color: ${strongColor};">${allBookmarks.length}</strong></p>
+                <div class="duplicate-dialog-body">
+                    <p class="duplicate-dialog-text">Found <strong>${conflicts.length}</strong> bookmark(s) that already exist.</p>
+                    <p class="duplicate-dialog-text">Total bookmarks to import: <strong>${allBookmarks.length}</strong></p>
                     
-                    <div style="background: ${listBg}; border-radius: 8px; padding: 12px; margin-bottom: 14px; max-height: 300px; overflow-y: auto;">
+                    <div class="duplicate-list-container">
                         ${conflicts.map(b => `
-                            <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid ${borderColor};">
-                                <span style="flex-shrink: 0; padding: 3px 8px; background: ${b.platform?.toLowerCase() === 'gemini' ? geminiBg : chatgptBg}; color: ${b.platform?.toLowerCase() === 'gemini' ? geminiText : chatgptText}; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                            <div class="duplicate-list-item">
+                                <span class="duplicate-platform-badge platform-${b.platform?.toLowerCase() === 'gemini' ? 'gemini' : 'chatgpt'}">
                                     ${b.platform || 'ChatGPT'}
                                 </span>
-                                <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${textColor};">
+                                <span class="duplicate-bookmark-title">
                                     ${this.escapeHtml(this.truncate(b.title || b.userMessage, 40))}
                                 </span>
                             </div>
                         `).join('')}
                     </div>
                     
-                    <p style="margin: 0 0 6px 0; color: ${textColor};">Click <strong style="color: var(--primary-600);">Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
-                    <p style="margin: 0; color: ${textColor}; font-size: 13px; font-style: italic; opacity: 0.8;">💡 Items without folders will be imported to the <strong>Import</strong> folder.</p>
+                    <p class="duplicate-dialog-text">Click <strong class="duplicate-highlight">Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
+                    <p class="duplicate-dialog-hint">💡 Items without folders will be imported to the <strong>Import</strong> folder.</p>
                 </div>
             </div>
-            <div style="padding: 12px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid ${borderColor};">
-                <button class="cancel-btn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 4px;
-                    background: transparent;
-                    color: var(--primary-600);
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">Cancel</button>
-                <button class="merge-btn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 4px;
-                    background: #2563EB;
-                    color: #FFFFFF;
-                    font-size: 14px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                ">Merge</button>
+            <div class="import-summary-footer">
+                <button class="cancel-btn">Cancel</button>
+                <button class="merge-btn">Merge</button>
             </div>
         `;
 
@@ -3456,13 +3393,6 @@ ${options.message}
             });
             cancelBtn.addEventListener('mouseleave', () => {
                 cancelBtn.style.background = 'transparent';
-            });
-
-            mergeBtn.addEventListener('mouseenter', () => {
-                mergeBtn.style.background = 'var(--primary-700)';
-            });
-            mergeBtn.addEventListener('mouseleave', () => {
-                mergeBtn.style.background = 'var(--primary-600)';
             });
 
             cancelBtn.addEventListener('click', () => {
@@ -4060,10 +3990,10 @@ ${options.message}
             }
 
             .close-btn {
-                background: none;
+                background: var(--button-close-bg);
                 border: none;
                 font-size: 24px;  /* Slightly smaller */
-                color: var(--gray-500);
+                color: var(--button-close-text);
                 cursor: pointer;
                 padding: var(--space-1);  /* 4px */
                 width: 32px;
@@ -4076,12 +4006,13 @@ ${options.message}
             }
 
             .close-btn:hover {
-                background: var(--gray-100);
-                color: var(--gray-900);
+                background: var(--button-close-hover);
+                color: var(--button-close-text-hover);
                 transform: scale(1.05);  /* Micro-animation */
             }
 
             .close-btn:active {
+                background: var(--button-close-active);
                 transform: scale(0.95);  /* Press feedback */
             }
 
@@ -4089,7 +4020,7 @@ ${options.message}
                 /* Layout properties (from Line 5003) */
                 display: flex;
                 align-items: center;
-                min-height: 36px;
+                min-height: 30px;
                 padding: var(--space-2) var(--space-3);  /* 8px 12px */
                 position: relative;
                 cursor: pointer;
@@ -4104,7 +4035,7 @@ ${options.message}
                 /* Critical: Explicit background */
                 background: transparent;
                 border: none;
-                border-bottom: 1.5px solid var(--gray-300);  /* From Line 5003 */
+                border-bottom: 1.8px solid var(--gray-300);  /* From Line 5003 */
             }
 
             .tree-item:hover {
@@ -4224,17 +4155,19 @@ ${options.message}
                 justify-content: center;
                 border: none;
                 border-radius: var(--radius-small);  /* 8px */
-                background: transparent;
-                color: var(--md-on-surface);
+                background: var(--button-icon-bg);
+                color: var(--button-icon-text);
                 cursor: pointer;
                 transition: all var(--duration-base) var(--ease-out);
             }
 
             .toolbar-icon-btn:hover {
-                background: var(--md-surface-container);
+                background: var(--button-icon-hover);
+                color: var(--button-icon-text-hover);
             }
 
             .toolbar-icon-btn:active {
+                background: var(--button-icon-active);
                 transform: scale(0.95);
             }
 
@@ -4266,24 +4199,26 @@ ${options.message}
 
             /* Mac tag风格 - 根据选中平台改变背景色 */
             .platform-selector[data-selected="all"] {
-                background: var(--gray-100);  /* 中性灰 */
-                border-color: var(--gray-300);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                border-color: var(--border-default);
             }
 
             .platform-selector[data-selected="chatgpt"] {
-                background: var(--success-50);  /* 浅绿色 */
-                border-color: var(--success-200);
-                color: var(--success-900);
+                background: var(--platform-chatgpt-bg);
+                color: var(--platform-chatgpt-text);
+                border-color: var(--platform-chatgpt-bg);
             }
 
             .platform-selector[data-selected="gemini"] {
-                background: var(--primary-50);  /* 浅蓝色 */
-                border-color: var(--primary-200);
-                color: var(--primary-900);
+                background: var(--platform-gemini-bg);
+                color: var(--platform-gemini-text);
+                border-color: var(--platform-gemini-bg);
             }
 
             .platform-selector:hover {
-                border-color: var(--primary-600);
+                background: var(--interactive-hover);
+                border-color: var(--interactive-primary);
                 box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
             }
 
@@ -4327,12 +4262,14 @@ ${options.message}
             }
 
             .platform-option:hover {
-                background: var(--md-surface-container);
+                background: var(--interactive-hover);
             }
 
             .platform-option[data-selected="true"] {
-                background: var(--primary-100);
-                color: var(--primary-900);
+                background: var(--interactive-selected);
+                color: var(--text-primary);
+                font-weight: 600;
+                box-shadow: inset 3px 0 0 var(--interactive-primary);
             }
 
             .platform-option-icon {
@@ -4390,7 +4327,7 @@ ${options.message}
             }
 
             .bookmark-item {
-                padding: var(--space-3) var(--space-4);
+                padding: var(--space-2) var(--space-4);
                 margin: var(--space-1) 3px;
                 border: none;
                 border-radius: var(--radius-small);
@@ -4398,11 +4335,10 @@ ${options.message}
                 cursor: pointer;
                 transition: all var(--duration-base) var(--ease-out);
                 
-                /* ✅ Match folder height */
-                min-height: 36px;
+                min-height: 28px;
                 
                 /* ✅ Bottom border + subtle shadow (like folders) */
-                border-bottom: 1px solid var(--md-outline-variant);
+                border-bottom: 1px solid var(--gray-200);
                 box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
                 
                 display: flex;
@@ -4445,7 +4381,7 @@ ${options.message}
                 left: 50%;
                 transform: translate(-50%, -50%);
                 background: var(--md-surface);  /* ✅ Dark mode */
-                padding: 24px;
+                padding: 12px;
                 border-radius: 12px;
                 box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
                 z-index: 10001;
@@ -4724,21 +4660,433 @@ ${options.message}
             }
 
             .merge-btn {
-                background: var(--primary-600);
+                background: var(--button-primary-bg);
                 color: var(--white);
             }
 
             .merge-btn:hover {
-                background: var(--primary-700);
+                background: var(--button-primary-hover);
             }
 
             .cancel-btn {
-                background: var(--gray-200);
-                color: var(--gray-700);
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: var(--font-medium);
+                cursor: pointer;
+                transition: background 0.2s;
+                background: var(--button-secondary-bg); 
+                color: var(--button-secondary-text);
             }
 
             .cancel-btn:hover {
-                background: var(--gray-300);
+                background: var(--button-secondary-hover); 
+                color: var(--button-secondary-text-hover);
+            }
+            
+            .confirm-btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: var(--radius-small);
+                background: var(--button-primary-bg);
+                color: var(--button-primary-text);
+                font-size: 14px;
+                font-weight: var(--font-medium);
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            
+            .confirm-btn:hover {
+                background: var(--button-primary-hover);
+            }
+
+            /* Import Summary Dialog */
+            .import-summary-title {
+                margin: 0 0 16px 0;
+                font-size: 18px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .import-summary-content {
+                font-size: 14px;
+                color: var(--text-primary);
+                line-height: 1.6;
+            }
+
+            .import-summary-text {
+                margin: 0 0 12px 0;
+            }
+
+            .import-summary-list {
+                margin: 0 0 16px 0;
+                padding-left: 24px;
+            }
+
+            .import-summary-warning {
+                background: var(--warning-bg);
+                border-left: 3px solid var(--warning-border);
+                padding: 12px;
+                border-radius: var(--radius-small);
+                margin-bottom: 16px;
+            }
+
+            .import-summary-warning-title {
+                font-weight: var(--font-medium);
+                color: var(--warning-text);
+                margin-bottom: 4px;
+            }
+
+            .import-summary-warning-text {
+                color: var(--warning-text);
+                font-size: 13px;
+            }
+
+            .import-summary-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: var(--space-2);
+                margin-top: 20px;
+            }
+
+            .proceed-btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: var(--radius-small);
+                background: var(--button-primary-bg);
+                color: var(--button-primary-text);
+                font-size: 14px;
+                font-weight: var(--font-medium);
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+
+            .proceed-btn:hover {
+                background: var(--button-primary-hover);
+            }
+
+            /* Duplicate Bookmarks Dialog */
+            .duplicate-dialog-content {
+                padding: 20px;
+            }
+
+            .duplicate-dialog-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 14px;
+            }
+
+            .duplicate-dialog-icon {
+                color: var(--warning-600);
+                font-size: 24px;
+                line-height: 1;
+                flex-shrink: 0;
+            }
+
+            .duplicate-dialog-title {
+                margin: 0;
+                font-size: 20px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+                line-height: 1.2;
+            }
+
+            .duplicate-dialog-body {
+                color: var(--text-primary);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .duplicate-dialog-text {
+                margin: 0 0 10px 0;
+            }
+
+            .duplicate-list-container {
+                background: var(--bg-tertiary);
+                border-radius: 8px;
+                padding: 12px;
+                margin-bottom: 14px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            .duplicate-list-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 0;
+                border-bottom: 1px solid var(--border-subtle);
+            }
+
+            .duplicate-list-item:last-child {
+                border-bottom: none;
+            }
+
+            .duplicate-platform-badge {
+                flex-shrink: 0;
+                padding: 3px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: var(--font-semibold);
+            }
+
+            .duplicate-platform-badge.platform-chatgpt {
+                background: var(--platform-chatgpt-bg);
+                color: var(--platform-chatgpt-text);
+            }
+
+            .duplicate-platform-badge.platform-gemini {
+                background: var(--platform-gemini-bg);
+                color: var(--platform-gemini-text);
+            }
+
+            .duplicate-bookmark-title {
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                color: var(--text-primary);
+            }
+
+            .duplicate-highlight {
+                color: var(--interactive-primary);
+            }
+
+            .duplicate-dialog-hint {
+                margin: 6px 0 0 0;
+                color: var(--text-secondary);
+                font-size: 13px;
+                font-style: italic;
+                opacity: 0.9;
+            }
+
+            /* Info Dialog */
+            .info-dialog-content {
+                padding: 24px 24px 20px;
+            }
+
+            .info-dialog-header {
+                display: flex;
+                align-items: center;
+                gap: var(--space-3);
+                margin-bottom: 16px;
+            }
+
+            .info-dialog-icon {
+                display: flex;
+                align-items: center;
+            }
+
+            .info-dialog-title {
+                margin: 0;
+                font-size: 18px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .info-dialog-message {
+                color: var(--text-primary);
+                font-size: 14px;
+                line-height: 1.6;
+                white-space: pre-wrap;
+            }
+
+            .info-dialog-footer {
+                padding: 12px 24px;
+                display: flex;
+                justify-content: flex-end;
+                border-top: 1px solid var(--border-default);
+            }
+
+            /* Delete Confirmation Dialog */
+            .delete-dialog-content {
+                padding: 20px;
+            }
+
+            .delete-dialog-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 14px;
+            }
+
+            .delete-dialog-icon {
+                color: var(--warning-600);
+                font-size: 24px;
+                line-height: 1;
+                flex-shrink: 0;
+            }
+
+            .delete-dialog-title {
+                margin: 0;
+                font-size: 20px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+                line-height: 1.2;
+            }
+
+            .delete-dialog-body {
+                color: var(--text-secondary);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .delete-dialog-text {
+                margin: 0 0 12px 0;
+            }
+
+            .delete-dialog-list {
+                margin: 0;
+                padding-left: 24px;
+                list-style: none;
+            }
+
+            .delete-dialog-list-item {
+                margin-bottom: 6px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .delete-dialog-list-icon {
+                flex-shrink: 0;
+            }
+
+            .delete-dialog-warning {
+                margin: 12px 0 0 0;
+                font-weight: var(--font-medium);
+                color: var(--error);
+            }
+
+            .delete-dialog-footer {
+                padding: 12px 16px;
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                border-top: 1px solid var(--border-default);
+            }
+
+            /* Error Dialog */
+            .error-dialog-content {
+                padding: 24px 24px 20px;
+            }
+
+            .error-dialog-header {
+                display: flex;
+                align-items: center;
+                gap: var(--space-4);
+                margin-bottom: 16px;
+            }
+
+            .error-dialog-title {
+                margin: 0;
+                font-size: 20px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .error-dialog-body {
+                color: var(--text-primary);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .error-dialog-text {
+                margin: 0 0 12px 0;
+            }
+
+            .error-list-container {
+                max-height: 300px;
+                overflow-y: auto;
+                background: var(--bg-tertiary);
+                border-radius: 4px;
+                padding: 12px;
+            }
+
+            .error-list {
+                margin: 0;
+                padding-left: 20px;
+            }
+
+            .error-list-item {
+                margin-bottom: 8px;
+            }
+
+            .error-dialog-footer {
+                padding: 8px;
+                display: flex;
+                justify-content: flex-end;
+                border-top: 1px solid var(--border-default);
+            }
+
+            /* Export Options Dialog */
+            .export-dialog-content {
+                padding: 24px;
+            }
+
+            .export-dialog-title {
+                margin: 0 0 16px 0;
+                font-size: 18px;
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .export-dialog-body {
+                margin-bottom: 20px;
+                color: var(--text-primary);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .export-dialog-text {
+                margin: 0 0 12px 0;
+            }
+
+            .export-options-container {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .export-option {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                border: 1px solid var(--border-default);
+                border-radius: var(--radius-medium);
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .export-option:hover {
+                border-color: var(--interactive-primary);
+                background: var(--interactive-hover);
+            }
+
+            .export-option-radio {
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+
+            .export-option-label {
+                font-weight: var(--font-medium);
+                color: var(--text-primary);
+            }
+
+            .export-option-desc {
+                font-size: 12px;
+                color: var(--text-secondary);
+                opacity: 0.9;
+            }
+
+            .export-dialog-footer {
+                display: flex;
+                gap: 12px;
+                justify-content: flex-end;
             }
 
             /* Detail Modal - Modern & Clean */
@@ -5164,10 +5512,10 @@ ${options.message}
             }
 
             .folder-item.selected {
-                background: var(--primary-50);  /* Light blue in light mode, dark blue in dark mode */
-                color: var(--primary-700);  /* Ensure text contrast */
+                background: var(--interactive-selected);
+                color: var(--text-primary);
                 /* Left accent bar instead of full border */
-                box-shadow: inset 3px 0 0 var(--primary-500);
+                box-shadow: inset 3px 0 0 var(--interactive-primary);
             }
 
             .folder-toggle {
@@ -5253,7 +5601,7 @@ ${options.message}
 
             .bookmark-title {
                 flex: 1;
-                font-size: 13px;
+                font-size: 14px;
                 color: var(--gray-700);
                 overflow: hidden;
                 text-overflow: ellipsis;

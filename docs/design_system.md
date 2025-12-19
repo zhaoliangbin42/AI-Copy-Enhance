@@ -124,22 +124,6 @@ Our logo represents the enhancement of AI copy experiences. Use it consistently 
 - Reversed: White on dark backgrounds
 - Monochrome: When color is not available
 
-### Brand Colors
-
-Our brand uses a purple-to-pink gradient as the primary identifier.
-
-```css
---brand-gradient-start: #ad5389;
---brand-gradient-end: #3c1053;
---brand-gradient: linear-gradient(135deg, #ad5389 0%, #3c1053 100%);
-```
-
-**Usage**:
-- Accent elements
-- Hover states for bookmarked items
-- Loading indicators
-- Branding moments
-
 ---
 
 ## 🎨 Visual Foundation

@@ -60,7 +60,7 @@ export class TooltipHelper {
         tooltip.textContent = text;
         tooltip.style.cssText = `
       position: absolute;
-      background: rgba(60, 64, 67, 0.9);
+      background: rgba(60, 64, 67, 0.9);  /* Dark gray tooltip */
       color: white;
       padding: 6px 8px;
       border-radius: 4px;
@@ -69,7 +69,7 @@ export class TooltipHelper {
       white-space: nowrap;
       opacity: 0;
       transition: opacity 0.15s ease-in-out;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);  /* Subtle shadow */
     `;
 
         // Add to container

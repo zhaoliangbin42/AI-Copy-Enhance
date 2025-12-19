@@ -27,24 +27,24 @@ export class Modal {
         const isDark = DesignTokens.isDarkMode();
         const styleElement = document.createElement('style');
 
-        // Add base styles + conditional dark mode class
+        //Add base styles + conditional dark mode class
         styleElement.textContent = modalStyles + `
       ${isDark ? `
-        .modal-overlay { background: rgba(0, 0, 0, 0.8); }
+        .modal-overlay { background: rgba(0, 0, 0, 0.8); }  /* Dark overlay */
         .modal-container { 
-          background: #1E1E1E;
-          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.5);
+          background: #1E1E1E;  /* Dark surface */
+          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.5);  /* Subtle border + shadow */
         }
-        .modal-header { border-bottom-color: #3F3F46; }
-        .modal-title { color: #FFFFFF; }
-        .modal-close { color: #A1A1AA; }
-        .modal-close:hover { background: #27272A; color: #FFFFFF; }
-        .modal-content { background: #1E1E1E; color: #E3E3E3; }
-        .modal-footer { border-top-color: #3F3F46; background: #1E1E1E; }
-        .modal-button { background: #27272A; color: #E3E3E3; }
-        .modal-button:hover { background: #3F3F46; }
-        .modal-button.primary { background: #3B82F6; color: white; }
-        .modal-button.primary:hover { background: #2563EB; }
+        .modal-header { border-bottom-color: #3F3F46; }  /* Gray-600 */
+        .modal-title { color: #FFFFFF; }  /* White text */
+        .modal-close { color: #A1A1AA; }  /* Gray-400 */
+        .modal-close:hover { background: #27272A; color: #FFFFFF; }  /* Gray-800 hover */
+        .modal-content { background: #1E1E1E; color: #E3E3E3; }  /* Dark surface + light text */
+        .modal-footer { border-top-color: #3F3F46; background: #1E1E1E; }  /* Gray-600 border */
+        .modal-button { background: #27272A; color: #E3E3E3; }  /* Gray-800 button */
+        .modal-button:hover { background: #3F3F46; }  /* Gray-600 hover */
+        .modal-button.primary { background: #3B82F6; color: white; }  /* Blue primary */
+        .modal-button.primary:hover { background: #2563EB; }  /* Darker blue on hover */
       ` : ''}
     `;
 
