@@ -58,8 +58,6 @@ const scriptRel = 'modulepreload';const assetsURL = function(dep) { return "/"+d
   });
 };
 
-const designTokensCss = "/**\n * Design Tokens - AI-MarkDone\n * \n * This file contains all design tokens (CSS custom properties) for the extension.\n * These tokens ensure consistency across all UI components.\n * \n * Based on: design_system.md\n * Version: 1.0.0\n * Last Updated: 2025-12-16\n */\n\n:root {\n    /* ============================================\n     NEUTRAL COLORS (Gray Scale)\n     ============================================ */\n\n    /* Lightest - Backgrounds, subtle dividers */\n    --gray-50: #F9FAFB;\n\n    /* Hover states, disabled backgrounds */\n    --gray-100: #F3F4F6;\n\n    /* Borders, dividers */\n    --gray-200: #E5E7EB;\n\n    /* Inactive borders */\n    --gray-300: #D1D5DB;\n\n    /* Placeholder text, tertiary icons */\n    --gray-400: #9CA3AF;\n\n    /* Secondary text, default icons */\n    --gray-500: #6B7280;\n\n    /* Primary text hover */\n    --gray-600: #4B5563;\n\n    /* Headings, emphasized text */\n    --gray-700: #374151;\n\n    /* Dark backgrounds */\n    --gray-800: #1F2937;\n\n    /* Primary text, headings */\n    --gray-900: #111827;\n\n\n    /* ============================================\n     PRIMARY COLORS (Material Blue)\n     ============================================ */\n\n    /* Material Design 3 - Primary Scale */\n    --primary-50: #E3F2FD;\n    /* Light Blue 50 */\n    --primary-100: #BBDEFB;\n    /* Light Blue 100 */\n    --primary-200: #90CAF9;\n    /* Light Blue 200 */\n    --primary-300: #64B5F6;\n    /* Light Blue 300 */\n    --primary-400: #42A5F5;\n    /* Light Blue 400 */\n    --primary-500: #2196F3;\n    /* Light Blue 500 - Main */\n    --primary-600: #1976D2;\n    /* Blue 700 - Primary */\n    --primary-700: #1565C0;\n    /* Blue 800 - Hover */\n    --primary-800: #0D47A1;\n    /* Blue 900 - Active */\n\n    /* Material Design 3 - Surface Colors */\n    --md-surface: #FFFFFF;\n    --md-surface-variant: #F5F5F5;\n    --md-surface-container: #FAFAFA;\n    --md-surface-container-high: #EEEEEE;\n    --md-on-surface: #1C1B1F;\n    --md-on-surface-variant: #49454F;\n\n    /* Material Design 3 - Primary Container */\n    --md-primary-container: #E3F2FD;\n    --md-on-primary-container: #0D47A1;\n\n    /* Material Design 3 - Outline */\n    --md-outline: #E0E0E0;\n    --md-outline-variant: #EEEEEE;\n\n\n    /* ============================================\n     SEMANTIC COLORS\n     ============================================ */\n\n    /* Success (Green) */\n    --success-50: #F0FDF4;\n    --success-100: #DCFCE7;\n    --success-500: #22C55E;\n    --success-600: #16A34A;\n    --success-700: #15803D;\n\n    /* Warning (Amber) */\n    --warning-50: #FFFBEB;\n    --warning-100: #FEF3C7;\n    --warning-500: #F59E0B;\n    --warning-600: #D97706;\n    --warning-700: #B45309;\n\n    /* Danger (Red) */\n    --danger-50: #FEF2F2;\n    --danger-100: #FEE2E2;\n    --danger-500: #EF4444;\n    --danger-600: #DC2626;\n    --danger-700: #B91C1C;\n\n\n    /* ============================================\n     COMPONENT TOKENS\n     ============================================ */\n\n    /* Toolbar */\n    --toolbar-gradient-solid-from: #3B82F6;\n    --toolbar-gradient-solid-to: #1D4ED8;\n    --toolbar-gradient-light-from: rgba(59, 130, 246, 0.12);\n    --toolbar-gradient-light-to: rgba(29, 78, 216, 0.12);\n    --toolbar-theme-color: #3B82F6;\n    --toolbar-bg: rgba(255, 255, 255, 0.98);\n    --toolbar-border: rgba(0, 0, 0, 0.06);\n    --toolbar-border-strong: rgba(0, 0, 0, 0.08);\n    --toolbar-shadow-1: rgba(0, 0, 0, 0.06);\n    --toolbar-shadow-2: rgba(0, 0, 0, 0.04);\n    --toolbar-hover-shadow-1: rgba(0, 0, 0, 0.08);\n    --toolbar-hover-shadow-2: rgba(0, 0, 0, 0.06);\n    --toolbar-divider: var(--gray-200);\n    --toolbar-button-text: var(--gray-600);\n    --toolbar-button-hover-bg: var(--gray-100);\n    --toolbar-button-hover-text: var(--gray-900);\n    --toolbar-button-active-bg: var(--gray-200);\n    --toolbar-stats-text: var(--gray-600);\n    --toolbar-bookmark-hover-bg: rgba(59, 130, 246, 0.2);\n\n    /* Modal */\n    --modal-overlay-bg: rgba(0, 0, 0, 0.6);\n    --modal-surface: #FFFFFF;\n    --modal-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08),\n        0 4px 12px rgba(0, 0, 0, 0.12),\n        0 16px 48px rgba(0, 0, 0, 0.18),\n        0 24px 80px rgba(0, 0, 0, 0.12);\n    --modal-primary-bg: #2563EB;\n    --modal-primary-text: #FFFFFF;\n    --modal-primary-hover-bg: #1D4ED8;\n    --modal-primary-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);\n\n\n    /* ============================================\n     PLATFORM COLORS\n     ============================================ */\n\n    /* ChatGPT */\n    --chatgpt-light: #D1FAE5;\n    --chatgpt-dark: #065F46;\n    --chatgpt-icon: #10A37F;\n    --platform-chatgpt-bg: #D1FAE5;\n    --platform-chatgpt-text: #065F46;\n\n    /* Gemini */\n    --gemini-light: #DBEAFE;\n    --gemini-dark: #1E40AF;\n    --gemini-icon: #4285F4;\n    --platform-gemini-bg: #DBEAFE;\n    --platform-gemini-text: #1E40AF;\n\n\n    /* ============================================\n     SPACING (8px Grid System)\n     ============================================ */\n\n    --space-0: 0px;\n    --space-1: 4px;\n    /* Micro spacing */\n    --space-2: 8px;\n    /* Small gaps, button padding */\n    --space-3: 12px;\n    /* Default gaps, input padding */\n    --space-4: 16px;\n    /* Component padding */\n    --space-5: 20px;\n    --space-6: 24px;\n    /* Section spacing */\n    --space-8: 32px;\n    /* Large sections */\n    --space-10: 40px;\n    --space-12: 48px;\n    /* Page sections */\n    --space-16: 64px;\n    /* Major divisions */\n    --space-20: 80px;\n    --space-24: 96px;\n\n\n    /* ============================================\n     TYPOGRAPHY\n     ============================================ */\n\n    /* Font Families */\n    --font-sans: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto,\n        \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif;\n    --font-mono: \"SF Mono\", Monaco, \"Cascadia Code\", \"Roboto Mono\",\n        \"Courier New\", monospace;\n\n    /* Font Sizes */\n    --text-xs: 12px;\n    /* Captions, footnotes, badges */\n    --text-sm: 13px;\n    /* Secondary text, labels */\n    --text-base: 14px;\n    /* Body text (default) */\n    --text-lg: 16px;\n    /* Large body text */\n    --text-xl: 18px;\n    /* Subheadings */\n    --text-2xl: 20px;\n    /* Section headings */\n    --text-3xl: 24px;\n    /* Page titles */\n\n    /* Font Weights */\n    --font-normal: 400;\n    /* Body text */\n    --font-medium: 500;\n    /* Emphasis, labels */\n    --font-semibold: 600;\n    /* Subheadings, buttons */\n    --font-bold: 700;\n    /* Headings, strong emphasis */\n\n    /* Line Heights */\n    --leading-tight: 1.25;\n    /* Headings */\n    --leading-normal: 1.5;\n    /* Body text */\n    --leading-relaxed: 1.75;\n    /* Long-form content */\n\n\n    /* ============================================\n     BORDER RADIUS (Material Design 3)\n     ============================================ */\n\n    --radius-none: 0px;\n    --radius-extra-small: 4px;\n    /* Extra small elements */\n    --radius-small: 8px;\n    /* Buttons, chips, small cards */\n    --radius-medium: 12px;\n    /* Cards, inputs, medium containers */\n    --radius-large: 16px;\n    /* Panels, dialogs, large containers */\n    --radius-extra-large: 28px;\n    /* Extra large containers */\n    --radius-full: 9999px;\n    /* Pills, avatars, badges */\n\n\n    /* ============================================\n     SHADOWS (Material Design 3 Elevation)\n     ============================================ */\n\n    /* Elevation 0 - No shadow */\n    --shadow-none: none;\n    --elevation-0: none;\n\n    /* Elevation 1 - Subtle (raised buttons, cards) */\n    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.15);\n    --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.15);\n\n    /* Elevation 2 - Hover states */\n    --shadow-sm: 0 1px 5px rgba(0, 0, 0, 0.2), 0 2px 2px rgba(0, 0, 0, 0.14);\n    --elevation-2: 0 1px 5px rgba(0, 0, 0, 0.2), 0 2px 2px rgba(0, 0, 0, 0.14);\n\n    /* Elevation 3 - Panels, modals */\n    --shadow-md: 0 3px 5px rgba(0, 0, 0, 0.2), 0 1px 18px rgba(0, 0, 0, 0.12);\n    --elevation-3: 0 3px 5px rgba(0, 0, 0, 0.2), 0 1px 18px rgba(0, 0, 0, 0.12);\n\n    /* Elevation 4 - Dropdowns, menus */\n    --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 5px rgba(0, 0, 0, 0.14);\n    --elevation-4: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 5px rgba(0, 0, 0, 0.14);\n\n    /* Elevation 5 - Dialogs */\n    --shadow-xl: 0 8px 10px rgba(0, 0, 0, 0.14), 0 3px 14px rgba(0, 0, 0, 0.12);\n    --elevation-5: 0 8px 10px rgba(0, 0, 0, 0.14), 0 3px 14px rgba(0, 0, 0, 0.12);\n\n    /* Maximum elevation */\n    --shadow-2xl: 0 24px 38px rgba(0, 0, 0, 0.14), 0 9px 46px rgba(0, 0, 0, 0.12);\n\n    /* Focus ring (Material Design) */\n    --shadow-focus: 0 0 0 3px rgba(25, 118, 210, 0.1);\n\n\n    /* ============================================\n     ICON SIZES\n     ============================================ */\n\n    --icon-xs: 14px;\n    /* Inline with text */\n    --icon-sm: 16px;\n    /* Default UI */\n    --icon-md: 20px;\n    /* Large buttons */\n    --icon-lg: 24px;\n    /* Headers */\n    --icon-xl: 32px;\n    /* Feature highlights */\n\n\n    /* ============================================\n     ANIMATION & TRANSITIONS\n     ============================================ */\n\n    /* Duration */\n    --duration-fast: 150ms;\n    /* Micro-interactions */\n    --duration-base: 200ms;\n    /* Standard transitions */\n    --duration-slow: 300ms;\n    /* Complex animations */\n    --duration-slower: 500ms;\n    /* Large movements */\n\n    /* Easing Functions */\n    --ease-in: cubic-bezier(0.4, 0, 1, 1);\n    --ease-out: cubic-bezier(0, 0, 0.2, 1);\n    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);\n    --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);\n\n\n    /* ============================================\n     Z-INDEX SCALE\n     ============================================ */\n\n    --z-dropdown: 1000;\n    --z-sticky: 1020;\n    --z-fixed: 1030;\n    --z-modal-backdrop: 2147483646;\n    /* Maximum z-index - 1 for backdrop */\n    --z-modal: 2147483647;\n    /* Maximum z-index for modal */\n    --z-popover: 2147483647;\n    --z-tooltip: 2147483647;\n}\n\n\n/* ============================================\n   DARK MODE\n   ============================================ */\n\n/**\n * Dark mode tokens - activated when host website (ChatGPT/Gemini) is in dark mode\n * Uses html.dark selector to follow host website theme, not system preference\n * All colors validated for WCAG AA compliance (4.5:1+ contrast)\n */\n\nhtml.dark {\n    /* ============================================\n     NEUTRAL COLORS (Dark Mode)\n     ============================================ */\n\n    /* Darkest - Backgrounds, subtle dividers */\n    --gray-50: #18181B;\n\n    /* Elevated surfaces */\n    --gray-100: #27272A;\n\n    /* Borders, dividers */\n    --gray-200: #3F3F46;\n\n    /* Inactive borders */\n    --gray-300: #52525B;\n\n    /* Tertiary text, icons */\n    --gray-400: #A1A1AA;\n\n    /* Secondary text, default icons */\n    --gray-500: #D4D4D8;\n\n    /* Primary text hover */\n    --gray-600: #E4E4E7;\n\n    /* Emphasized text */\n    --gray-700: #F4F4F5;\n\n    /* High contrast backgrounds */\n    --gray-800: #FAFAFA;\n\n    /* Primary text, headings */\n    --gray-900: #FFFFFF;\n\n    /* ============================================\n     PRIMARY COLORS (Dark Mode - Blue)\n     ============================================ */\n\n    /* Darkest primary */\n    --primary-50: #0D47A1;\n\n    /* Dark primary */\n    --primary-100: #1565C0;\n\n    /* Primary */\n    --primary-200: #1976D2;\n\n    /* Light primary */\n    --primary-300: #42A5F5;\n\n    /* Lighter primary */\n    --primary-400: #64B5F6;\n\n    /* Main primary (dark mode) */\n    --primary-500: #90CAF9;\n\n    /* Hover state */\n    --primary-600: #BBDEFB;\n\n    /* Active state */\n    --primary-700: #E3F2FD;\n\n    /* ============================================\n     MATERIAL DESIGN 3 - SURFACE COLORS (Dark)\n     ============================================ */\n\n    /* Base surface */\n    --md-surface: #121212;\n\n    /* Variant surface */\n    --md-surface-variant: #1E1E1E;\n\n    /* Container surface */\n    --md-surface-container: #2C2C2C;\n\n    /* High elevation container */\n    --md-surface-container-high: #3A3A3A;\n\n    /* Text on surface */\n    --md-on-surface: #E3E3E3;\n\n    /* Text on surface variant */\n    --md-on-surface-variant: #CAC4D0;\n\n    /* ============================================\n     MATERIAL DESIGN 3 - PRIMARY CONTAINER (Dark)\n     ============================================ */\n\n    /* Primary container background */\n    --md-primary-container: #004A77;\n\n    /* Text on primary container */\n    --md-on-primary-container: #C5E7FF;\n\n    /* ============================================\n     MATERIAL DESIGN 3 - OUTLINE (Dark)\n     ============================================ */\n\n    /* Default outline */\n    --md-outline: #938F99;\n\n    /* Variant outline */\n    --md-outline-variant: #49454F;\n\n    /* ============================================\n     SEMANTIC COLORS (Dark Mode)\n     ============================================ */\n\n    /* Success (Green) */\n    --success-50: #15803D;\n    --success-100: #16A34A;\n    --success-200: #22C55E;\n    --success-300: #4ADE80;\n    --success-400: #86EFAC;\n    --success-500: #4ADE80;\n    --success-600: #86EFAC;\n    --success-700: #BBF7D0;\n\n    /* Warning (Amber) */\n    --warning-50: #B45309;\n    --warning-100: #D97706;\n    --warning-200: #F59E0B;\n    --warning-300: #FBBF24;\n    --warning-400: #FCD34D;\n    --warning-500: #FCD34D;\n    --warning-600: #FDE68A;\n    --warning-700: #FEF3C7;\n\n    /* Danger (Red) */\n    --danger-50: #B91C1C;\n    --danger-100: #DC2626;\n    --danger-200: #EF4444;\n    --danger-300: #F87171;\n    --danger-400: #FCA5A5;\n    --danger-500: #F87171;\n    --danger-600: #FCA5A5;\n    --danger-700: #FECACA;\n\n    /* ============================================\n     COMPONENT TOKENS (Dark Mode)\n     ============================================ */\n\n    /* Toolbar */\n    --toolbar-gradient-solid-from: #60A5FA;\n    --toolbar-gradient-solid-to: #3B82F6;\n    --toolbar-gradient-light-from: rgba(96, 165, 250, 0.25);\n    --toolbar-gradient-light-to: rgba(59, 130, 246, 0.25);\n    --toolbar-theme-color: #60A5FA;\n    --toolbar-bg: rgba(40, 40, 40, 0.98);\n    --toolbar-border: rgba(255, 255, 255, 0.08);\n    --toolbar-border-strong: rgba(255, 255, 255, 0.12);\n    --toolbar-shadow-1: rgba(0, 0, 0, 0.4);\n    --toolbar-shadow-2: rgba(0, 0, 0, 0.3);\n    --toolbar-hover-shadow-1: rgba(0, 0, 0, 0.5);\n    --toolbar-hover-shadow-2: rgba(0, 0, 0, 0.4);\n    --toolbar-divider: rgba(255, 255, 255, 0.12);\n    --toolbar-button-text: rgba(255, 255, 255, 0.6);\n    --toolbar-button-hover-bg: rgba(255, 255, 255, 0.08);\n    --toolbar-button-hover-text: rgba(255, 255, 255, 0.9);\n    --toolbar-button-active-bg: rgba(255, 255, 255, 0.12);\n    --toolbar-stats-text: rgba(255, 255, 255, 0.5);\n    --toolbar-bookmark-hover-bg: rgba(59, 130, 246, 0.2);\n\n    /* Modal */\n    --modal-overlay-bg: rgba(0, 0, 0, 0.8);\n    --modal-surface: #1E1E1E;\n    --modal-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),\n        0 4px 12px rgba(0, 0, 0, 0.5),\n        0 16px 48px rgba(0, 0, 0, 0.6),\n        0 24px 80px rgba(0, 0, 0, 0.4);\n    --modal-primary-bg: #3B82F6;\n    --modal-primary-text: #FFFFFF;\n    --modal-primary-hover-bg: #2563EB;\n    --modal-primary-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);\n\n    /* ============================================\n     PLATFORM COLORS (Dark Mode)\n     ============================================ */\n\n    /* ChatGPT */\n    --chatgpt-light: #065F46;\n    --chatgpt-dark: #10B981;\n    --chatgpt-icon: #34D399;\n    --platform-chatgpt-bg: #064E3B;\n    --platform-chatgpt-text: #6EE7B7;\n\n    /* Gemini */\n    --gemini-light: #1E40AF;\n    --gemini-dark: #60A5FA;\n    --gemini-icon: #93C5FD;\n    --platform-gemini-bg: #1E3A8A;\n    --platform-gemini-text: #93C5FD;\n\n    /* ============================================\n     SHADOWS (Dark Mode - Enhanced for visibility)\n     ============================================ */\n\n    /* Extra small shadow */\n    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);\n\n    /* Small shadow */\n    --shadow-sm: 0 1px 5px rgba(0, 0, 0, 0.4), 0 2px 2px rgba(0, 0, 0, 0.28);\n\n    /* Medium shadow */\n    --shadow-md: 0 3px 5px rgba(0, 0, 0, 0.4), 0 1px 18px rgba(0, 0, 0, 0.24);\n\n    /* Large shadow */\n    --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 5px rgba(0, 0, 0, 0.28);\n\n    /* Extra large shadow */\n    --shadow-xl: 0 8px 10px rgba(0, 0, 0, 0.28), 0 3px 14px rgba(0, 0, 0, 0.24);\n\n    /* 2X large shadow */\n    --shadow-2xl: 0 24px 38px rgba(0, 0, 0, 0.28), 0 9px 46px rgba(0, 0, 0, 0.24);\n\n    /* ============================================\n     GLASSMORPHISM (Dark Mode)\n     ============================================ */\n\n    /* Glass background with blur */\n    --glass-bg: rgba(30, 30, 30, 0.7);\n\n    /* Glass border */\n    --glass-border: rgba(255, 255, 255, 0.1);\n\n    /* Glass shadow */\n    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);\n}\n\n\n/* ============================================\n   REDUCED MOTION\n   ============================================ */\n\n@media (prefers-reduced-motion: reduce) {\n    :root {\n        --duration-fast: 0.01ms;\n        --duration-base: 0.01ms;\n        --duration-slow: 0.01ms;\n        --duration-slower: 0.01ms;\n    }\n\n    *,\n    *::before,\n    *::after {\n        animation-duration: 0.01ms !important;\n        animation-iteration-count: 1 !important;\n        transition-duration: 0.01ms !important;\n    }\n}\n";
-
 class SiteAdapter {
 }
 
@@ -954,6 +952,748 @@ const toolbarStyles = `
 }
 `;
 
+class DesignTokens {
+  /**
+   * Detect if dark mode is currently active
+   * Checks both document class and system preference
+   */
+  static isDarkMode() {
+    if (document.documentElement.classList.contains("dark")) {
+      return true;
+    }
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return true;
+    }
+    return false;
+  }
+  /**
+   * Get primitive color tokens (Layer 1)
+   * These are base colors that NEVER change - globally unique
+   * @returns CSS custom properties string
+   */
+  static getPrimitiveTokens() {
+    return `
+            /* ============================================
+               PRIMITIVE TOKENS - Base Colors (Immutable)
+               ============================================ */
+            
+            /* Neutral Colors (Gray) - 10 levels */
+            --color-gray-50: #F9FAFB;
+            --color-gray-100: #F3F4F6;
+            --color-gray-200: #E5E7EB;
+            --color-gray-300: #D1D5DB;
+            --color-gray-400: #9CA3AF;
+            --color-gray-500: #6B7280;
+            --color-gray-600: #4B5563;
+            --color-gray-700: #374151;
+            --color-gray-800: #1F2937;
+            --color-gray-900: #111827;
+
+            /* Blue (Primary) - 10 levels */
+            --color-blue-50: #E3F2FD;
+            --color-blue-100: #BBDEFB;
+            --color-blue-200: #90CAF9;
+            --color-blue-300: #64B5F6;
+            --color-blue-400: #42A5F5;
+            --color-blue-500: #2196F3;
+            --color-blue-600: #1976D2;
+            --color-blue-700: #1565C0;
+            --color-blue-800: #0D47A1;
+            --color-blue-900: #0A3A7F;
+
+            /* Green - 10 levels */
+            --color-green-50: #F0FDF4;
+            --color-green-100: #DCFCE7;
+            --color-green-200: #BBF7D0;
+            --color-green-300: #86EFAC;
+            --color-green-400: #4ADE80;
+            --color-green-500: #22C55E;
+            --color-green-600: #16A34A;
+            --color-green-700: #15803D;
+            --color-green-800: #166534;
+            --color-green-900: #14532D;
+
+            /* Purple - 10 levels */
+            --color-purple-50: #FAF5FF;
+            --color-purple-100: #F3E8FF;
+            --color-purple-200: #E9D5FF;
+            --color-purple-300: #D8B4FE;
+            --color-purple-400: #C084FC;
+            --color-purple-500: #A855F7;
+            --color-purple-600: #9333EA;
+            --color-purple-700: #7E22CE;
+            --color-purple-800: #6B21A8;
+            --color-purple-900: #581C87;
+
+            /* Red - 10 levels */
+            --color-red-50: #FEF2F2;
+            --color-red-100: #FEE2E2;
+            --color-red-200: #FECACA;
+            --color-red-300: #FCA5A5;
+            --color-red-400: #F87171;
+            --color-red-500: #EF4444;
+            --color-red-600: #DC2626;
+            --color-red-700: #B91C1C;
+            --color-red-800: #991B1B;
+            --color-red-900: #7F1D1D;
+
+            /* Amber - 10 levels */
+            --color-amber-50: #FFFBEB;
+            --color-amber-100: #FEF3C7;
+            --color-amber-200: #FDE68A;
+            --color-amber-300: #FCD34D;
+            --color-amber-400: #FBBF24;
+            --color-amber-500: #F59E0B;
+            --color-amber-600: #D97706;
+            --color-amber-700: #B45309;
+            --color-amber-800: #92400E;
+            --color-amber-900: #78350F;
+
+            /* Special Colors */
+            --color-white: #FFFFFF;
+            --color-black: #000000;
+
+            /* Dark Mode Specific Grays */
+            --color-gray-dark-50: #18181B;
+            --color-gray-dark-100: #27272A;
+            --color-gray-dark-200: #3F3F46;
+            --color-gray-dark-300: #52525B;
+            --color-gray-dark-400: #A1A1AA;
+            --color-gray-dark-500: #D4D4D8;
+            --color-gray-dark-600: #E4E4E7;
+            --color-gray-dark-700: #F4F4F5;
+            --color-gray-dark-800: #FAFAFA;
+            --color-gray-dark-900: #FFFFFF;
+        `;
+  }
+  /**
+   * Get light mode semantic tokens (Layer 2)
+   * These reference primitive tokens based on light mode context
+   * @returns CSS custom properties string
+   */
+  static getLightSemanticTokens() {
+    return `
+            /* ============================================
+               SEMANTIC TOKENS - Light Mode
+               ============================================ */
+
+            /* Background Colors */
+            --bg-primary: var(--color-white);
+            --bg-secondary: var(--color-gray-50);
+            --bg-tertiary: var(--color-gray-100);
+            --bg-surface: var(--color-white);
+            --bg-surface-elevated: var(--color-gray-50);
+            --bg-modal: var(--color-white);
+            --bg-overlay: rgba(0, 0, 0, 0.5);
+
+            /* Text Colors */
+            --text-primary: var(--color-gray-900);
+            --text-secondary: var(--color-gray-500);
+            --text-tertiary: var(--color-gray-400);
+            --text-link: var(--color-blue-600);
+            --text-link-hover: var(--color-blue-700);
+            --text-on-primary: var(--color-white);
+            --text-disabled: var(--color-gray-300);
+
+            /* Border Colors */
+            --border-default: var(--color-gray-200);
+            --border-subtle: var(--color-gray-100);
+            --border-strong: var(--color-gray-300);
+            --border-interactive: var(--color-blue-500);
+            --border-focus: var(--color-blue-300);
+            --border-error: var(--color-red-500);
+
+            /* Interactive Colors */
+            --interactive-primary: var(--color-blue-600);
+            --interactive-primary-hover: var(--color-blue-700);
+            --interactive-selected: rgba(59, 130, 246, 0.12);
+            --interactive-secondary: var(--color-gray-100);
+            --interactive-secondary-hover: var(--color-gray-200);
+            --interactive-hover: var(--color-gray-100);
+            --interactive-active: var(--color-gray-200);
+            --interactive-disabled: var(--color-gray-300);
+
+            /* Semantic States */
+            --success: var(--color-green-600);
+            --success-bg: var(--color-green-50);
+            --warning: var(--color-amber-600);
+            --warning-bg: var(--color-amber-50);
+            --error: var(--color-red-600);
+            --error-bg: var(--color-red-50);
+            --info: var(--color-blue-600);
+            --info-bg: var(--color-blue-50);
+
+            /* Platform Colors */
+            --platform-chatgpt-bg: var(--color-green-100);
+            --platform-chatgpt-text: var(--color-green-800);
+            --platform-gemini-bg: var(--color-blue-100);
+            --platform-gemini-text: var(--color-blue-800);
+
+            /* Legacy Support - Backward Compatible (will be phased out) */
+            --gray-50: var(--color-gray-50);
+            --gray-100: var(--color-gray-100);
+            --gray-200: var(--color-gray-200);
+            --gray-300: var(--color-gray-300);
+            --gray-400: var(--color-gray-400);
+            --gray-500: var(--color-gray-500);
+            --gray-600: var(--color-gray-600);
+            --gray-700: var(--color-gray-700);
+            --gray-800: var(--color-gray-800);
+            --gray-900: var(--color-gray-900);
+
+            --primary-50: var(--color-blue-50);
+            --primary-100: var(--color-blue-100);
+            --primary-200: var(--color-blue-200);
+            --primary-300: var(--color-blue-300);
+            --primary-400: var(--color-blue-400);
+            --primary-500: var(--color-blue-500);
+            --primary-600: var(--color-blue-600);
+            --primary-700: var(--color-blue-700);
+            --primary-800: var(--color-blue-800);
+
+            --success-50: var(--color-green-50);
+            --success-100: var(--color-green-100);
+            --success-500: var(--color-green-500);
+            --success-600: var(--color-green-600);
+            --success-700: var(--color-green-700);
+
+            --warning-50: var(--color-amber-50);
+            --warning-100: var(--color-amber-100);
+            --warning-500: var(--color-amber-500);
+            --warning-600: var(--color-amber-600);
+            --warning-700: var(--color-amber-700);
+
+            --danger-50: var(--color-red-50);
+            --danger-100: var(--color-red-100);
+            --danger-500: var(--color-red-500);
+            --danger-600: var(--color-red-600);
+            --danger-700: var(--color-red-700);
+
+            /* Material Design 3 - Surface Colors */
+            --md-surface: var(--color-white);
+            --md-surface-variant: #F5F5F5;
+            --md-surface-container: #FAFAFA;
+            --md-surface-container-high: #EEEEEE;
+            --md-on-surface: #1C1B1F;
+            --md-on-surface-variant: #49454F;
+            --md-primary-container: var(--color-blue-50);
+            --md-on-primary-container: var(--color-blue-800);
+            --md-outline: #E0E0E0;
+            --md-outline-variant: #EEEEEE;
+
+            /* Platform Legacy */
+            --chatgpt-light: #D1FAE5;
+            --chatgpt-dark: #065F46;
+            --chatgpt-icon: #10A37F;
+            --gemini-light: #DBEAFE;
+            --gemini-dark: #1E40AF;
+            --gemini-icon: #4285F4;
+
+            /* Component-Specific */
+            --modal-tree-bg: var(--bg-secondary);
+            --modal-tree-item-hover: var(--interactive-hover);
+            --modal-tree-item-text: var(--text-primary);
+            --modal-tree-item-icon: var(--color-gray-600);
+
+            /* Toolbar Tokens */
+            --toolbar-gradient-solid-from: #3B82F6;
+            --toolbar-gradient-solid-to: #1D4ED8;
+            --toolbar-gradient-light-from: rgba(59, 130, 246, 0.12);
+            --toolbar-gradient-light-to: rgba(29, 78, 216, 0.12);
+            --toolbar-theme-color: #3B82F6;
+            --toolbar-bg: rgba(255, 255, 255, 0.98);
+            --toolbar-border: rgba(0, 0, 0, 0.06);
+            --toolbar-border-strong: rgba(0, 0, 0, 0.08);
+            --toolbar-shadow-1: rgba(0, 0, 0, 0.06);
+            --toolbar-shadow-2: rgba(0, 0, 0, 0.04);
+            --toolbar-hover-shadow-1: rgba(0, 0, 0, 0.08);
+            --toolbar-hover-shadow-2: rgba(0, 0, 0, 0.06);
+            --toolbar-divider: var(--gray-200);
+            --toolbar-button-text: var(--gray-600);
+            --toolbar-button-hover-bg: var(--gray-100);
+            --toolbar-button-hover-text: var(--gray-900);
+            --toolbar-button-active-bg: var(--gray-200);
+            --toolbar-stats-text: var(--gray-600);
+            --toolbar-bookmark-hover-bg: rgba(59, 130, 246, 0.2);
+
+            /* Modal Tokens */
+            --modal-overlay-bg: rgba(0, 0, 0, 0.6);
+            --modal-surface: #FFFFFF;
+            --modal-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08),
+                0 4px 12px rgba(0, 0, 0, 0.12),
+                0 16px 48px rgba(0, 0, 0, 0.18),
+                0 24px 80px rgba(0, 0, 0, 0.12);
+            --modal-primary-bg: #2563EB;
+            --modal-primary-text: #FFFFFF;
+            --modal-primary-hover-bg: #1D4ED8;
+            --modal-primary-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+
+            /* Button Tokens - Primary */
+            --button-primary-bg: var(--color-blue-600);
+            --button-primary-hover: var(--color-blue-700);
+            --button-primary-active: var(--color-blue-800);
+            --button-primary-text: var(--color-white);
+            --button-primary-text-hover: var(--color-white);
+            --button-primary-disabled: var(--color-gray-300);
+            --button-primary-disabled-text: var(--color-gray-500);
+
+            /* Button Tokens - Secondary */
+            --button-secondary-bg: transparent;
+            --button-secondary-hover: var(--color-gray-100);
+            --button-secondary-active: var(--color-gray-200);
+            --button-secondary-text: var(--color-blue-600);
+            --button-secondary-text-hover: var(--color-blue-700);
+            --button-secondary-border: var(--color-gray-300);
+            --button-secondary-disabled: var(--color-gray-200);
+            --button-secondary-disabled-text: var(--color-gray-400);
+
+            /* Button Tokens - Danger */
+            --button-danger-bg: var(--color-red-600);
+            --button-danger-hover: var(--color-red-700);
+            --button-danger-active: var(--color-red-800);
+            --button-danger-text: var(--color-white);
+            --button-danger-text-hover: var(--color-white);
+            --button-danger-disabled: var(--color-red-300);
+            --button-danger-disabled-text: var(--color-red-100);
+
+            /* Button Tokens - Warning */
+            --button-warning-bg: var(--color-amber-500);
+            --button-warning-hover: var(--color-amber-600);
+            --button-warning-active: var(--color-amber-700);
+            --button-warning-text: var(--color-white);
+            --button-warning-text-hover: var(--color-white);
+            --button-warning-disabled: var(--color-amber-300);
+
+            /* Button Tokens - Ghost (Transparent) */
+            --button-ghost-bg: transparent;
+            --button-ghost-hover: var(--interactive-hover);
+            --button-ghost-active: var(--interactive-active);
+            --button-ghost-text: var(--text-primary);
+            --button-ghost-text-hover: var(--text-primary);
+
+            /* Button Tokens - Icon */
+            --button-icon-bg: transparent;
+            --button-icon-hover: var(--color-gray-100);
+            --button-icon-active: var(--color-gray-200);
+            --button-icon-text: var(--color-gray-600);
+            --button-icon-text-hover: var(--color-gray-900);
+
+            /* Button Tokens - Close */
+            --button-close-bg: transparent;
+            --button-close-hover: var(--color-gray-100);
+            --button-close-active: var(--color-gray-200);
+            --button-close-text: var(--color-gray-500);
+            --button-close-text-hover: var(--color-gray-900);
+        `;
+  }
+  /**
+   * Get dark mode semantic tokens (Layer 2)
+   * These reference primitive tokens based on dark mode context
+   * @returns CSS custom properties string
+   */
+  static getDarkSemanticTokens() {
+    return `
+            /* ============================================
+               SEMANTIC TOKENS - Dark Mode
+               ============================================ */
+
+            /* Background Colors */
+            --bg-primary: var(--color-gray-dark-50);
+            --bg-secondary: var(--color-gray-dark-100);
+            --bg-tertiary: var(--color-gray-dark-200);
+            --bg-surface: #121212;
+            --bg-surface-elevated: #1E1E1E;
+            --bg-modal: #121212;
+            --bg-overlay: rgba(0, 0, 0, 0.65);
+
+            /* Text Colors */
+            --text-primary: var(--color-white);
+            --text-secondary: var(--color-gray-dark-500);
+            --text-tertiary: var(--color-gray-dark-400);
+            --text-link: var(--color-blue-400);
+            --text-link-hover: var(--color-blue-300);
+            --text-on-primary: var(--color-white);
+            --text-disabled: var(--color-gray-dark-300);
+
+            /* Border Colors */
+            --border-default: var(--color-gray-dark-200);
+            --border-subtle: var(--color-gray-dark-100);
+            --border-strong: var(--color-gray-dark-300);
+            --border-interactive: var(--color-blue-400);
+            --border-focus: var(--color-blue-200);
+            --border-error: var(--color-red-400);
+
+            /* Interactive Colors */
+            --interactive-primary: var(--color-blue-400);
+            --interactive-primary-hover: var(--color-blue-500);
+            --interactive-selected: rgba(59, 130, 246, 0.2);
+            --interactive-secondary: var(--color-gray-dark-100);
+            --interactive-secondary-hover: var(--color-gray-dark-200);
+            --interactive-hover: var(--color-gray-dark-100);
+            --interactive-active: var(--color-gray-dark-200);
+            --interactive-disabled: var(--color-gray-dark-300);
+
+            /* Semantic States */
+            --success: var(--color-green-400);
+            --success-bg: var(--color-green-900);
+            --warning: var(--color-amber-400);
+            --warning-bg: var(--color-amber-900);
+            --error: var(--color-red-400);
+            --error-bg: var(--color-red-900);
+            --info: var(--color-blue-400);
+            --info-bg: var(--color-blue-900);
+
+            /* Platform Colors */
+            --platform-chatgpt-bg: var(--color-green-900);
+            --platform-chatgpt-text: var(--color-green-200);
+            --platform-gemini-bg: var(--color-blue-900);
+            --platform-gemini-text: var(--color-blue-200);
+
+            /* Legacy Support - Backward Compatible (will be phased out) */
+            --gray-50: var(--color-gray-dark-50);
+            --gray-100: var(--color-gray-dark-100);
+            --gray-200: var(--color-gray-dark-200);
+            --gray-300: var(--color-gray-dark-300);
+            --gray-400: var(--color-gray-dark-400);
+            --gray-500: var(--color-gray-dark-500);
+            --gray-600: var(--color-gray-dark-600);
+            --gray-700: var(--color-gray-dark-700);
+            --gray-800: var(--color-gray-dark-800);
+            --gray-900: var(--color-gray-dark-900);
+
+            --primary-50: var(--color-blue-50);
+            --primary-100: var(--color-blue-100);
+            --primary-200: var(--color-blue-200);
+            --primary-300: var(--color-blue-300);
+            --primary-400: var(--color-blue-400);
+            --primary-500: var(--color-blue-500);
+            --primary-600: var(--color-blue-600);
+            --primary-700: var(--color-blue-700);
+            --primary-800: var(--color-blue-800);
+
+            --success-50: var(--color-green-50);
+            --success-100: var(--color-green-100);
+            --success-500: var(--color-green-500);
+            --success-600: var(--color-green-600);
+            --success-700: var(--color-green-700);
+
+            --warning-50: var(--color-amber-50);
+            --warning-100: var(--color-amber-100);
+            --warning-500: var(--color-amber-500);
+            --warning-600: var(--color-amber-600);
+            --warning-700: var(--color-amber-700);
+
+            --danger-50: var(--color-red-50);
+            --danger-100: var(--color-red-100);
+            --danger-500: var(--color-red-500);
+            --danger-600: var(--color-red-600);
+            --danger-700: var(--color-red-700);
+
+            /* Material Design 3 - Surface Colors (Dark) */
+            --md-surface: #121212;
+            --md-surface-variant: #1E1E1E;
+            --md-surface-container: #2C2C2C;
+            --md-surface-container-high: #3A3A3A;
+            --md-on-surface: #E3E3E3;
+            --md-on-surface-variant: #CAC4D0;
+            --md-primary-container: #004A77;
+            --md-on-primary-container: #C5E7FF;
+            --md-outline: #938F99;
+            --md-outline-variant: #49454F;
+
+            /* Platform Legacy */
+            --chatgpt-light: #065F46;
+            --chatgpt-dark: #10B981;
+            --chatgpt-icon: #34D399;
+            --gemini-light: #1E40AF;
+            --gemini-dark: #60A5FA;
+            --gemini-icon: #93C5FD;
+
+            /* Component-Specific */
+            --modal-tree-bg: var(--color-gray-dark-50);
+            --modal-tree-item-hover: var(--color-gray-dark-100);
+            --modal-tree-item-text: var(--color-gray-dark-900);
+            --modal-tree-item-icon: var(--color-gray-dark-400);
+
+            /* Toolbar Tokens */
+            --toolbar-gradient-solid-from: #60A5FA;
+            --toolbar-gradient-solid-to: #3B82F6;
+            --toolbar-gradient-light-from: rgba(96, 165, 250, 0.25);
+            --toolbar-gradient-light-to: rgba(59, 130, 246, 0.25);
+            --toolbar-theme-color: #60A5FA;
+            --toolbar-bg: rgba(40, 40, 40, 0.98);
+            --toolbar-border: rgba(255, 255, 255, 0.08);
+            --toolbar-border-strong: rgba(255, 255, 255, 0.12);
+            --toolbar-shadow-1: rgba(0, 0, 0, 0.4);
+            --toolbar-shadow-2: rgba(0, 0, 0, 0.3);
+            --toolbar-hover-shadow-1: rgba(0, 0, 0, 0.5);
+            --toolbar-hover-shadow-2: rgba(0, 0, 0, 0.4);
+            --toolbar-divider: rgba(255, 255, 255, 0.12);
+            --toolbar-button-text: rgba(255, 255, 255, 0.6);
+            --toolbar-button-hover-bg: rgba(255, 255, 255, 0.08);
+            --toolbar-button-hover-text: rgba(255, 255, 255, 0.9);
+            --toolbar-button-active-bg: rgba(255, 255, 255, 0.12);
+            --toolbar-stats-text: rgba(255, 255, 255, 0.5);
+            --toolbar-bookmark-hover-bg: rgba(59, 130, 246, 0.2);
+
+            /* Modal Tokens */
+            --modal-overlay-bg: rgba(0, 0, 0, 0.8);
+            --modal-surface: #1E1E1E;
+            --modal-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
+                0 4px 12px rgba(0, 0, 0, 0.5),
+                0 16px 48px rgba(0, 0, 0, 0.6),
+                0 24px 80px rgba(0, 0, 0, 0.4);
+            --modal-primary-bg: #3B82F6;
+            --modal-primary-text: #FFFFFF;
+            --modal-primary-hover-bg: #2563EB;
+            --modal-primary-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+
+            /* Button Tokens - Primary */
+            --button-primary-bg: var(--color-blue-400);
+            --button-primary-hover: var(--color-blue-500);
+            --button-primary-active: var(--color-blue-600);
+            --button-primary-text: var(--color-white);
+            --button-primary-text-hover: var(--color-white);
+            --button-primary-disabled: var(--color-gray-dark-300);
+            --button-primary-disabled-text: var(--color-gray-dark-500);
+
+            /* Button Tokens - Secondary */
+            --button-secondary-bg: transparent;
+            --button-secondary-hover: var(--color-gray-dark-100);
+            --button-secondary-active: var(--color-gray-dark-200);
+            --button-secondary-text: var(--color-blue-400);
+            --button-secondary-text-hover: var(--color-blue-300);
+            --button-secondary-border: var(--color-gray-dark-300);
+            --button-secondary-disabled: var(--color-gray-dark-200);
+            --button-secondary-disabled-text: var(--color-gray-dark-400);
+
+            /* Button Tokens - Danger */
+            --button-danger-bg: var(--color-red-500);
+            --button-danger-hover: var(--color-red-600);
+            --button-danger-active: var(--color-red-700);
+            --button-danger-text: var(--color-white);
+            --button-danger-text-hover: var(--color-white);
+            --button-danger-disabled: var(--color-red-dark-300);
+            --button-danger-disabled-text: var(--color-red-dark-100);
+
+            /* Button Tokens - Warning */
+            --button-warning-bg: var(--color-amber-500);
+            --button-warning-hover: var(--color-amber-600);
+            --button-warning-active: var(--color-amber-700);
+            --button-warning-text: var(--color-gray-900);
+            --button-warning-text-hover: var(--color-gray-900);
+            --button-warning-disabled: var(--color-amber-dark-300);
+
+            /* Button Tokens - Ghost (Transparent) */
+            --button-ghost-bg: transparent;
+            --button-ghost-hover: var(--interactive-hover);
+            --button-ghost-active: var(--interactive-active);
+            --button-ghost-text: var(--text-primary);
+            --button-ghost-text-hover: var(--text-primary);
+
+            /* Button Tokens - Icon */
+            --button-icon-bg: transparent;
+            --button-icon-hover: var(--color-gray-dark-100);
+            --button-icon-active: var(--color-gray-dark-200);
+            --button-icon-text: var(--color-gray-dark-400);
+            --button-icon-text-hover: var(--color-white);
+
+            /* Button Tokens - Close */
+            --button-close-bg: transparent;
+            --button-close-hover: var(--color-gray-dark-100);
+            --button-close-active: var(--color-gray-dark-200);
+            --button-close-text: var(--color-gray-dark-400);
+            --button-close-text-hover: var(--color-white);
+        `;
+  }
+  /**
+   * Get non-color tokens (spacing, typography, etc.)
+   * These are mode-independent
+   * @returns CSS custom properties string
+   */
+  static getCommonTokens() {
+    return `
+            /* ============================================
+               SPACING SCALE (8px Grid)
+               ============================================ */
+            
+            --space-0: 0px;
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            --space-8: 32px;
+            --space-10: 40px;
+            --space-12: 48px;
+            --space-16: 64px;
+            --space-20: 80px;
+            --space-24: 96px;
+
+            /* ============================================
+               TYPOGRAPHY
+               ============================================ */
+            
+            /* Font Families */
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
+                "Courier New", monospace;
+            
+            /* Font Sizes */
+            --text-xs: 12px;
+            --text-sm: 13px;
+            --text-base: 14px;
+            --text-lg: 16px;
+            --text-xl: 18px;
+            --text-2xl: 20px;
+            --text-3xl: 24px;
+            
+            /* Font Weights */
+            --font-normal: 400;
+            --font-medium: 500;
+            --font-semibold: 600;
+            --font-bold: 700;
+            
+            /* Line Heights */
+            --leading-tight: 1.25;
+            --leading-normal: 1.5;
+            --leading-relaxed: 1.75;
+
+            /* ============================================
+               BORDER RADIUS
+               ============================================ */
+            
+            --radius-none: 0px;
+            --radius-sm: 6px;
+            --radius-small: 6px;
+            --radius-md: 8px;
+            --radius-medium: 8px;
+            --radius-lg: 12px;
+            --radius-large: 12px;
+            --radius-xl: 16px;
+            --radius-full: 9999px;
+
+            /* ============================================
+               Z-INDEX SCALE
+               ============================================ */
+            
+            --z-dropdown: 1000;
+            --z-sticky: 1020;
+            --z-fixed: 1030;
+            --z-modal-backdrop: 1040;
+            --z-modal: 1050;
+            --z-popover: 1060;
+            --z-tooltip: 1070;
+
+            /* ============================================
+               ANIMATIONS
+               ============================================ */
+            
+            /* Durations */
+            --duration-fast: 150ms;
+            --duration-base: 200ms;
+            --duration-slow: 300ms;
+            --duration-slower: 500ms;
+            
+            /* Easing Functions */
+            --ease-in: cubic-bezier(0.4, 0, 1, 1);
+            --ease-out: cubic-bezier(0, 0, 0.2, 1);
+            --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+            --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+            /* Aliases */
+            --white: var(--color-white);
+            --black: var(--color-black);
+        `;
+  }
+  /**
+   * Get mode-specific shadow tokens
+   * @param isDark Whether dark mode is active
+   * @returns CSS custom properties string
+   */
+  static getShadowTokens(isDark) {
+    if (isDark) {
+      return `
+                /* Dark Mode Shadows */
+                --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+                --shadow-sm: 0 1px 5px rgba(0, 0, 0, 0.4), 0 2px 2px rgba(0, 0, 0, 0.28);
+                --shadow-md: 0 3px 5px rgba(0, 0, 0, 0.4), 0 1px 18px rgba(0, 0, 0, 0.24);
+                --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 5px rgba(0, 0, 0, 0.28);
+                --shadow-xl: 0 8px 10px rgba(0, 0, 0, 0.28), 0 3px 14px rgba(0, 0, 0, 0.24);
+                --shadow-2xl: 0 24px 38px rgba(0, 0, 0, 0.28), 0 9px 46px rgba(0, 0, 0, 0.24);
+                --shadow-focus: 0 0 0 3px rgba(90, 202, 249, 0.2);
+
+                --elevation-0: 0 0 0 0 rgba(0, 0, 0, 0);
+                --elevation-1: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+                --elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+                --elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+                --elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+
+                --glass-bg: rgba(30, 30, 30, 0.7);
+                --glass-border: rgba(255, 255, 255, 0.1);
+                --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            `;
+    } else {
+      return `
+                /* Light Mode Shadows */
+                --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+                --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.1);
+
+                --elevation-0: 0 0 0 0 rgba(0, 0, 0, 0);
+                --elevation-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+                --elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                --elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                --elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+                --glass-bg: rgba(255, 255, 255, 0.7);
+                --glass-border: rgba(255, 255, 255, 0.18);
+                --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            `;
+    }
+  }
+  /**
+   * Get complete token set for current mode
+   * Combines primitive tokens + semantic tokens + common tokens
+   * @deprecated Use getCompleteTokens() instead
+   */
+  static getLightTokens() {
+    return this.getCompleteTokens(false);
+  }
+  /**
+   * Get complete token set for current mode
+   * Combines primitive tokens + semantic tokens + common tokens
+   * @deprecated Use getCompleteTokens() instead
+   */
+  static getDarkTokens() {
+    return this.getCompleteTokens(true);
+  }
+  /**
+   * Get complete token set for specified mode
+   * Combines: Primitive Tokens + Semantic Tokens + Common Tokens + Shadows
+   * @param isDark Whether to get dark mode tokens
+   * @returns Complete CSS custom properties string
+   */
+  static getCompleteTokens(isDark) {
+    const primitiveTokens = this.getPrimitiveTokens();
+    const semanticTokens = isDark ? this.getDarkSemanticTokens() : this.getLightSemanticTokens();
+    const commonTokens = this.getCommonTokens();
+    const shadowTokens = this.getShadowTokens(isDark);
+    return `
+            ${primitiveTokens}
+            ${semanticTokens}
+            ${commonTokens}
+            ${shadowTokens}
+        `;
+  }
+}
+
 class WordCounter {
   /**
    * Count words in Markdown text
@@ -1294,16 +2034,35 @@ class Toolbar {
   container;
   callbacks;
   wordCounter;
+  tokenStyleElement = null;
   constructor(callbacks) {
     this.callbacks = callbacks;
     this.wordCounter = new WordCounter();
     this.container = document.createElement("div");
     this.container.className = "aicopy-toolbar-container";
     this.shadowRoot = this.container.attachShadow({ mode: "open" });
+    this.injectStyles();
+    this.setTheme(DesignTokens.isDarkMode());
+    this.createUI();
+  }
+  /**
+   * Inject styles into Shadow DOM
+   */
+  injectStyles() {
+    this.tokenStyleElement = document.createElement("style");
+    this.shadowRoot.appendChild(this.tokenStyleElement);
     const styleElement = document.createElement("style");
     styleElement.textContent = toolbarStyles;
     this.shadowRoot.appendChild(styleElement);
-    this.createUI();
+  }
+  /**
+   * Update toolbar theme tokens
+   */
+  setTheme(isDark) {
+    if (this.tokenStyleElement) {
+      this.tokenStyleElement.textContent = `:host { ${DesignTokens.getCompleteTokens(isDark)} }`;
+    }
+    this.container.dataset.theme = isDark ? "dark" : "light";
   }
   /**
    * Create toolbar UI
@@ -1677,23 +2436,212 @@ const modalStyles = `
 
 `;
 
+class DarkModeDetector {
+  static instance;
+  observers = /* @__PURE__ */ new Set();
+  mutationObserver = null;
+  currentState = false;
+  constructor() {
+    this.currentState = this.detectDarkMode();
+    this.startObserving();
+  }
+  /**
+   * Get singleton instance
+   */
+  static getInstance() {
+    if (!DarkModeDetector.instance) {
+      DarkModeDetector.instance = new DarkModeDetector();
+    }
+    return DarkModeDetector.instance;
+  }
+  /**
+   * Get current dark mode state
+   */
+  isDarkMode() {
+    return this.currentState;
+  }
+  /**
+   * Subscribe to dark mode changes
+   * @param callback Function to call when dark mode changes
+   * @returns Unsubscribe function
+   */
+  subscribe(callback) {
+    this.observers.add(callback);
+    callback(this.currentState);
+    return () => {
+      this.observers.delete(callback);
+    };
+  }
+  /**
+   * Detect current dark mode state
+   * Priority:
+   * 1. html.classList contains 'dark' or 'light' (ChatGPT)
+   * 2. body.classList contains 'dark-theme' (Gemini)
+   * 3. html[data-theme] attribute
+   * 4. Computed background color heuristic
+   * 5. prefers-color-scheme media query
+   */
+  detectDarkMode() {
+    const html = document.documentElement;
+    const body = document.body;
+    if (html.classList.contains("dark")) {
+      logger$1.debug("[DarkMode] Detected via html.dark class");
+      return true;
+    }
+    if (html.classList.contains("light")) {
+      logger$1.debug("[DarkMode] Detected via html.light class");
+      return false;
+    }
+    if (body && body.classList.contains("dark-theme")) {
+      logger$1.debug("[DarkMode] Detected via body.dark-theme class (Gemini)");
+      return true;
+    }
+    if (body && body.classList.contains("light-theme")) {
+      logger$1.debug("[DarkMode] Detected via body.light-theme class (Gemini)");
+      return false;
+    }
+    const theme = html.getAttribute("data-theme") || body?.getAttribute("data-theme");
+    if (theme === "dark") {
+      logger$1.debug('[DarkMode] Detected via data-theme="dark"');
+      return true;
+    }
+    if (theme === "light") {
+      logger$1.debug('[DarkMode] Detected via data-theme="light"');
+      return false;
+    }
+    if (body) {
+      const bgColor = window.getComputedStyle(body).backgroundColor;
+      const rgb = bgColor.match(/\d+/g);
+      if (rgb && rgb.length >= 3) {
+        const r = parseInt(rgb[0]);
+        const g = parseInt(rgb[1]);
+        const b = parseInt(rgb[2]);
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        if (luminance < 0.5) {
+          logger$1.debug("[DarkMode] Detected via background color heuristic (dark)");
+          return true;
+        }
+      }
+    }
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    logger$1.debug(`[DarkMode] Fallback to prefers-color-scheme: ${prefersDark}`);
+    return prefersDark;
+  }
+  /**
+   * Start observing dark mode changes
+   */
+  startObserving() {
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+    }
+    this.mutationObserver = new MutationObserver((mutations) => {
+      const hasRelevantChange = mutations.some((mutation) => {
+        if (mutation.type === "attributes") {
+          return mutation.attributeName === "class" || mutation.attributeName === "data-theme";
+        }
+        return false;
+      });
+      if (hasRelevantChange) {
+        const newState = this.detectDarkMode();
+        if (newState !== this.currentState) {
+          this.currentState = newState;
+          this.notifyObservers(newState);
+        }
+      }
+    });
+    this.mutationObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme"],
+      childList: false,
+      subtree: false
+    });
+    if (document.body) {
+      this.mutationObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ["class", "data-theme"]
+      });
+    }
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleMediaChange = () => {
+      const newState = this.detectDarkMode();
+      if (newState !== this.currentState) {
+        this.currentState = newState;
+        this.notifyObservers(newState);
+      }
+    };
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", handleMediaChange);
+    } else {
+      mediaQuery.addListener(handleMediaChange);
+    }
+  }
+  /**
+   * Notify all observers of state change
+   */
+  notifyObservers(isDark) {
+    this.observers.forEach((callback) => {
+      try {
+        callback(isDark);
+      } catch (error) {
+        console.error("Error in dark mode observer callback:", error);
+      }
+    });
+  }
+  /**
+   * Stop observing (cleanup)
+   */
+  stopObserving() {
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+      this.mutationObserver = null;
+    }
+    this.observers.clear();
+  }
+}
+
 class Modal {
   shadowRoot;
   container;
   content = "";
+  tokenStyleElement = null;
+  themeUnsubscribe = null;
+  currentThemeIsDark = DesignTokens.isDarkMode();
   constructor() {
     this.container = document.createElement("div");
     this.container.className = "aicopy-modal";
     this.shadowRoot = this.container.attachShadow({ mode: "open" });
     this.injectStyles();
+    this.subscribeTheme();
   }
   /**
    * Inject base styles
    */
   injectStyles() {
+    this.tokenStyleElement = document.createElement("style");
+    this.shadowRoot.appendChild(this.tokenStyleElement);
     const styleElement = document.createElement("style");
     styleElement.textContent = modalStyles;
     this.shadowRoot.appendChild(styleElement);
+    this.setTheme(this.currentThemeIsDark);
+  }
+  /**
+   * Subscribe to host theme updates
+   */
+  subscribeTheme() {
+    const detector = DarkModeDetector.getInstance();
+    this.themeUnsubscribe = detector.subscribe((isDark) => {
+      this.setTheme(isDark);
+    });
+  }
+  /**
+   * Apply theme tokens to the modal shadow root
+   */
+  setTheme(isDark) {
+    this.currentThemeIsDark = isDark;
+    if (this.tokenStyleElement) {
+      this.tokenStyleElement.textContent = `:host { ${DesignTokens.getCompleteTokens(isDark)} }`;
+    }
+    this.container.dataset.theme = isDark ? "dark" : "light";
   }
   /**
    * Show modal with content
@@ -1708,6 +2656,10 @@ class Modal {
    */
   hide() {
     this.container.remove();
+    if (this.themeUnsubscribe) {
+      this.themeUnsubscribe();
+      this.themeUnsubscribe = null;
+    }
   }
   /**
    * Create modal UI
@@ -22335,11 +23287,11 @@ const panelStyles = `
    DARK MODE - Shadow DOM compatible
    ============================================ */
 
-:host-context(html.dark) .aicopy-panel-overlay {
+:host([data-theme='dark']) .aicopy-panel-overlay {
   background: rgba(0, 0, 0, 0.8);
 }
 
-:host-context(html.dark) .aicopy-panel {
+:host([data-theme='dark']) .aicopy-panel {
   background: #1E1E1E;
   box-shadow: 
     0 0 0 1px rgba(255, 255, 255, 0.1),
@@ -22348,34 +23300,34 @@ const panelStyles = `
     0 24px 80px rgba(0, 0, 0, 0.4);
 }
 
-:host-context(html.dark) .aicopy-panel-header {
+:host([data-theme='dark']) .aicopy-panel-header {
   background: #1E1E1E;
   border-bottom-color: #3F3F46;
 }
 
-:host-context(html.dark) .aicopy-panel-title {
+:host([data-theme='dark']) .aicopy-panel-title {
   color: #FFFFFF;
 }
 
-:host-context(html.dark) .aicopy-panel-fullscreen-btn {
+:host([data-theme='dark']) .aicopy-panel-fullscreen-btn {
   color: #A1A1AA;
 }
 
-:host-context(html.dark) .aicopy-panel-fullscreen-btn:hover {
+:host([data-theme='dark']) .aicopy-panel-fullscreen-btn:hover {
   background: #27272A;
   color: #FFFFFF;
 }
 
-:host-context(html.dark) .aicopy-panel-close {
+:host([data-theme='dark']) .aicopy-panel-close {
   color: #A1A1AA;
 }
 
-:host-context(html.dark) .aicopy-panel-close:hover {
+:host([data-theme='dark']) .aicopy-panel-close:hover {
   background: #27272A;
   color: #FFFFFF;
 }
 
-:host-context(html.dark) .aicopy-panel-body {
+:host([data-theme='dark']) .aicopy-panel-body {
   background: #1E1E1E;
 }
 `;
@@ -22571,7 +23523,7 @@ const markdownStyles = `
    DARK MODE - GitHub Dark (Shadow DOM compatible)
    ============================================ */
 
-:host-context(html.dark) .markdown-body {
+:host([data-theme='dark']) .markdown-body {
   --fgColor-default: #f0f6fc;
   --fgColor-muted: #9198a1;
   --fgColor-accent: #4493f8;
@@ -22584,6 +23536,7 @@ const markdownStyles = `
 `;
 class ReRenderPanel {
   container = null;
+  currentThemeIsDark = false;
   constructor() {
     d.setOptions({
       breaks: true,
@@ -22615,12 +23568,22 @@ class ReRenderPanel {
     }
   }
   /**
+   * Apply theme to the panel host
+   */
+  setTheme(isDark) {
+    this.currentThemeIsDark = isDark;
+    if (this.container) {
+      this.container.dataset.theme = isDark ? "dark" : "light";
+    }
+  }
+  /**
    * Create panel with Shadow DOM for style isolation
    */
   createPanel(markdown) {
     let processedMarkdown = markdown.replace(/\$([^$]+)\$([\u3001\uff0c\u3002\uff1b\uff1a\uff01\uff1f])\$([^$]+)\$/g, "$$$1$$ $2 $$$3$$").replace(/\$([^$]+)\$(\u2014\u2014)\$([^$]+)\$/g, "$$$1$$ $2 $$$3$$");
     const html = d.parse(processedMarkdown);
     this.container = document.createElement("div");
+    this.container.dataset.theme = this.currentThemeIsDark ? "dark" : "light";
     const shadowRoot = this.container.attachShadow({ mode: "open" });
     const panelStyleEl = document.createElement("style");
     panelStyleEl.textContent = panelStyles;
@@ -23239,11 +24202,11 @@ class PathUtils {
   /** Maximum allowed folder depth */
   static MAX_DEPTH = 4;
   /** Maximum folder name length */
-  static MAX_NAME_LENGTH = 50;
+  static MAX_NAME_LENGTH = 100;
   /** Forbidden characters in folder names (includes separator and control chars) */
-  static FORBIDDEN_CHARS = /[/\x00-\x1F\x7F<>:"|?*\\]/;
+  static FORBIDDEN_CHARS = /[\/\x00-\x1F\x7F]/;
   /** Pattern to detect directory traversal attempts */
-  static TRAVERSAL_PATTERN = /\.\./;
+  static TRAVERSAL_PATTERN = /(^|\/)\.\.(\/|$)/;
   /**
    * Normalize path to prevent directory traversal attacks
    * 
@@ -23368,6 +24331,97 @@ class PathUtils {
     return this.normalize(joined);
   }
   /**
+   * Normalize folder name based on UI rules
+   *
+   * - Remove slashes
+   * - Collapse consecutive spaces
+   * - Trim leading/trailing spaces
+   */
+  static normalizeFolderName(name) {
+    let value = typeof name === "string" ? name : "";
+    const removedSlash = value.includes(this.SEPARATOR);
+    if (removedSlash) {
+      value = value.replace(/\//g, "");
+    }
+    const collapsedValue = value.replace(/ {2,}/g, " ");
+    const collapsedSpaces = collapsedValue !== value;
+    value = collapsedValue;
+    const trimmedValue = value.replace(/^ +| +$/g, "");
+    const trimmed = trimmedValue !== value;
+    value = trimmedValue;
+    return {
+      value,
+      trimmed,
+      collapsedSpaces,
+      removedSlash
+    };
+  }
+  static getFolderNameErrors(value) {
+    const errors = [];
+    if (!value || value.length === 0) {
+      errors.push("empty");
+    }
+    if (value.length > this.MAX_NAME_LENGTH) {
+      errors.push("tooLong");
+    }
+    if (this.FORBIDDEN_CHARS.test(value)) {
+      errors.push("forbiddenChars");
+    }
+    if (this.TRAVERSAL_PATTERN.test(value)) {
+      errors.push("traversal");
+    }
+    return errors;
+  }
+  static getFolderNameValidation(name) {
+    const normalization = this.normalizeFolderName(name);
+    const normalized = normalization.value;
+    const errors = this.getFolderNameErrors(normalized);
+    return {
+      normalized,
+      normalization,
+      errors,
+      isValid: errors.length === 0
+    };
+  }
+  static hasNameConflict(name, existingNames) {
+    const normalized = this.normalizeFolderName(name).value;
+    if (!normalized) {
+      return false;
+    }
+    const candidate = normalized.toLocaleLowerCase();
+    return existingNames.some((existing) => {
+      const existingNormalized = this.normalizeFolderName(existing).value;
+      return existingNormalized.toLocaleLowerCase() === candidate;
+    });
+  }
+  static generateAutoRenameName(name, existingNames) {
+    const validation = this.getFolderNameValidation(name);
+    if (!validation.isValid) {
+      throw new PathValidationError("Invalid folder name for auto rename", name);
+    }
+    const normalized = validation.normalized;
+    const existingSet = new Set(
+      existingNames.map((existing) => this.normalizeFolderName(existing).value.toLocaleLowerCase())
+    );
+    if (!existingSet.has(normalized.toLocaleLowerCase())) {
+      return normalized;
+    }
+    for (let i = 1; i < 1e4; i += 1) {
+      const suffix = `-${i}`;
+      const maxBaseLength = this.MAX_NAME_LENGTH - suffix.length;
+      const base = normalized.length > maxBaseLength ? normalized.slice(0, maxBaseLength).replace(/ +$/g, "") : normalized;
+      if (!base) {
+        break;
+      }
+      const candidate = `${base}${suffix}`;
+      const candidateLower = candidate.toLocaleLowerCase();
+      if (!existingSet.has(candidateLower) && this.getFolderNameErrors(candidate).length === 0) {
+        return candidate;
+      }
+    }
+    throw new PathValidationError("Unable to generate unique folder name", name);
+  }
+  /**
    * Update path prefix for rename/move operations
    * 
    * Used for recursive updates when renaming or moving folders.
@@ -23409,19 +24463,7 @@ class PathUtils {
       return false;
     }
     const trimmed = name.trim();
-    if (trimmed.length === 0) {
-      return false;
-    }
-    if (trimmed.length > this.MAX_NAME_LENGTH) {
-      return false;
-    }
-    if (this.FORBIDDEN_CHARS.test(trimmed)) {
-      return false;
-    }
-    if (this.TRAVERSAL_PATTERN.test(trimmed)) {
-      return false;
-    }
-    return true;
+    return this.getFolderNameErrors(trimmed).length === 0;
   }
   /**
    * Validate complete folder path
@@ -23567,7 +24609,7 @@ class FolderStorage {
         }
       }
       const siblings = await this.getSiblings(path);
-      if (siblings.some((f) => f.name === name)) {
+      if (PathUtils.hasNameConflict(name, siblings.map((f) => f.name))) {
         throw new FolderOperationError(
           `Folder "${name}" already exists at this level`,
           "create",
@@ -23665,7 +24707,8 @@ class FolderStorage {
         );
       }
       const siblings = await this.getSiblings(newPath);
-      if (siblings.some((f) => f.path !== oldPath && f.name === newName)) {
+      const siblingNames = siblings.filter((f) => f.path !== oldPath).map((f) => f.name);
+      if (PathUtils.hasNameConflict(newName, siblingNames)) {
         throw new FolderOperationError(
           `Folder "${newName}" already exists at this level`,
           "rename",
@@ -24191,682 +25234,6 @@ class TreeBuilder {
   }
 }
 
-class DesignTokens {
-  /**
-   * Detect if dark mode is currently active
-   * Checks both document class and system preference
-   */
-  static isDarkMode() {
-    if (document.documentElement.classList.contains("dark")) {
-      return true;
-    }
-    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return true;
-    }
-    return false;
-  }
-  /**
-   * Get primitive color tokens (Layer 1)
-   * These are base colors that NEVER change - globally unique
-   * @returns CSS custom properties string
-   */
-  static getPrimitiveTokens() {
-    return `
-            /* ============================================
-               PRIMITIVE TOKENS - Base Colors (Immutable)
-               ============================================ */
-            
-            /* Neutral Colors (Gray) - 10 levels */
-            --color-gray-50: #F9FAFB;
-            --color-gray-100: #F3F4F6;
-            --color-gray-200: #E5E7EB;
-            --color-gray-300: #D1D5DB;
-            --color-gray-400: #9CA3AF;
-            --color-gray-500: #6B7280;
-            --color-gray-600: #4B5563;
-            --color-gray-700: #374151;
-            --color-gray-800: #1F2937;
-            --color-gray-900: #111827;
-
-            /* Blue (Primary) - 10 levels */
-            --color-blue-50: #E3F2FD;
-            --color-blue-100: #BBDEFB;
-            --color-blue-200: #90CAF9;
-            --color-blue-300: #64B5F6;
-            --color-blue-400: #42A5F5;
-            --color-blue-500: #2196F3;
-            --color-blue-600: #1976D2;
-            --color-blue-700: #1565C0;
-            --color-blue-800: #0D47A1;
-            --color-blue-900: #0A3A7F;
-
-            /* Green - 10 levels */
-            --color-green-50: #F0FDF4;
-            --color-green-100: #DCFCE7;
-            --color-green-200: #BBF7D0;
-            --color-green-300: #86EFAC;
-            --color-green-400: #4ADE80;
-            --color-green-500: #22C55E;
-            --color-green-600: #16A34A;
-            --color-green-700: #15803D;
-            --color-green-800: #166534;
-            --color-green-900: #14532D;
-
-            /* Purple - 10 levels */
-            --color-purple-50: #FAF5FF;
-            --color-purple-100: #F3E8FF;
-            --color-purple-200: #E9D5FF;
-            --color-purple-300: #D8B4FE;
-            --color-purple-400: #C084FC;
-            --color-purple-500: #A855F7;
-            --color-purple-600: #9333EA;
-            --color-purple-700: #7E22CE;
-            --color-purple-800: #6B21A8;
-            --color-purple-900: #581C87;
-
-            /* Red - 10 levels */
-            --color-red-50: #FEF2F2;
-            --color-red-100: #FEE2E2;
-            --color-red-200: #FECACA;
-            --color-red-300: #FCA5A5;
-            --color-red-400: #F87171;
-            --color-red-500: #EF4444;
-            --color-red-600: #DC2626;
-            --color-red-700: #B91C1C;
-            --color-red-800: #991B1B;
-            --color-red-900: #7F1D1D;
-
-            /* Amber - 10 levels */
-            --color-amber-50: #FFFBEB;
-            --color-amber-100: #FEF3C7;
-            --color-amber-200: #FDE68A;
-            --color-amber-300: #FCD34D;
-            --color-amber-400: #FBBF24;
-            --color-amber-500: #F59E0B;
-            --color-amber-600: #D97706;
-            --color-amber-700: #B45309;
-            --color-amber-800: #92400E;
-            --color-amber-900: #78350F;
-
-            /* Special Colors */
-            --color-white: #FFFFFF;
-            --color-black: #000000;
-
-            /* Dark Mode Specific Grays */
-            --color-gray-dark-50: #18181B;
-            --color-gray-dark-100: #27272A;
-            --color-gray-dark-200: #3F3F46;
-            --color-gray-dark-300: #52525B;
-            --color-gray-dark-400: #A1A1AA;
-            --color-gray-dark-500: #D4D4D8;
-            --color-gray-dark-600: #E4E4E7;
-            --color-gray-dark-700: #F4F4F5;
-            --color-gray-dark-800: #FAFAFA;
-            --color-gray-dark-900: #FFFFFF;
-        `;
-  }
-  /**
-   * Get light mode semantic tokens (Layer 2)
-   * These reference primitive tokens based on light mode context
-   * @returns CSS custom properties string
-   */
-  static getLightSemanticTokens() {
-    return `
-            /* ============================================
-               SEMANTIC TOKENS - Light Mode
-               ============================================ */
-
-            /* Background Colors */
-            --bg-primary: var(--color-white);
-            --bg-secondary: var(--color-gray-50);
-            --bg-tertiary: var(--color-gray-100);
-            --bg-surface: var(--color-white);
-            --bg-surface-elevated: var(--color-gray-50);
-            --bg-modal: var(--color-white);
-            --bg-overlay: rgba(0, 0, 0, 0.5);
-
-            /* Text Colors */
-            --text-primary: var(--color-gray-900);
-            --text-secondary: var(--color-gray-500);
-            --text-tertiary: var(--color-gray-400);
-            --text-link: var(--color-blue-600);
-            --text-link-hover: var(--color-blue-700);
-            --text-on-primary: var(--color-white);
-            --text-disabled: var(--color-gray-300);
-
-            /* Border Colors */
-            --border-default: var(--color-gray-200);
-            --border-subtle: var(--color-gray-100);
-            --border-strong: var(--color-gray-300);
-            --border-interactive: var(--color-blue-500);
-            --border-focus: var(--color-blue-300);
-            --border-error: var(--color-red-500);
-
-            /* Interactive Colors */
-            --interactive-primary: var(--color-blue-600);
-            --interactive-primary-hover: var(--color-blue-700);
-            --interactive-selected: rgba(59, 130, 246, 0.12);
-            --interactive-secondary: var(--color-gray-100);
-            --interactive-secondary-hover: var(--color-gray-200);
-            --interactive-hover: var(--color-gray-100);
-            --interactive-active: var(--color-gray-200);
-            --interactive-disabled: var(--color-gray-300);
-
-            /* Semantic States */
-            --success: var(--color-green-600);
-            --success-bg: var(--color-green-50);
-            --warning: var(--color-amber-600);
-            --warning-bg: var(--color-amber-50);
-            --error: var(--color-red-600);
-            --error-bg: var(--color-red-50);
-            --info: var(--color-blue-600);
-            --info-bg: var(--color-blue-50);
-
-            /* Platform Colors */
-            --platform-chatgpt-bg: var(--color-green-100);
-            --platform-chatgpt-text: var(--color-green-800);
-            --platform-gemini-bg: var(--color-blue-100);
-            --platform-gemini-text: var(--color-blue-800);
-
-            /* Legacy Support - Backward Compatible (will be phased out) */
-            --gray-50: var(--color-gray-50);
-            --gray-100: var(--color-gray-100);
-            --gray-200: var(--color-gray-200);
-            --gray-300: var(--color-gray-300);
-            --gray-400: var(--color-gray-400);
-            --gray-500: var(--color-gray-500);
-            --gray-600: var(--color-gray-600);
-            --gray-700: var(--color-gray-700);
-            --gray-800: var(--color-gray-800);
-            --gray-900: var(--color-gray-900);
-
-            --primary-50: var(--color-blue-50);
-            --primary-100: var(--color-blue-100);
-            --primary-200: var(--color-blue-200);
-            --primary-300: var(--color-blue-300);
-            --primary-400: var(--color-blue-400);
-            --primary-500: var(--color-blue-500);
-            --primary-600: var(--color-blue-600);
-            --primary-700: var(--color-blue-700);
-            --primary-800: var(--color-blue-800);
-
-            --success-50: var(--color-green-50);
-            --success-100: var(--color-green-100);
-            --success-500: var(--color-green-500);
-            --success-600: var(--color-green-600);
-            --success-700: var(--color-green-700);
-
-            --warning-50: var(--color-amber-50);
-            --warning-100: var(--color-amber-100);
-            --warning-500: var(--color-amber-500);
-            --warning-600: var(--color-amber-600);
-            --warning-700: var(--color-amber-700);
-
-            --danger-50: var(--color-red-50);
-            --danger-100: var(--color-red-100);
-            --danger-500: var(--color-red-500);
-            --danger-600: var(--color-red-600);
-            --danger-700: var(--color-red-700);
-
-            /* Material Design 3 - Surface Colors */
-            --md-surface: var(--color-white);
-            --md-surface-variant: #F5F5F5;
-            --md-surface-container: #FAFAFA;
-            --md-surface-container-high: #EEEEEE;
-            --md-on-surface: #1C1B1F;
-            --md-on-surface-variant: #49454F;
-            --md-primary-container: var(--color-blue-50);
-            --md-on-primary-container: var(--color-blue-800);
-            --md-outline: #E0E0E0;
-            --md-outline-variant: #EEEEEE;
-
-            /* Platform Legacy */
-            --chatgpt-light: #D1FAE5;
-            --chatgpt-dark: #065F46;
-            --chatgpt-icon: #10A37F;
-            --gemini-light: #DBEAFE;
-            --gemini-dark: #1E40AF;
-            --gemini-icon: #4285F4;
-
-            /* Component-Specific */
-            --modal-tree-bg: var(--bg-secondary);
-            --modal-tree-item-hover: var(--interactive-hover);
-            --modal-tree-item-text: var(--text-primary);
-            --modal-tree-item-icon: var(--color-gray-600);
-
-            /* Button Tokens - Primary */
-            --button-primary-bg: var(--color-blue-600);
-            --button-primary-hover: var(--color-blue-700);
-            --button-primary-active: var(--color-blue-800);
-            --button-primary-text: var(--color-white);
-            --button-primary-text-hover: var(--color-white);
-            --button-primary-disabled: var(--color-gray-300);
-            --button-primary-disabled-text: var(--color-gray-500);
-
-            /* Button Tokens - Secondary */
-            --button-secondary-bg: transparent;
-            --button-secondary-hover: var(--color-gray-100);
-            --button-secondary-active: var(--color-gray-200);
-            --button-secondary-text: var(--color-blue-600);
-            --button-secondary-text-hover: var(--color-blue-700);
-            --button-secondary-border: var(--color-gray-300);
-            --button-secondary-disabled: var(--color-gray-200);
-            --button-secondary-disabled-text: var(--color-gray-400);
-
-            /* Button Tokens - Danger */
-            --button-danger-bg: var(--color-red-600);
-            --button-danger-hover: var(--color-red-700);
-            --button-danger-active: var(--color-red-800);
-            --button-danger-text: var(--color-white);
-            --button-danger-text-hover: var(--color-white);
-            --button-danger-disabled: var(--color-red-300);
-            --button-danger-disabled-text: var(--color-red-100);
-
-            /* Button Tokens - Warning */
-            --button-warning-bg: var(--color-amber-500);
-            --button-warning-hover: var(--color-amber-600);
-            --button-warning-active: var(--color-amber-700);
-            --button-warning-text: var(--color-white);
-            --button-warning-text-hover: var(--color-white);
-            --button-warning-disabled: var(--color-amber-300);
-
-            /* Button Tokens - Ghost (Transparent) */
-            --button-ghost-bg: transparent;
-            --button-ghost-hover: var(--interactive-hover);
-            --button-ghost-active: var(--interactive-active);
-            --button-ghost-text: var(--text-primary);
-            --button-ghost-text-hover: var(--text-primary);
-
-            /* Button Tokens - Icon */
-            --button-icon-bg: transparent;
-            --button-icon-hover: var(--color-gray-100);
-            --button-icon-active: var(--color-gray-200);
-            --button-icon-text: var(--color-gray-600);
-            --button-icon-text-hover: var(--color-gray-900);
-
-            /* Button Tokens - Close */
-            --button-close-bg: transparent;
-            --button-close-hover: var(--color-gray-100);
-            --button-close-active: var(--color-gray-200);
-            --button-close-text: var(--color-gray-500);
-            --button-close-text-hover: var(--color-gray-900);
-        `;
-  }
-  /**
-   * Get dark mode semantic tokens (Layer 2)
-   * These reference primitive tokens based on dark mode context
-   * @returns CSS custom properties string
-   */
-  static getDarkSemanticTokens() {
-    return `
-            /* ============================================
-               SEMANTIC TOKENS - Dark Mode
-               ============================================ */
-
-            /* Background Colors */
-            --bg-primary: var(--color-gray-dark-50);
-            --bg-secondary: var(--color-gray-dark-100);
-            --bg-tertiary: var(--color-gray-dark-200);
-            --bg-surface: #121212;
-            --bg-surface-elevated: #1E1E1E;
-            --bg-modal: #121212;
-            --bg-overlay: rgba(0, 0, 0, 0.65);
-
-            /* Text Colors */
-            --text-primary: var(--color-white);
-            --text-secondary: var(--color-gray-dark-500);
-            --text-tertiary: var(--color-gray-dark-400);
-            --text-link: var(--color-blue-400);
-            --text-link-hover: var(--color-blue-300);
-            --text-on-primary: var(--color-white);
-            --text-disabled: var(--color-gray-dark-300);
-
-            /* Border Colors */
-            --border-default: var(--color-gray-dark-200);
-            --border-subtle: var(--color-gray-dark-100);
-            --border-strong: var(--color-gray-dark-300);
-            --border-interactive: var(--color-blue-400);
-            --border-focus: var(--color-blue-200);
-            --border-error: var(--color-red-400);
-
-            /* Interactive Colors */
-            --interactive-primary: var(--color-blue-400);
-            --interactive-primary-hover: var(--color-blue-500);
-            --interactive-selected: rgba(59, 130, 246, 0.2);
-            --interactive-secondary: var(--color-gray-dark-100);
-            --interactive-secondary-hover: var(--color-gray-dark-200);
-            --interactive-hover: var(--color-gray-dark-100);
-            --interactive-active: var(--color-gray-dark-200);
-            --interactive-disabled: var(--color-gray-dark-300);
-
-            /* Semantic States */
-            --success: var(--color-green-400);
-            --success-bg: var(--color-green-900);
-            --warning: var(--color-amber-400);
-            --warning-bg: var(--color-amber-900);
-            --error: var(--color-red-400);
-            --error-bg: var(--color-red-900);
-            --info: var(--color-blue-400);
-            --info-bg: var(--color-blue-900);
-
-            /* Platform Colors */
-            --platform-chatgpt-bg: var(--color-green-900);
-            --platform-chatgpt-text: var(--color-green-200);
-            --platform-gemini-bg: var(--color-blue-900);
-            --platform-gemini-text: var(--color-blue-200);
-
-            /* Legacy Support - Backward Compatible (will be phased out) */
-            --gray-50: var(--color-gray-dark-50);
-            --gray-100: var(--color-gray-dark-100);
-            --gray-200: var(--color-gray-dark-200);
-            --gray-300: var(--color-gray-dark-300);
-            --gray-400: var(--color-gray-dark-400);
-            --gray-500: var(--color-gray-dark-500);
-            --gray-600: var(--color-gray-dark-600);
-            --gray-700: var(--color-gray-dark-700);
-            --gray-800: var(--color-gray-dark-800);
-            --gray-900: var(--color-gray-dark-900);
-
-            --primary-50: var(--color-blue-50);
-            --primary-100: var(--color-blue-100);
-            --primary-200: var(--color-blue-200);
-            --primary-300: var(--color-blue-300);
-            --primary-400: var(--color-blue-400);
-            --primary-500: var(--color-blue-500);
-            --primary-600: var(--color-blue-600);
-            --primary-700: var(--color-blue-700);
-            --primary-800: var(--color-blue-800);
-
-            --success-50: var(--color-green-50);
-            --success-100: var(--color-green-100);
-            --success-500: var(--color-green-500);
-            --success-600: var(--color-green-600);
-            --success-700: var(--color-green-700);
-
-            --warning-50: var(--color-amber-50);
-            --warning-100: var(--color-amber-100);
-            --warning-500: var(--color-amber-500);
-            --warning-600: var(--color-amber-600);
-            --warning-700: var(--color-amber-700);
-
-            --danger-50: var(--color-red-50);
-            --danger-100: var(--color-red-100);
-            --danger-500: var(--color-red-500);
-            --danger-600: var(--color-red-600);
-            --danger-700: var(--color-red-700);
-
-            /* Material Design 3 - Surface Colors (Dark) */
-            --md-surface: #121212;
-            --md-surface-variant: #1E1E1E;
-            --md-surface-container: #2C2C2C;
-            --md-surface-container-high: #3A3A3A;
-            --md-on-surface: #E3E3E3;
-            --md-on-surface-variant: #CAC4D0;
-            --md-primary-container: #004A77;
-            --md-on-primary-container: #C5E7FF;
-            --md-outline: #938F99;
-            --md-outline-variant: #49454F;
-
-            /* Platform Legacy */
-            --chatgpt-light: #065F46;
-            --chatgpt-dark: #10B981;
-            --chatgpt-icon: #34D399;
-            --gemini-light: #1E40AF;
-            --gemini-dark: #60A5FA;
-            --gemini-icon: #93C5FD;
-
-            /* Component-Specific */
-            --modal-tree-bg: var(--color-gray-dark-50);
-            --modal-tree-item-hover: var(--color-gray-dark-100);
-            --modal-tree-item-text: var(--color-gray-dark-900);
-            --modal-tree-item-icon: var(--color-gray-dark-400);
-
-            /* Button Tokens - Primary */
-            --button-primary-bg: var(--color-blue-400);
-            --button-primary-hover: var(--color-blue-500);
-            --button-primary-active: var(--color-blue-600);
-            --button-primary-text: var(--color-white);
-            --button-primary-text-hover: var(--color-white);
-            --button-primary-disabled: var(--color-gray-dark-300);
-            --button-primary-disabled-text: var(--color-gray-dark-500);
-
-            /* Button Tokens - Secondary */
-            --button-secondary-bg: transparent;
-            --button-secondary-hover: var(--color-gray-dark-100);
-            --button-secondary-active: var(--color-gray-dark-200);
-            --button-secondary-text: var(--color-blue-400);
-            --button-secondary-text-hover: var(--color-blue-300);
-            --button-secondary-border: var(--color-gray-dark-300);
-            --button-secondary-disabled: var(--color-gray-dark-200);
-            --button-secondary-disabled-text: var(--color-gray-dark-400);
-
-            /* Button Tokens - Danger */
-            --button-danger-bg: var(--color-red-500);
-            --button-danger-hover: var(--color-red-600);
-            --button-danger-active: var(--color-red-700);
-            --button-danger-text: var(--color-white);
-            --button-danger-text-hover: var(--color-white);
-            --button-danger-disabled: var(--color-red-dark-300);
-            --button-danger-disabled-text: var(--color-red-dark-100);
-
-            /* Button Tokens - Warning */
-            --button-warning-bg: var(--color-amber-500);
-            --button-warning-hover: var(--color-amber-600);
-            --button-warning-active: var(--color-amber-700);
-            --button-warning-text: var(--color-gray-900);
-            --button-warning-text-hover: var(--color-gray-900);
-            --button-warning-disabled: var(--color-amber-dark-300);
-
-            /* Button Tokens - Ghost (Transparent) */
-            --button-ghost-bg: transparent;
-            --button-ghost-hover: var(--interactive-hover);
-            --button-ghost-active: var(--interactive-active);
-            --button-ghost-text: var(--text-primary);
-            --button-ghost-text-hover: var(--text-primary);
-
-            /* Button Tokens - Icon */
-            --button-icon-bg: transparent;
-            --button-icon-hover: var(--color-gray-dark-100);
-            --button-icon-active: var(--color-gray-dark-200);
-            --button-icon-text: var(--color-gray-dark-400);
-            --button-icon-text-hover: var(--color-white);
-
-            /* Button Tokens - Close */
-            --button-close-bg: transparent;
-            --button-close-hover: var(--color-gray-dark-100);
-            --button-close-active: var(--color-gray-dark-200);
-            --button-close-text: var(--color-gray-dark-400);
-            --button-close-text-hover: var(--color-white);
-        `;
-  }
-  /**
-   * Get non-color tokens (spacing, typography, etc.)
-   * These are mode-independent
-   * @returns CSS custom properties string
-   */
-  static getCommonTokens() {
-    return `
-            /* ============================================
-               SPACING SCALE (8px Grid)
-               ============================================ */
-            
-            --space-0: 0px;
-            --space-1: 4px;
-            --space-2: 8px;
-            --space-3: 12px;
-            --space-4: 16px;
-            --space-5: 20px;
-            --space-6: 24px;
-            --space-8: 32px;
-            --space-10: 40px;
-            --space-12: 48px;
-            --space-16: 64px;
-            --space-20: 80px;
-            --space-24: 96px;
-
-            /* ============================================
-               TYPOGRAPHY
-               ============================================ */
-            
-            /* Font Families */
-            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-            --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
-                "Courier New", monospace;
-            
-            /* Font Sizes */
-            --text-xs: 12px;
-            --text-sm: 13px;
-            --text-base: 14px;
-            --text-lg: 16px;
-            --text-xl: 18px;
-            --text-2xl: 20px;
-            --text-3xl: 24px;
-            
-            /* Font Weights */
-            --font-normal: 400;
-            --font-medium: 500;
-            --font-semibold: 600;
-            --font-bold: 700;
-            
-            /* Line Heights */
-            --leading-tight: 1.25;
-            --leading-normal: 1.5;
-            --leading-relaxed: 1.75;
-
-            /* ============================================
-               BORDER RADIUS
-               ============================================ */
-            
-            --radius-none: 0px;
-            --radius-sm: 6px;
-            --radius-small: 6px;
-            --radius-md: 8px;
-            --radius-medium: 8px;
-            --radius-lg: 12px;
-            --radius-large: 12px;
-            --radius-xl: 16px;
-            --radius-full: 9999px;
-
-            /* ============================================
-               Z-INDEX SCALE
-               ============================================ */
-            
-            --z-dropdown: 1000;
-            --z-sticky: 1020;
-            --z-fixed: 1030;
-            --z-modal-backdrop: 1040;
-            --z-modal: 1050;
-            --z-popover: 1060;
-            --z-tooltip: 1070;
-
-            /* ============================================
-               ANIMATIONS
-               ============================================ */
-            
-            /* Durations */
-            --duration-fast: 150ms;
-            --duration-base: 200ms;
-            --duration-slow: 300ms;
-            --duration-slower: 500ms;
-            
-            /* Easing Functions */
-            --ease-in: cubic-bezier(0.4, 0, 1, 1);
-            --ease-out: cubic-bezier(0, 0, 0.2, 1);
-            --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-            --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-            /* Aliases */
-            --white: var(--color-white);
-            --black: var(--color-black);
-        `;
-  }
-  /**
-   * Get mode-specific shadow tokens
-   * @param isDark Whether dark mode is active
-   * @returns CSS custom properties string
-   */
-  static getShadowTokens(isDark) {
-    if (isDark) {
-      return `
-                /* Dark Mode Shadows */
-                --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
-                --shadow-sm: 0 1px 5px rgba(0, 0, 0, 0.4), 0 2px 2px rgba(0, 0, 0, 0.28);
-                --shadow-md: 0 3px 5px rgba(0, 0, 0, 0.4), 0 1px 18px rgba(0, 0, 0, 0.24);
-                --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 5px rgba(0, 0, 0, 0.28);
-                --shadow-xl: 0 8px 10px rgba(0, 0, 0, 0.28), 0 3px 14px rgba(0, 0, 0, 0.24);
-                --shadow-2xl: 0 24px 38px rgba(0, 0, 0, 0.28), 0 9px 46px rgba(0, 0, 0, 0.24);
-                --shadow-focus: 0 0 0 3px rgba(90, 202, 249, 0.2);
-
-                --elevation-0: 0 0 0 0 rgba(0, 0, 0, 0);
-                --elevation-1: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-                --elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-                --elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-                --elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
-
-                --glass-bg: rgba(30, 30, 30, 0.7);
-                --glass-border: rgba(255, 255, 255, 0.1);
-                --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            `;
-    } else {
-      return `
-                /* Light Mode Shadows */
-                --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-                --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-                --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-                --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-                --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.1);
-
-                --elevation-0: 0 0 0 0 rgba(0, 0, 0, 0);
-                --elevation-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-                --elevation-2: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                --elevation-3: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-                --elevation-4: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-
-                --glass-bg: rgba(255, 255, 255, 0.7);
-                --glass-border: rgba(255, 255, 255, 0.18);
-                --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            `;
-    }
-  }
-  /**
-   * Get complete token set for current mode
-   * Combines primitive tokens + semantic tokens + common tokens
-   * @deprecated Use getCompleteTokens() instead
-   */
-  static getLightTokens() {
-    return this.getCompleteTokens(false);
-  }
-  /**
-   * Get complete token set for current mode
-   * Combines primitive tokens + semantic tokens + common tokens
-   * @deprecated Use getCompleteTokens() instead
-   */
-  static getDarkTokens() {
-    return this.getCompleteTokens(true);
-  }
-  /**
-   * Get complete token set for specified mode
-   * Combines: Primitive Tokens + Semantic Tokens + Common Tokens + Shadows
-   * @param isDark Whether to get dark mode tokens
-   * @returns Complete CSS custom properties string
-   */
-  static getCompleteTokens(isDark) {
-    const primitiveTokens = this.getPrimitiveTokens();
-    const semanticTokens = isDark ? this.getDarkSemanticTokens() : this.getLightSemanticTokens();
-    const commonTokens = this.getCommonTokens();
-    const shadowTokens = this.getShadowTokens(isDark);
-    return `
-            ${primitiveTokens}
-            ${semanticTokens}
-            ${commonTokens}
-            ${shadowTokens}
-        `;
-  }
-}
-
 class BookmarkSaveModal {
   // ✅ Shadow DOM infrastructure
   container = null;
@@ -25332,19 +25699,31 @@ class BookmarkSaveModal {
   showSimpleNotification(_type, message) {
     alert(message);
   }
+  getFolderNameErrorMessage(errors) {
+    if (errors.includes("empty")) {
+      return "Folder name cannot be empty.";
+    }
+    if (errors.includes("tooLong")) {
+      return `Folder name must be ${PathUtils.MAX_NAME_LENGTH} characters or less.`;
+    }
+    if (errors.includes("traversal")) {
+      return 'Folder name cannot contain "..".';
+    }
+    if (errors.includes("forbiddenChars")) {
+      return "Folder name contains invalid characters.";
+    }
+    return "Invalid folder name.";
+  }
   /**
    * Create folder
    */
   async createFolder(name, parentPath) {
-    if (name.length > 50) {
-      this.showSimpleNotification("error", "Folder name too long (max 50 characters)");
+    const validation = PathUtils.getFolderNameValidation(name);
+    if (!validation.isValid) {
+      this.showSimpleNotification("error", this.getFolderNameErrorMessage(validation.errors));
       return;
     }
-    if (name.includes("/")) {
-      this.showSimpleNotification("error", 'Folder name cannot contain "/"');
-      return;
-    }
-    const newPath = parentPath ? `${parentPath}/${name}` : name;
+    const newPath = parentPath ? `${parentPath}/${validation.normalized}` : validation.normalized;
     const depth = newPath.split("/").length;
     if (depth > PathUtils.MAX_DEPTH) {
       this.showSimpleNotification("error", `Maximum folder depth is ${PathUtils.MAX_DEPTH} levels (e.g., Work/Projects/AI/ChatGPT)`);
@@ -25352,7 +25731,7 @@ class BookmarkSaveModal {
     }
     const exists = this.folders.find((f) => f.path === newPath);
     if (exists) {
-      this.showSimpleNotification("error", `Folder "${name}" already exists`);
+      this.showSimpleNotification("error", `Folder "${validation.normalized}" already exists`);
       return;
     }
     try {
@@ -25654,7 +26033,7 @@ class FolderOperationsManager {
       if (!PathUtils.isValidFolderName(name)) {
         return {
           success: false,
-          error: "Invalid folder name. Name cannot contain special characters or be empty."
+          error: "Invalid folder name."
         };
       }
       const path = parentPath ? `${parentPath}${PathUtils.SEPARATOR}${name}` : name;
@@ -25694,7 +26073,7 @@ class FolderOperationsManager {
       if (!PathUtils.isValidFolderName(newName)) {
         return {
           success: false,
-          error: "Invalid folder name. Name cannot contain special characters or be empty."
+          error: "Invalid folder name."
         };
       }
       const parentPath = PathUtils.getParentPath(path);
@@ -25797,7 +26176,7 @@ class FolderOperationsManager {
     if (!PathUtils.isValidFolderName(name)) {
       return {
         valid: false,
-        error: "Invalid folder name. Name cannot contain special characters, be empty, or exceed 50 characters."
+        error: "Invalid folder name."
       };
     }
     return { valid: true };
@@ -26151,7 +26530,7 @@ class MarkdownRenderer {
    DARK MODE - GitHub Dark (Shadow DOM compatible)
    ============================================ */
 
-:host-context(html.dark) .markdown-body {
+:host([data-theme='dark']) .markdown-body {
   --fgColor-default: #f0f6fc;
   --fgColor-muted: #9198a1;
   --fgColor-accent: #4493f8;
@@ -26366,6 +26745,7 @@ class SimpleBookmarkPanel {
     this.overlay.style.alignItems = "center";
     this.overlay.style.justifyContent = "center";
     this.overlay.style.background = "var(--bg-overlay)";
+    this.overlay.dataset.theme = DesignTokens.isDarkMode() ? "dark" : "light";
     this.shadowRoot = this.overlay.attachShadow({ mode: "open" });
     const styles = document.createElement("style");
     styles.textContent = this.getStyles();
@@ -26521,7 +26901,7 @@ class SimpleBookmarkPanel {
                 </button>
                 <button class="tab-btn" data-tab="support">
                     <span class="tab-icon">${Icons.coffee}</span>
-                    <span class="tab-label">Buy Me a Coffee</span>
+                    <span class="tab-label">Support on GitHub</span>
                 </button>
             </div>
 
@@ -26584,10 +26964,10 @@ class SimpleBookmarkPanel {
 
                 <div class="tab-content support-tab">
                     <div class="support-content">
-                        <h3>${Icons.coffee} Buy Me a Coffee</h3>
-                        <p>If you find this extension helpful, consider supporting the development!</p>
-                        <a href="https://www.buymeacoffee.com/yourusername" target="_blank" class="support-btn">
-                            Support Development
+                        <h3>${Icons.coffee} Support on GitHub</h3>
+                        <p>If this extension helps you, please support it on GitHub.</p>
+                        <a href="https://github.com/zhaoliangbin42/AI-MarkDone" target="_blank" rel="noopener noreferrer" class="support-btn">
+                            Open GitHub
                         </a>
                     </div>
                 </div>
@@ -26761,13 +27141,6 @@ class SimpleBookmarkPanel {
     } else {
       return "now";
     }
-  }
-  /**
-   * Truncate text
-   */
-  truncate(text, maxLength) {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + "...";
   }
   /**
    * Filter bookmarks based on search and platform
@@ -27007,7 +27380,7 @@ class SimpleBookmarkPanel {
     this.shadowRoot?.querySelectorAll(".folder-item").forEach((item) => {
       item.addEventListener("click", (e) => {
         const target = e.target;
-        if (target.classList.contains("item-checkbox") || target.closest(".item-actions")) {
+        if (target.classList.contains("item-checkbox") || target.closest(".item-actions") || target.closest(".inline-edit-wrapper")) {
           return;
         }
         const path = item.dataset.path;
@@ -27451,23 +27824,31 @@ Please create a new root folder or organize within existing folders.`
   async showCreateFolderInput(parentPath) {
     const name = prompt("Enter folder name:");
     if (!name) return;
-    if (name.length > 50) {
+    const validation = PathUtils.getFolderNameValidation(name);
+    if (!validation.isValid) {
       await this.showNotification({
         type: "error",
         title: "Invalid Folder Name",
-        message: "Folder name must be 50 characters or less"
+        message: this.getFolderNameErrorMessage(validation.errors)
       });
       return;
     }
-    if (name.includes("/")) {
-      await this.showNotification({
-        type: "error",
-        title: "Invalid Folder Name",
-        message: 'Folder name cannot contain "/"'
-      });
-      return;
+    this.handleCreateFolder(parentPath, validation.normalized);
+  }
+  getFolderNameErrorMessage(errors) {
+    if (errors.includes("empty")) {
+      return "Folder name cannot be empty.";
     }
-    this.handleCreateFolder(parentPath, name);
+    if (errors.includes("tooLong")) {
+      return `Folder name must be ${PathUtils.MAX_NAME_LENGTH} characters or less.`;
+    }
+    if (errors.includes("traversal")) {
+      return 'Folder name cannot contain "..".';
+    }
+    if (errors.includes("forbiddenChars")) {
+      return "Folder name contains invalid characters.";
+    }
+    return "Invalid folder name.";
   }
   async handleCreateFolder(parentPath, name) {
     const newPath = parentPath ? `${parentPath}/${name}` : name;
@@ -27510,6 +27891,9 @@ Please create a new root folder or organize within existing folders.`
   showRenameFolderInput(path) {
     const folder = this.folders.find((f) => f.path === path);
     if (!folder) return;
+    if (this.shadowRoot?.querySelector(".inline-edit-input")) {
+      return;
+    }
     const folderItems = this.shadowRoot?.querySelectorAll(".folder-item");
     if (!folderItems) return;
     const items = Array.from(folderItems);
@@ -27520,64 +27904,410 @@ Please create a new root folder or organize within existing folders.`
     const nameSpan = targetItem.querySelector(".folder-name");
     if (!nameSpan) return;
     const originalName = folder.name;
+    const parentPath = PathUtils.getParentPath(path);
+    const siblingNames = this.folders.filter((f) => f.path !== path && PathUtils.getParentPath(f.path) === parentPath).map((f) => f.name);
+    const normalizeInputValue = (value) => {
+      let nextValue = typeof value === "string" ? value : "";
+      const removedSlash = nextValue.includes(PathUtils.SEPARATOR);
+      if (removedSlash) {
+        nextValue = nextValue.replace(/\//g, "");
+      }
+      const collapsed = nextValue.replace(/ {2,}/g, " ");
+      const collapsedSpaces = collapsed !== nextValue;
+      nextValue = collapsed;
+      return {
+        value: nextValue,
+        normalization: { collapsedSpaces, removedSlash }
+      };
+    };
+    const normalizeCommitValue = (value) => {
+      const collapsed = value.replace(/ {2,}/g, " ");
+      return collapsed.replace(/^ +| +$/g, "");
+    };
+    const normalizedOriginal = normalizeCommitValue(originalName);
+    const describeTarget = (target) => {
+      if (!target) return "null";
+      if (target instanceof HTMLElement) {
+        const className = typeof target.className === "string" ? target.className.trim() : "";
+        const classSuffix = className ? `.${className.replace(/\s+/g, ".")}` : "";
+        return `${target.tagName.toLowerCase()}${classSuffix}`;
+      }
+      return Object.prototype.toString.call(target);
+    };
+    const logRename = (label, data) => {
+      logger$1.info(`[Rename] ${label}`, {
+        path,
+        parentPath: parentPath || "",
+        ...data
+      });
+    };
+    logRename("start", {
+      originalName,
+      normalizedOriginal,
+      siblingCount: siblingNames.length
+    });
+    const wrapper = document.createElement("div");
+    wrapper.className = "inline-edit-wrapper";
+    const row = document.createElement("div");
+    row.className = "inline-edit-row";
     const input = document.createElement("input");
     input.type = "text";
     input.value = originalName;
     input.className = "inline-edit-input";
-    input.style.cssText = `
-            width: 100%;
-            padding: 2px 6px;
-            border: 1px solid var(--primary-600);
-            border-radius: var(--radius-extra-small);
-            font-size: var(--text-base);
-            font-family: inherit;
-            outline: none;
-            box-shadow: var(--shadow-focus);
-        `;
+    input.setAttribute("aria-label", "Rename folder");
+    const actions = document.createElement("div");
+    actions.className = "inline-edit-actions";
+    const confirmBtn = document.createElement("button");
+    confirmBtn.type = "button";
+    confirmBtn.className = "inline-edit-btn inline-edit-confirm";
+    confirmBtn.title = "Confirm rename";
+    confirmBtn.setAttribute("aria-label", "Confirm rename");
+    confirmBtn.innerHTML = Icons.check;
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "inline-edit-btn inline-edit-cancel";
+    cancelBtn.title = "Cancel rename";
+    cancelBtn.setAttribute("aria-label", "Cancel rename");
+    cancelBtn.innerHTML = Icons.x;
+    const error = document.createElement("div");
+    error.className = "inline-edit-error";
+    error.setAttribute("aria-live", "polite");
+    const suggestion = document.createElement("div");
+    suggestion.className = "inline-edit-suggestion";
+    suggestion.setAttribute("aria-live", "polite");
+    const suggestionText = document.createElement("span");
+    suggestionText.className = "inline-edit-suggestion-text";
+    suggestionText.textContent = "重命名为：";
+    const suggestionValue = document.createElement("span");
+    suggestionValue.className = "inline-edit-suggestion-value";
+    const autoRenameBtn = document.createElement("button");
+    autoRenameBtn.type = "button";
+    autoRenameBtn.className = "inline-edit-auto-rename";
+    autoRenameBtn.textContent = "自动重命名";
+    suggestion.appendChild(suggestionText);
+    suggestion.appendChild(suggestionValue);
+    suggestion.appendChild(autoRenameBtn);
+    actions.appendChild(confirmBtn);
+    actions.appendChild(cancelBtn);
+    row.appendChild(input);
+    row.appendChild(actions);
+    wrapper.appendChild(row);
+    wrapper.appendChild(error);
+    wrapper.appendChild(suggestion);
     const parent = nameSpan.parentElement;
     if (!parent) return;
-    parent.replaceChild(input, nameSpan);
+    parent.replaceChild(wrapper, nameSpan);
+    const originalTabIndex = targetItem.getAttribute("tabindex");
+    targetItem.classList.add("is-editing");
+    targetItem.setAttribute("tabindex", "-1");
+    targetItem.scrollIntoView({ block: "nearest" });
     input.focus();
     input.select();
-    const saveEdit = async () => {
-      const newName = input.value.trim();
-      if (!newName || newName === originalName) {
-        parent.replaceChild(nameSpan, input);
-        return;
+    let ignoreBlur = false;
+    let lastPointerDownTarget = null;
+    let lastPointerDownInside = true;
+    let lastStableValue = originalName;
+    let currentBlocking = false;
+    let isSubmitting = false;
+    lastPointerDownTarget = wrapper;
+    const stopPropagation = (event) => event.stopPropagation();
+    wrapper.addEventListener("mousedown", stopPropagation);
+    wrapper.addEventListener("click", stopPropagation);
+    input.addEventListener("mousedown", stopPropagation);
+    input.addEventListener("click", stopPropagation);
+    actions.addEventListener("mousedown", stopPropagation);
+    actions.addEventListener("click", stopPropagation);
+    suggestion.addEventListener("mousedown", stopPropagation);
+    suggestion.addEventListener("click", stopPropagation);
+    const cleanup = () => {
+      if (!parent.contains(wrapper)) return;
+      parent.replaceChild(nameSpan, wrapper);
+      targetItem.classList.remove("is-editing");
+      if (originalTabIndex === null) {
+        targetItem.removeAttribute("tabindex");
+      } else {
+        targetItem.setAttribute("tabindex", originalTabIndex);
       }
-      if (newName.length > 50) {
-        await this.showNotification({
-          type: "error",
-          title: "Invalid Folder Name",
-          message: "Folder name must be 50 characters or less"
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("focusin", handleFocusIn, true);
+      document.removeEventListener("focusout", handleFocusOut, true);
+      document.removeEventListener("keydown", handleGlobalKeydown, true);
+      logRename("cleanup");
+    };
+    let autoRenameValue = "";
+    const updateStatus = (normalization, overrideMessage, overrideBlocking = false) => {
+      const commitValue = normalizeCommitValue(input.value);
+      const validation = PathUtils.getFolderNameValidation(commitValue);
+      const conflict = validation.isValid ? PathUtils.hasNameConflict(commitValue, siblingNames) : false;
+      let message = "";
+      let blocking = false;
+      autoRenameValue = "";
+      if (overrideMessage) {
+        message = overrideMessage;
+        blocking = overrideBlocking;
+      } else if (!validation.isValid) {
+        message = this.getFolderNameErrorMessage(validation.errors);
+        blocking = true;
+      } else if (conflict) {
+        message = "Folder name already exists.";
+        blocking = true;
+      } else if (normalization.removedSlash) {
+        message = 'Folder name cannot contain "/".';
+      } else if (normalization.collapsedSpaces) {
+        message = "Consecutive spaces were collapsed.";
+      }
+      currentBlocking = blocking;
+      confirmBtn.disabled = blocking;
+      input.classList.toggle("error", blocking);
+      error.textContent = message;
+      error.style.display = message ? "block" : "none";
+      logRename("status", {
+        value: input.value,
+        blocking,
+        message,
+        collapsedSpaces: normalization.collapsedSpaces,
+        removedSlash: normalization.removedSlash
+      });
+      if (!overrideMessage && validation.isValid && conflict) {
+        try {
+          autoRenameValue = PathUtils.generateAutoRenameName(commitValue, siblingNames);
+        } catch (err) {
+          logger$1.warn("[Folder] Auto-rename preview unavailable", err);
+        }
+      }
+      if (autoRenameValue) {
+        suggestionValue.textContent = autoRenameValue;
+        suggestion.style.display = "flex";
+        autoRenameBtn.disabled = false;
+      } else {
+        suggestion.style.display = "none";
+        autoRenameBtn.disabled = true;
+        suggestionValue.textContent = "";
+      }
+    };
+    const applyNormalization = () => {
+      const { value: nextValue, normalization } = normalizeInputValue(input.value);
+      const commitValue = normalizeCommitValue(nextValue);
+      if (normalization.removedSlash) {
+        input.value = lastStableValue;
+        updateStatus(
+          normalization,
+          'Folder name cannot contain "/".',
+          true
+        );
+        logRename("normalize-revert-slash", {
+          attempted: nextValue,
+          revertedTo: lastStableValue
         });
-        input.focus();
-        return;
+        return normalization;
       }
-      if (newName.includes("/")) {
-        await this.showNotification({
-          type: "error",
-          title: "Invalid Folder Name",
-          message: 'Folder name cannot contain "/"'
+      if (commitValue.length > PathUtils.MAX_NAME_LENGTH) {
+        input.value = lastStableValue;
+        updateStatus(
+          normalization,
+          `Folder name must be ${PathUtils.MAX_NAME_LENGTH} characters or less.`,
+          true
+        );
+        logRename("normalize-revert-too-long", {
+          attempted: nextValue,
+          revertedTo: lastStableValue
         });
-        input.focus();
+        return normalization;
+      }
+      if (input.value !== nextValue) {
+        input.value = nextValue;
+        const cursor = nextValue.length;
+        input.setSelectionRange(cursor, cursor);
+        logRename("normalize-adjust", {
+          from: input.value,
+          to: nextValue
+        });
+      }
+      lastStableValue = input.value;
+      updateStatus(normalization);
+      return normalization;
+    };
+    const commitEdit = async () => {
+      if (isSubmitting) {
+        logRename("commit-skip-submitting");
         return;
       }
-      await this.handleRenameFolder(path, newName);
+      const commitValue = normalizeCommitValue(input.value);
+      const validation = PathUtils.getFolderNameValidation(commitValue);
+      const conflict = validation.isValid ? PathUtils.hasNameConflict(commitValue, siblingNames) : false;
+      if (!validation.isValid || conflict) {
+        updateStatus({ collapsedSpaces: false, removedSlash: false });
+        input.focus();
+        input.select();
+        logRename("commit-blocked", {
+          value: input.value,
+          normalized: commitValue,
+          errors: validation.errors,
+          conflict
+        });
+        return;
+      }
+      if (commitValue !== input.value) {
+        input.value = commitValue;
+      }
+      if (commitValue === normalizedOriginal) {
+        logRename("commit-no-change", { normalized: commitValue });
+        cleanup();
+        return;
+      }
+      isSubmitting = true;
+      confirmBtn.disabled = true;
+      logRename("commit-submit", {
+        value: input.value,
+        normalized: commitValue
+      });
+      const success = await this.handleRenameFolder(path, commitValue);
+      if (!success) {
+        isSubmitting = false;
+        confirmBtn.disabled = false;
+        input.focus();
+        input.select();
+        logRename("commit-failed");
+      } else {
+        logRename("commit-success");
+      }
     };
     const cancelEdit = () => {
-      parent.replaceChild(nameSpan, input);
+      logRename("cancel");
+      cleanup();
     };
-    input.addEventListener("blur", saveEdit);
+    const handlePointerDown = (event) => {
+      lastPointerDownTarget = event.target;
+      const insideWrapper = event.composedPath().includes(wrapper);
+      lastPointerDownInside = insideWrapper;
+      logRename("pointerdown", {
+        target: describeTarget(event.target),
+        insideWrapper
+      });
+    };
+    const handleFocusIn = (event) => {
+      logRename("focusin", {
+        target: describeTarget(event.target),
+        active: describeTarget(document.activeElement)
+      });
+    };
+    const handleFocusOut = (event) => {
+      logRename("focusout", {
+        target: describeTarget(event.target),
+        active: describeTarget(document.activeElement)
+      });
+    };
+    const handleGlobalKeydown = (event) => {
+      logRename("keydown-capture", {
+        key: event.key,
+        target: describeTarget(event.target),
+        active: describeTarget(document.activeElement)
+      });
+    };
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("focusin", handleFocusIn, true);
+    document.addEventListener("focusout", handleFocusOut, true);
+    document.addEventListener("keydown", handleGlobalKeydown, true);
+    input.addEventListener("focus", () => {
+      logRename("input-focus");
+    });
+    input.addEventListener("beforeinput", (event) => {
+      const evt = event;
+      logRename("beforeinput", {
+        inputType: evt.inputType,
+        data: evt.data
+      });
+    });
+    input.addEventListener("input", (e) => {
+      e.stopPropagation();
+      applyNormalization();
+      logRename("input", { value: input.value });
+    });
+    input.addEventListener("blur", () => {
+      if (ignoreBlur) return;
+      if (isSubmitting) return;
+      if (!lastPointerDownTarget) {
+        input.focus();
+        logRename("blur-no-pointerdown");
+        return;
+      }
+      const clickedOutside = !lastPointerDownInside;
+      if (!clickedOutside) {
+        input.focus();
+        logRename("blur-inside-wrapper", {
+          target: describeTarget(lastPointerDownTarget)
+        });
+        return;
+      }
+      if (currentBlocking) {
+        input.focus();
+        logRename("blur-blocked", {
+          target: describeTarget(lastPointerDownTarget)
+        });
+        return;
+      }
+      logRename("blur-commit", {
+        target: describeTarget(lastPointerDownTarget)
+      });
+      void commitEdit();
+    });
     input.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      logRename("keydown", { key: e.key });
       if (e.key === "Enter") {
         e.preventDefault();
-        saveEdit();
+        void commitEdit();
       } else if (e.key === "Escape") {
         e.preventDefault();
         cancelEdit();
       }
     });
+    confirmBtn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      ignoreBlur = true;
+    });
+    confirmBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      logRename("confirm-click");
+      await commitEdit();
+      ignoreBlur = false;
+    });
+    cancelBtn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      ignoreBlur = true;
+    });
+    cancelBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      cancelEdit();
+      ignoreBlur = false;
+    });
+    autoRenameBtn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      ignoreBlur = true;
+    });
+    autoRenameBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!autoRenameValue) {
+        ignoreBlur = false;
+        return;
+      }
+      confirmBtn.disabled = true;
+      autoRenameBtn.disabled = true;
+      logRename("auto-rename", { value: autoRenameValue });
+      const success = await this.handleRenameFolder(path, autoRenameValue);
+      if (!success) {
+        confirmBtn.disabled = false;
+        autoRenameBtn.disabled = false;
+        input.focus();
+        input.select();
+        logRename("auto-rename-failed");
+      } else {
+        logRename("auto-rename-success");
+      }
+      ignoreBlur = false;
+    });
+    const initialNormalization = normalizeInputValue(input.value);
+    updateStatus(initialNormalization.normalization);
   }
   async handleRenameFolder(path, newName) {
     const result = await this.folderOpsManager.renameFolder(path, newName);
@@ -27586,6 +28316,7 @@ Please create a new root folder or organize within existing folders.`
       this.bookmarks = await SimpleBookmarkStorage.getAllBookmarks();
       await this.refreshTreeView();
       logger$1.info(`[Folder] Renamed: ${path} -> ${newName}`);
+      return true;
     } else {
       await this.showNotification({
         type: "error",
@@ -27594,38 +28325,32 @@ Please create a new root folder or organize within existing folders.`
       });
       logger$1.error(`[Folder] Rename failed:`, result.error);
     }
+    return false;
   }
   async handleDeleteFolder(path) {
-    const hasBookmarks = this.bookmarks.some(
+    const analysis = this.buildFolderDeleteAnalysis(path);
+    if (!analysis) return;
+    const confirmed = await this.showBatchDeleteConfirmation(analysis);
+    if (!confirmed) return;
+    await this.executeBatchDelete(analysis);
+    await this.refresh();
+  }
+  buildFolderDeleteAnalysis(path) {
+    const target = this.folders.find((f) => f.path === path);
+    if (!target) return null;
+    const descendantFolders = this.folders.filter((f) => f.path.startsWith(path + "/"));
+    const bookmarks = this.bookmarks.filter(
       (b) => b.folderPath === path || b.folderPath?.startsWith(path + "/")
     );
-    const hasSubfolders = this.folders.some(
-      (f) => f.path.startsWith(path + "/")
-    );
-    if (hasBookmarks || hasSubfolders) {
-      await this.showNotification({
-        type: "error",
-        title: "Folder Not Empty",
-        message: "Please remove all items before deleting folder"
-      });
-      return;
-    }
-    if (!confirm(`Delete folder "${path}"?`)) {
-      return;
-    }
-    const result = await this.folderOpsManager.deleteFolder(path);
-    if (result.success) {
-      this.folders = await FolderStorage.getAll();
-      await this.refreshTreeView();
-      logger$1.info(`[Folder] Deleted: ${path}`);
+    const folders = [];
+    const subfolders = [];
+    if (target.depth === 1) {
+      folders.push(target);
     } else {
-      await this.showNotification({
-        type: "error",
-        title: "Failed to Delete",
-        message: `Failed to delete folder: ${result.error}`
-      });
-      logger$1.error(`[Folder] Delete failed:`, result.error);
+      subfolders.push(target);
     }
+    descendantFolders.forEach((folder) => subfolders.push(folder));
+    return { folders, subfolders, bookmarks };
   }
   /**
    * Switch tab
@@ -28575,15 +29300,12 @@ ${options.message}
         const bookmarks = this.validateImportData(data);
         logger$1.info(`[Import] Validated ${bookmarks.length} bookmarks`);
         const analysis = this.analyzeImportData(bookmarks);
-        if (analysis.noFolder.length > 0 || analysis.tooDeep.length > 0) {
-          const shouldProceed = await this.showImportSummary(analysis);
-          if (!shouldProceed) {
-            logger$1.info("[Import] User cancelled import");
-            return;
-          }
-          analysis.noFolder.forEach((b) => b.folderPath = "Import");
-          analysis.tooDeep.forEach((b) => b.folderPath = "Import");
-        }
+        const importFolderSet = /* @__PURE__ */ new Set([
+          ...analysis.noFolder,
+          ...analysis.tooDeep
+        ]);
+        analysis.noFolder.forEach((b) => b.folderPath = "Import");
+        analysis.tooDeep.forEach((b) => b.folderPath = "Import");
         const allBookmarks = [...analysis.valid, ...analysis.noFolder, ...analysis.tooDeep];
         const folderPathsNeeded = /* @__PURE__ */ new Set();
         if (analysis.noFolder.length > 0 || analysis.tooDeep.length > 0) {
@@ -28611,14 +29333,28 @@ ${options.message}
         this.folders = await FolderStorage.getAll();
         logger$1.info(`[Import] Loaded ${this.folders.length} folders after creation`);
         const conflicts = await this.detectConflicts(allBookmarks);
-        if (conflicts.length > 0) {
-          const shouldMerge = await this.showConflictDialog(conflicts, allBookmarks);
-          if (!shouldMerge) {
+        const mergeEntries = await this.buildImportMergeEntries(allBookmarks, importFolderSet);
+        const hasRenameConflicts = mergeEntries.some((entry) => entry.status === "rename");
+        const hasImportFolder = mergeEntries.some((entry) => entry.status === "import");
+        const shouldPrompt = conflicts.length > 0 || hasRenameConflicts || hasImportFolder;
+        if (shouldPrompt) {
+          const action = await this.showMergeDialog(mergeEntries, {
+            hasRenameConflicts,
+            duplicateCount: conflicts.length
+          });
+          if (action === "cancel") {
             logger$1.info("[Import] User cancelled import");
             return;
           }
+          if (action === "rename-merge") {
+            mergeEntries.forEach((entry) => {
+              if (entry.renameTo) {
+                entry.bookmark.title = entry.renameTo;
+              }
+            });
+          }
         }
-        await this.importBookmarks(allBookmarks, false);
+        await this.importBookmarks(allBookmarks, true);
         await this.refresh();
         let message = `Successfully imported ${bookmarks.length} bookmark(s)!`;
         if (analysis.noFolder.length > 0 || analysis.tooDeep.length > 0) {
@@ -28675,78 +29411,8 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
     return { valid, noFolder, tooDeep };
   }
   /**
-   * Show import summary dialog
-   * Issue 2: Display summary and ask for confirmation
+   * Validate import data
    */
-  async showImportSummary(analysis) {
-    return new Promise((resolve) => {
-      const overlay = document.createElement("div");
-      overlay.className = "import-summary-overlay";
-      const modal = document.createElement("div");
-      modal.className = "import-summary-modal";
-      const totalIssues = analysis.noFolder.length + analysis.tooDeep.length;
-      modal.innerHTML = `
-                <h3 class="import-summary-title">
-                    📥 导入摘要
-                </h3>
-                <div class="import-summary-content">
-                    <p class="import-summary-text">
-                        准备导入 <strong>${analysis.valid.length + analysis.noFolder.length + analysis.tooDeep.length}</strong> 个书签：
-                    </p>
-                    <ul class="import-summary-list">
-                        <li>${Icons.check} ${analysis.valid.length} 个书签将正常导入</li>
-                        ${analysis.noFolder.length > 0 ? `<li>${Icons.folder} ${analysis.noFolder.length} 个书签无文件夹 → 将导入到 <strong>Import</strong> 文件夹</li>` : ""}
-                        ${analysis.tooDeep.length > 0 ? `<li>${Icons.folder} ${analysis.tooDeep.length} 个书签文件夹层级过深 → 将导入到 <strong>Import</strong> 文件夹</li>` : ""}
-                    </ul>
-                    ${totalIssues > 0 ? `
-                        <div class="import-summary-warning">
-                            <div class="import-summary-warning-title">ℹ️ 注意</div>
-                            <div class="import-summary-warning-text">
-                                ${analysis.noFolder.length + analysis.tooDeep.length} 个书签将自动归类到 Import 文件夹
-                            </div>
-                        </div>
-                    ` : ""}
-                </div>
-                <div class="import-summary-footer">
-                    <button class="cancel-btn">Cancel</button>
-                    <button class="proceed-btn">Continue</button>
-                </div>
-            `;
-      overlay.appendChild(modal);
-      if (this.shadowRoot) {
-        this.shadowRoot.appendChild(overlay);
-      }
-      const cancelBtn = modal.querySelector(".cancel-btn");
-      const proceedBtn = modal.querySelector(".proceed-btn");
-      cancelBtn.addEventListener("click", () => {
-        overlay.remove();
-        resolve(false);
-      });
-      proceedBtn.addEventListener("click", () => {
-        overlay.remove();
-        resolve(true);
-      });
-      overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) {
-          overlay.remove();
-          resolve(false);
-        }
-      });
-      const handleEscape = (e) => {
-        if (e.key === "Escape") {
-          overlay.remove();
-          document.removeEventListener("keydown", handleEscape);
-          resolve(false);
-        }
-      };
-      document.addEventListener("keydown", handleEscape);
-    });
-  }
-  /**
-  
-      /**
-       * Validate import data
-       */
   validateImportData(data) {
     let bookmarksArray;
     if (Array.isArray(data)) {
@@ -28800,15 +29466,81 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
     return conflicts;
   }
   /**
-   * Show conflict resolution dialog
-   * Returns: true (merge) or false (cancel)
+   * Build merge entries with status + rename preview
    */
-  async showConflictDialog(conflicts, allBookmarks) {
+  async buildImportMergeEntries(bookmarks, importFolderSet) {
+    const existingBookmarks = this.bookmarks.length > 0 ? this.bookmarks : await SimpleBookmarkStorage.getAllBookmarks();
+    const usedTitlesByFolder = /* @__PURE__ */ new Map();
+    const entries = [];
+    const getUsedTitles = (folderPath) => {
+      const key = folderPath || "Import";
+      let existing = usedTitlesByFolder.get(key);
+      if (!existing) {
+        existing = /* @__PURE__ */ new Set();
+        usedTitlesByFolder.set(key, existing);
+      }
+      return existing;
+    };
+    existingBookmarks.forEach((bookmark) => {
+      const usedTitles = getUsedTitles(bookmark.folderPath);
+      usedTitles.add(this.normalizeBookmarkTitle(bookmark.title));
+    });
+    for (const bookmark of bookmarks) {
+      const folderPath = bookmark.folderPath || "Import";
+      const usedTitles = getUsedTitles(folderPath);
+      const normalizedTitle = this.normalizeBookmarkTitle(bookmark.title);
+      let status = "normal";
+      let renameTo;
+      if (normalizedTitle && usedTitles.has(normalizedTitle)) {
+        status = "rename";
+        renameTo = this.generateUniqueTitle(bookmark.title, usedTitles);
+        usedTitles.add(this.normalizeBookmarkTitle(renameTo));
+      } else if (normalizedTitle) {
+        usedTitles.add(normalizedTitle);
+      }
+      if (status !== "rename" && importFolderSet.has(bookmark)) {
+        status = "import";
+      }
+      entries.push({ bookmark, status, renameTo });
+    }
+    return entries;
+  }
+  normalizeBookmarkTitle(title) {
+    return title.trim().toLocaleLowerCase();
+  }
+  generateUniqueTitle(baseTitle, usedTitles) {
+    const trimmedBase = baseTitle.trim() || "Untitled";
+    let candidate = trimmedBase;
+    let counter = 1;
+    while (usedTitles.has(this.normalizeBookmarkTitle(candidate))) {
+      candidate = `${trimmedBase}-${counter}`;
+      counter += 1;
+    }
+    return candidate;
+  }
+  /**
+   * Show merge confirmation dialog
+   * Returns: merge, rename-merge, or cancel
+   */
+  async showMergeDialog(entries, options) {
     return new Promise((resolve) => {
       const overlay = document.createElement("div");
       overlay.className = "duplicate-dialog-overlay";
       const modal = document.createElement("div");
       modal.className = "duplicate-dialog-modal";
+      const statusLabels = {
+        normal: "正常导入",
+        rename: "重命名合并",
+        import: "合并到 import 文件夹"
+      };
+      const counts = entries.reduce(
+        (acc, entry) => {
+          acc[entry.status] += 1;
+          return acc;
+        },
+        { normal: 0, rename: 0, import: 0 }
+      );
+      const primaryLabel = options.hasRenameConflicts ? "重命名合并" : "合并";
       modal.innerHTML = `
             <style>
                 .duplicate-dialog-overlay {
@@ -28818,7 +29550,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                     right: 0;
                     bottom: 0;
                     background: var(--modal-overlay-bg);
-                    z-index: var(--z-modal-backdrop);
+                    z-index: 2147483647;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -28838,21 +29570,29 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                     font-family: var(--font-sans);
                 }
 
-                /* Duplicate Dialog Styles */
+                /* Merge Dialog Styles */
                 .duplicate-dialog-content { padding: 20px; }
                 .duplicate-dialog-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
                 .duplicate-dialog-icon { color: var(--warning-600); font-size: 24px; line-height: 1; flex-shrink: 0; }
                 .duplicate-dialog-title { margin: 0; font-size: 20px; font-weight: var(--font-medium); color: var(--md-on-surface); line-height: 1.2; }
                 .duplicate-dialog-body { color: var(--md-on-surface); font-size: 14px; line-height: 1.5; }
                 .duplicate-dialog-text { margin: 0 0 10px 0; }
-                .duplicate-list-container { background: var(--md-surface-variant); border-radius: var(--radius-small); padding: 12px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
-                .duplicate-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--md-outline-variant); }
-                .duplicate-list-item:last-child { border-bottom: none; }
-                .duplicate-platform-badge { flex-shrink: 0; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-                .duplicate-platform-badge.platform-chatgpt { background: var(--platform-chatgpt-bg); color: var(--platform-chatgpt-text); }
-                .duplicate-platform-badge.platform-gemini { background: var(--platform-gemini-bg); color: var(--platform-gemini-text); }
-                .duplicate-bookmark-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--md-on-surface); }
-                .duplicate-highlight { color: var(--primary-600); font-weight: var(--font-semibold); }
+                .merge-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+                .merge-summary-item { background: var(--md-surface-variant); border-radius: var(--radius-small); padding: 8px 10px; }
+                .merge-summary-label { font-size: 12px; color: var(--md-on-surface-variant); display: block; }
+                .merge-summary-value { font-size: 16px; font-weight: var(--font-semibold); color: var(--md-on-surface); }
+                .merge-list-container { border: 1px solid var(--md-outline-variant); border-radius: var(--radius-small); max-height: 320px; overflow-y: auto; }
+                .merge-list-item { padding: 10px 12px; border-bottom: 1px solid var(--md-outline-variant); display: flex; flex-direction: column; gap: 4px; }
+                .merge-list-item:last-child { border-bottom: none; }
+                .merge-item-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+                .merge-item-title { font-weight: var(--font-medium); color: var(--md-on-surface); word-break: break-word; }
+                .merge-item-path { font-size: 12px; color: var(--md-on-surface-variant); word-break: break-word; }
+                .merge-item-path-label { margin-right: 6px; color: var(--md-on-surface-variant); font-weight: var(--font-medium); }
+                .merge-item-rename { font-size: 12px; color: var(--danger-500); }
+                .merge-badge { font-size: 12px; padding: 2px 6px; border-radius: 999px; font-weight: var(--font-medium); white-space: nowrap; }
+                .merge-badge-normal { background: var(--success-50); color: var(--success-700); }
+                .merge-badge-rename { background: var(--warning-50); color: var(--warning-700); }
+                .merge-badge-import { background: var(--info-bg); color: var(--primary-700); }
                 .duplicate-dialog-hint { margin: 6px 0 0 0; color: var(--md-on-surface-variant); font-size: 13px; font-style: italic; opacity: 0.9; }
                 .import-summary-footer { padding: 12px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--md-outline); }
                 .cancel-btn { padding: 8px 16px; border: none; border-radius: 6px; background: var(--gray-100); color: var(--md-on-surface); font-size: var(--text-sm); font-weight: var(--font-medium); cursor: pointer; transition: all 0.2s; }
@@ -28863,32 +29603,51 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
             <div class="duplicate-dialog-content">
                 <div class="duplicate-dialog-header">
                     <span class="duplicate-dialog-icon">${Icons.alertTriangle}</span>
-                    <h3 class="duplicate-dialog-title">Duplicate Bookmarks Detected</h3>
+                    <h3 class="duplicate-dialog-title">导入确认</h3>
                 </div>
                 <div class="duplicate-dialog-body">
-                    <p class="duplicate-dialog-text">Found <strong>${conflicts.length}</strong> bookmark(s) that already exist.</p>
-                    <p class="duplicate-dialog-text">Total bookmarks to import: <strong>${allBookmarks.length}</strong></p>
-                    
-                    <div class="duplicate-list-container">
-                        ${conflicts.map((b) => `
-                            <div class="duplicate-list-item">
-                                <span class="duplicate-platform-badge platform-${b.platform?.toLowerCase() === "gemini" ? "gemini" : "chatgpt"}">
-                                    ${b.platform || "ChatGPT"}
-                                </span>
-                                <span class="duplicate-bookmark-title">
-                                    ${this.escapeHtml(this.truncate(b.title || b.userMessage, 40))}
-                                </span>
+                    <p class="duplicate-dialog-text">本次导入 <strong>${entries.length}</strong> 条记录。</p>
+                    <div class="merge-summary">
+                        <div class="merge-summary-item">
+                            <span class="merge-summary-label">正常导入</span>
+                            <span class="merge-summary-value">${counts.normal}</span>
+                        </div>
+                        <div class="merge-summary-item">
+                            <span class="merge-summary-label">重命名合并</span>
+                            <span class="merge-summary-value">${counts.rename}</span>
+                        </div>
+                        <div class="merge-summary-item">
+                            <span class="merge-summary-label">合并到 import 文件夹</span>
+                            <span class="merge-summary-value">${counts.import}</span>
+                        </div>
+                    </div>
+                    ${options.duplicateCount > 0 ? `
+                        <p class="duplicate-dialog-hint">检测到 ${options.duplicateCount} 个重复书签，将保留现有条目并跳过导入。</p>
+                    ` : ""}
+                    <div class="merge-list-container">
+                        ${entries.map((entry) => `
+                            <div class="merge-list-item">
+                                <div class="merge-item-header">
+                                    <div class="merge-item-title">${this.escapeHtml(entry.bookmark.title)}</div>
+                                    <span class="merge-badge merge-badge-${entry.status}">
+                                        ${statusLabels[entry.status]}
+                                    </span>
+                                </div>
+                                <div class="merge-item-path">
+                                    <span class="merge-item-path-label">Folder:</span>
+                                    ${this.escapeHtml(entry.bookmark.folderPath || "Import")}
+                                </div>
+                                ${entry.renameTo ? `
+                                    <div class="merge-item-rename">重命名为：${this.escapeHtml(entry.renameTo)}</div>
+                                ` : ""}
                             </div>
                         `).join("")}
                     </div>
-                    
-                    <p class="duplicate-dialog-text">Click <strong class="duplicate-highlight">Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
-                    <p class="duplicate-dialog-hint">💡 Items without folders will be imported to the <strong>Import</strong> folder.</p>
                 </div>
             </div>
             <div class="import-summary-footer">
-                <button class="cancel-btn">Cancel</button>
-                <button class="merge-btn">Merge</button>
+                <button class="cancel-btn">取消</button>
+                <button class="merge-btn">${primaryLabel}</button>
             </div>
         `;
       overlay.appendChild(modal);
@@ -28897,17 +29656,17 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
       const mergeBtn = modal.querySelector(".merge-btn");
       cancelBtn.addEventListener("click", () => {
         overlay.remove();
-        resolve(false);
+        resolve("cancel");
       });
       mergeBtn.addEventListener("click", () => {
         overlay.remove();
-        resolve(true);
+        resolve(options.hasRenameConflicts ? "rename-merge" : "merge");
       });
       overlay.addEventListener("click", (e) => {
         e.stopPropagation();
         if (e.target === overlay) {
           overlay.remove();
-          resolve(false);
+          resolve("cancel");
         }
       });
       modal.addEventListener("click", (e) => {
@@ -28917,7 +29676,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
         if (e.key === "Escape") {
           overlay.remove();
           document.removeEventListener("keydown", handleEscape);
-          resolve(false);
+          resolve("cancel");
         }
       };
       document.addEventListener("keydown", handleEscape);
@@ -29195,6 +29954,9 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
     const styleElement = this.shadowRoot.querySelector("style");
     if (styleElement) {
       styleElement.textContent = this.getStyles();
+      if (this.overlay) {
+        this.overlay.dataset.theme = DesignTokens.isDarkMode() ? "dark" : "light";
+      }
       logger$1.debug("[SimpleBookmarkPanel] Theme styles updated");
     } else {
       logger$1.warn("[SimpleBookmarkPanel] Cannot update theme: style element not found");
@@ -29259,7 +30021,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 border-radius: var(--radius-large);  /* Material Design 16px */
                 box-shadow: var(--elevation-3);      /* Material Design elevation */
                 display: flex;
-                z-index: var(--z-modal);
+                z-index: var(--z-fixed);
                 font-family: var(--font-sans);
                 overflow: hidden;
             }
@@ -29980,7 +30742,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: var(--z-modal-backdrop);
+                z-index: 2147483647;
             }
 
             .conflict-dialog {
@@ -30151,6 +30913,23 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 transform: translateY(-1px);
             }
 
+            .ok-btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: var(--radius-small);
+                background: var(--button-primary-bg);
+                color: var(--button-primary-text);
+                font-size: var(--text-sm);
+                font-weight: var(--font-medium);
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .ok-btn:hover {
+                background: var(--button-primary-hover);
+                transform: translateY(-1px);
+            }
+
             /* Import Summary Dialog */
             .import-summary-overlay {
                 position: fixed;
@@ -30159,7 +30938,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 right: 0;
                 bottom: 0;
                 background: var(--bg-overlay);
-                z-index: var(--z-modal-backdrop);
+                z-index: 2147483647;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -30504,7 +31283,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 right: 0;
                 bottom: 0;
                 background: var(--bg-overlay);
-                z-index: var(--z-modal-backdrop);
+                z-index: 2147483647;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -31017,6 +31796,10 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 box-shadow: inset 3px 0 0 var(--interactive-primary);
             }
 
+            .folder-item.is-editing:hover {
+                background: transparent;
+            }
+
             .folder-toggle {
                 display: inline-flex;
                 align-items: center;
@@ -31072,6 +31855,144 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 color: var(--gray-500);
                 font-weight: 400;
                 user-select: none;
+            }
+
+            .folder-item.is-editing .item-actions {
+                display: none;
+            }
+
+            .inline-edit-wrapper {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-1);
+                min-width: 0;
+            }
+
+            .inline-edit-row {
+                display: flex;
+                align-items: center;
+                gap: var(--space-2);
+                min-width: 0;
+            }
+
+            .inline-edit-input {
+                flex: 1;
+                min-width: 0;
+                padding: 2px 6px;
+                border: 1px solid var(--md-outline);
+                border-radius: var(--radius-extra-small);
+                font-size: var(--text-base);
+                font-family: inherit;
+                background: var(--md-surface);
+                color: var(--md-on-surface);
+                outline: none;
+                line-height: 1.4;
+            }
+
+            .inline-edit-input:focus {
+                border-color: var(--primary-600);
+                box-shadow: var(--shadow-focus);
+            }
+
+            .inline-edit-input.error {
+                border-color: var(--danger-500);
+                box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
+            }
+
+            .inline-edit-actions {
+                display: inline-flex;
+                gap: var(--space-1);
+                flex-shrink: 0;
+            }
+
+            .inline-edit-btn {
+                width: 24px;
+                height: 24px;
+                border: 1px solid var(--md-outline);
+                border-radius: 4px;
+                background: var(--md-surface);
+                color: var(--md-on-surface);
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                transition: all var(--duration-fast);
+            }
+
+            .inline-edit-btn:hover {
+                background: var(--gray-100);
+                transform: translateY(-1px);
+            }
+
+            .inline-edit-confirm {
+                border-color: var(--success-200);
+                color: var(--success-600);
+            }
+
+            .inline-edit-confirm:hover {
+                background: var(--success-50);
+            }
+
+            .inline-edit-cancel {
+                border-color: var(--danger-200);
+                color: var(--danger-500);
+            }
+
+            .inline-edit-cancel:hover {
+                background: var(--danger-50);
+            }
+
+            .inline-edit-btn:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .inline-edit-error {
+                font-size: 12px;
+                color: var(--danger-500);
+                line-height: 1.2;
+            }
+
+            .inline-edit-suggestion {
+                display: none;
+                align-items: center;
+                gap: var(--space-2);
+                font-size: 12px;
+                color: var(--danger-500);
+            }
+
+            .inline-edit-suggestion-text {
+                color: var(--danger-500);
+            }
+
+            .inline-edit-suggestion-value {
+                color: var(--md-on-surface);
+                font-weight: var(--font-medium);
+            }
+
+            .inline-edit-auto-rename {
+                padding: 2px 8px;
+                border-radius: 6px;
+                border: 1px solid var(--primary-200);
+                background: var(--primary-50);
+                color: var(--primary-700);
+                font-size: 12px;
+                cursor: pointer;
+                transition: all var(--duration-fast);
+            }
+
+            .inline-edit-auto-rename:hover {
+                background: var(--primary-100);
+                transform: translateY(-1px);
+            }
+
+            .inline-edit-auto-rename:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none;
             }
 
             /* VSCode-style folder children visibility */
@@ -31145,6 +32066,10 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
 
             .tree-item:hover .item-actions {
                 display: flex;
+            }
+
+            .tree-item.is-editing:hover .item-actions {
+                display: none;
             }
 
             .action-btn {
@@ -31498,169 +32423,6 @@ class GeminiPanelButton {
 }
 const geminiPanelButton = new GeminiPanelButton();
 
-class DarkModeDetector {
-  static instance;
-  observers = /* @__PURE__ */ new Set();
-  mutationObserver = null;
-  currentState = false;
-  constructor() {
-    this.currentState = this.detectDarkMode();
-    this.startObserving();
-  }
-  /**
-   * Get singleton instance
-   */
-  static getInstance() {
-    if (!DarkModeDetector.instance) {
-      DarkModeDetector.instance = new DarkModeDetector();
-    }
-    return DarkModeDetector.instance;
-  }
-  /**
-   * Get current dark mode state
-   */
-  isDarkMode() {
-    return this.currentState;
-  }
-  /**
-   * Subscribe to dark mode changes
-   * @param callback Function to call when dark mode changes
-   * @returns Unsubscribe function
-   */
-  subscribe(callback) {
-    this.observers.add(callback);
-    callback(this.currentState);
-    return () => {
-      this.observers.delete(callback);
-    };
-  }
-  /**
-   * Detect current dark mode state
-   * Priority:
-   * 1. html.classList contains 'dark' or 'light' (ChatGPT)
-   * 2. body.classList contains 'dark-theme' (Gemini)
-   * 3. html[data-theme] attribute
-   * 4. Computed background color heuristic
-   * 5. prefers-color-scheme media query
-   */
-  detectDarkMode() {
-    const html = document.documentElement;
-    const body = document.body;
-    if (html.classList.contains("dark")) {
-      logger$1.debug("[DarkMode] Detected via html.dark class");
-      return true;
-    }
-    if (html.classList.contains("light")) {
-      logger$1.debug("[DarkMode] Detected via html.light class");
-      return false;
-    }
-    if (body && body.classList.contains("dark-theme")) {
-      logger$1.debug("[DarkMode] Detected via body.dark-theme class (Gemini)");
-      return true;
-    }
-    if (body && body.classList.contains("light-theme")) {
-      logger$1.debug("[DarkMode] Detected via body.light-theme class (Gemini)");
-      return false;
-    }
-    const theme = html.getAttribute("data-theme") || body?.getAttribute("data-theme");
-    if (theme === "dark") {
-      logger$1.debug('[DarkMode] Detected via data-theme="dark"');
-      return true;
-    }
-    if (theme === "light") {
-      logger$1.debug('[DarkMode] Detected via data-theme="light"');
-      return false;
-    }
-    if (body) {
-      const bgColor = window.getComputedStyle(body).backgroundColor;
-      const rgb = bgColor.match(/\d+/g);
-      if (rgb && rgb.length >= 3) {
-        const r = parseInt(rgb[0]);
-        const g = parseInt(rgb[1]);
-        const b = parseInt(rgb[2]);
-        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        if (luminance < 0.5) {
-          logger$1.debug("[DarkMode] Detected via background color heuristic (dark)");
-          return true;
-        }
-      }
-    }
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    logger$1.debug(`[DarkMode] Fallback to prefers-color-scheme: ${prefersDark}`);
-    return prefersDark;
-  }
-  /**
-   * Start observing dark mode changes
-   */
-  startObserving() {
-    if (this.mutationObserver) {
-      this.mutationObserver.disconnect();
-    }
-    this.mutationObserver = new MutationObserver((mutations) => {
-      const hasRelevantChange = mutations.some((mutation) => {
-        if (mutation.type === "attributes") {
-          return mutation.attributeName === "class" || mutation.attributeName === "data-theme";
-        }
-        return false;
-      });
-      if (hasRelevantChange) {
-        const newState = this.detectDarkMode();
-        if (newState !== this.currentState) {
-          this.currentState = newState;
-          this.notifyObservers(newState);
-        }
-      }
-    });
-    this.mutationObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class", "data-theme"],
-      childList: false,
-      subtree: false
-    });
-    if (document.body) {
-      this.mutationObserver.observe(document.body, {
-        attributes: true,
-        attributeFilter: ["class", "data-theme"]
-      });
-    }
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleMediaChange = () => {
-      const newState = this.detectDarkMode();
-      if (newState !== this.currentState) {
-        this.currentState = newState;
-        this.notifyObservers(newState);
-      }
-    };
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener("change", handleMediaChange);
-    } else {
-      mediaQuery.addListener(handleMediaChange);
-    }
-  }
-  /**
-   * Notify all observers of state change
-   */
-  notifyObservers(isDark) {
-    this.observers.forEach((callback) => {
-      try {
-        callback(isDark);
-      } catch (error) {
-        console.error("Error in dark mode observer callback:", error);
-      }
-    });
-  }
-  /**
-   * Stop observing (cleanup)
-   */
-  stopObserving() {
-    if (this.mutationObserver) {
-      this.mutationObserver.disconnect();
-      this.mutationObserver = null;
-    }
-    this.observers.clear();
-  }
-}
-
 class ContentScript {
   observer = null;
   injector = null;
@@ -31679,35 +32441,28 @@ class ContentScript {
   // Track messages being processed to prevent duplicate toolbar injection
   processingMessages = /* @__PURE__ */ new Set();
   processingElements = /* @__PURE__ */ new WeakSet();
+  // Track current theme to keep shadow-root tokens in sync
+  currentThemeIsDark = false;
   constructor() {
-    this.ensureDesignTokens();
     logger$1.setLevel(LogLevel.INFO);
     this.markdownParser = new MarkdownParser();
     this.mathClickHandler = new MathClickHandler();
     this.reRenderPanel = new ReRenderPanel();
     const darkModeDetector = DarkModeDetector.getInstance();
+    this.currentThemeIsDark = darkModeDetector.isDarkMode();
     darkModeDetector.subscribe((isDark) => {
       logger$1.info(`[DarkMode] Theme changed: ${isDark ? "dark" : "light"}`);
-      if (isDark) {
-        document.documentElement.classList.add("dark");
-        logger$1.info("[DarkMode] Applied dark class to <html>");
-      } else {
-        document.documentElement.classList.remove("dark");
-        logger$1.info("[DarkMode] Removed dark class from <html>");
-      }
+      this.currentThemeIsDark = isDark;
+      this.applyTheme(isDark);
     });
     logger$1.info("AI-MarkDone initialized");
   }
   /**
-   * Inject shared design tokens into the page once.
+   * Apply current theme tokens to extension UI elements.
    */
-  ensureDesignTokens() {
-    const existing = document.getElementById("aicopy-design-tokens");
-    if (existing) return;
-    const style = document.createElement("style");
-    style.id = "aicopy-design-tokens";
-    style.textContent = designTokensCss;
-    (document.head || document.documentElement).appendChild(style);
+  applyTheme(isDark) {
+    this.toolbars.forEach((toolbar) => toolbar.setTheme(isDark));
+    this.reRenderPanel.setTheme(isDark);
   }
   /**
    * Start the extension
@@ -31857,6 +32612,7 @@ class ContentScript {
       }
     };
     const toolbar = new Toolbar(callbacks);
+    toolbar.setTheme(this.currentThemeIsDark);
     if (this.injector) {
       this.injector.inject(messageElement, toolbar.getElement());
     }

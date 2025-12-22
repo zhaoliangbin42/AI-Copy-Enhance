@@ -1,4 +1,5 @@
 import { toolbarStyles } from '../../styles/toolbar.css';
+import { DesignTokens } from '../../utils/design-tokens';
 import { copyToClipboard } from '../../utils/dom-utils';
 import { logger } from '../../utils/logger';
 import { WordCounter } from '../parsers/word-counter';
@@ -20,6 +21,7 @@ export class Toolbar {
     private container: HTMLElement;
     private callbacks: ToolbarCallbacks;
     private wordCounter: WordCounter;
+    private tokenStyleElement: HTMLStyleElement | null = null;
 
     constructor(callbacks: ToolbarCallbacks) {
         this.callbacks = callbacks;
@@ -33,12 +35,33 @@ export class Toolbar {
         this.shadowRoot = this.container.attachShadow({ mode: 'open' });
 
         // Inject styles
-        const styleElement = document.createElement('style');
-        styleElement.textContent = toolbarStyles;
-        this.shadowRoot.appendChild(styleElement);
+        this.injectStyles();
+        this.setTheme(DesignTokens.isDarkMode());
 
         // Create UI
         this.createUI();
+    }
+
+    /**
+     * Inject styles into Shadow DOM
+     */
+    private injectStyles(): void {
+        this.tokenStyleElement = document.createElement('style');
+        this.shadowRoot.appendChild(this.tokenStyleElement);
+
+        const styleElement = document.createElement('style');
+        styleElement.textContent = toolbarStyles;
+        this.shadowRoot.appendChild(styleElement);
+    }
+
+    /**
+     * Update toolbar theme tokens
+     */
+    setTheme(isDark: boolean): void {
+        if (this.tokenStyleElement) {
+            this.tokenStyleElement.textContent = `:host { ${DesignTokens.getCompleteTokens(isDark)} }`;
+        }
+        this.container.dataset.theme = isDark ? 'dark' : 'light';
     }
 
     /**

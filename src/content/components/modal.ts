@@ -1,5 +1,7 @@
 import { modalStyles } from '../../styles/modal.css';
 import { copyToClipboard } from '../../utils/dom-utils';
+import { DesignTokens } from '../../utils/design-tokens';
+import { DarkModeDetector } from '../../utils/dark-mode-detector';
 
 /**
  * Modal component using Shadow DOM
@@ -9,6 +11,9 @@ export class Modal {
     private shadowRoot: ShadowRoot;
     private container: HTMLElement;
     private content: string = '';
+    private tokenStyleElement: HTMLStyleElement | null = null;
+    private themeUnsubscribe: (() => void) | null = null;
+    private currentThemeIsDark: boolean = DesignTokens.isDarkMode();
 
     constructor() {
         this.container = document.createElement('div');
@@ -17,16 +22,42 @@ export class Modal {
 
         // Inject styles for token-driven theming
         this.injectStyles();
+        this.subscribeTheme();
     }
 
     /**
      * Inject base styles
      */
     private injectStyles(): void {
+        this.tokenStyleElement = document.createElement('style');
+        this.shadowRoot.appendChild(this.tokenStyleElement);
+
         const styleElement = document.createElement('style');
         styleElement.textContent = modalStyles;
 
         this.shadowRoot.appendChild(styleElement);
+        this.setTheme(this.currentThemeIsDark);
+    }
+
+    /**
+     * Subscribe to host theme updates
+     */
+    private subscribeTheme(): void {
+        const detector = DarkModeDetector.getInstance();
+        this.themeUnsubscribe = detector.subscribe((isDark) => {
+            this.setTheme(isDark);
+        });
+    }
+
+    /**
+     * Apply theme tokens to the modal shadow root
+     */
+    private setTheme(isDark: boolean): void {
+        this.currentThemeIsDark = isDark;
+        if (this.tokenStyleElement) {
+            this.tokenStyleElement.textContent = `:host { ${DesignTokens.getCompleteTokens(isDark)} }`;
+        }
+        this.container.dataset.theme = isDark ? 'dark' : 'light';
     }
 
     /**
@@ -43,6 +74,10 @@ export class Modal {
      */
     hide(): void {
         this.container.remove();
+        if (this.themeUnsubscribe) {
+            this.themeUnsubscribe();
+            this.themeUnsubscribe = null;
+        }
     }
 
     /**

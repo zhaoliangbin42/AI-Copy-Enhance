@@ -226,7 +226,7 @@ export class DarkModeDetector {
 
 /**
  * Helper function to apply dark mode class to document
- * This ensures our extension's styles can use html.dark selector
+ * @deprecated Avoid mutating host page classes; use Shadow DOM theming instead.
  */
 export function applyDarkModeClass(): void {
     const detector = DarkModeDetector.getInstance();

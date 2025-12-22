@@ -2,7 +2,7 @@
  * Shadow DOM styles for toolbar component
  * Notion-style floating toolbar with glassmorphism effect
  * 
- * Updated to use design tokens from design-tokens.css
+ * Updated to use shadow-root design tokens
  */
 
 export const toolbarStyles = `

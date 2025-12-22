@@ -23,6 +23,26 @@ export class PathValidationError extends Error {
     }
 }
 
+export type FolderNameNormalization = {
+    value: string;
+    trimmed: boolean;
+    collapsedSpaces: boolean;
+    removedSlash: boolean;
+};
+
+export type FolderNameValidationError =
+    | 'empty'
+    | 'tooLong'
+    | 'forbiddenChars'
+    | 'traversal';
+
+export type FolderNameValidationResult = {
+    normalized: string;
+    normalization: FolderNameNormalization;
+    errors: FolderNameValidationError[];
+    isValid: boolean;
+};
+
 /**
  * Path manipulation utilities with security-first design
  */
@@ -34,13 +54,13 @@ export class PathUtils {
     static readonly MAX_DEPTH = 4;
 
     /** Maximum folder name length */
-    static readonly MAX_NAME_LENGTH = 50;
+    static readonly MAX_NAME_LENGTH = 100;
 
     /** Forbidden characters in folder names (includes separator and control chars) */
-    private static readonly FORBIDDEN_CHARS = /[/\x00-\x1F\x7F<>:"|?*\\]/;
+    private static readonly FORBIDDEN_CHARS = /[\/\x00-\x1F\x7F]/;
 
     /** Pattern to detect directory traversal attempts */
-    private static readonly TRAVERSAL_PATTERN = /\.\./;
+    private static readonly TRAVERSAL_PATTERN = /(^|\/)\.\.(\/|$)/;
 
     /**
      * Normalize path to prevent directory traversal attacks
@@ -197,6 +217,123 @@ export class PathUtils {
     }
 
     /**
+     * Normalize folder name based on UI rules
+     *
+     * - Remove slashes
+     * - Collapse consecutive spaces
+     * - Trim leading/trailing spaces
+     */
+    static normalizeFolderName(name: string): FolderNameNormalization {
+        let value = typeof name === 'string' ? name : '';
+
+        const removedSlash = value.includes(this.SEPARATOR);
+        if (removedSlash) {
+            value = value.replace(/\//g, '');
+        }
+
+        const collapsedValue = value.replace(/ {2,}/g, ' ');
+        const collapsedSpaces = collapsedValue !== value;
+        value = collapsedValue;
+
+        const trimmedValue = value.replace(/^ +| +$/g, '');
+        const trimmed = trimmedValue !== value;
+        value = trimmedValue;
+
+        return {
+            value,
+            trimmed,
+            collapsedSpaces,
+            removedSlash
+        };
+    }
+
+    private static getFolderNameErrors(value: string): FolderNameValidationError[] {
+        const errors: FolderNameValidationError[] = [];
+
+        if (!value || value.length === 0) {
+            errors.push('empty');
+        }
+
+        if (value.length > this.MAX_NAME_LENGTH) {
+            errors.push('tooLong');
+        }
+
+        if (this.FORBIDDEN_CHARS.test(value)) {
+            errors.push('forbiddenChars');
+        }
+
+        if (this.TRAVERSAL_PATTERN.test(value)) {
+            errors.push('traversal');
+        }
+
+        return errors;
+    }
+
+    static getFolderNameValidation(name: string): FolderNameValidationResult {
+        const normalization = this.normalizeFolderName(name);
+        const normalized = normalization.value;
+        const errors = this.getFolderNameErrors(normalized);
+
+        return {
+            normalized,
+            normalization,
+            errors,
+            isValid: errors.length === 0
+        };
+    }
+
+    static hasNameConflict(name: string, existingNames: string[]): boolean {
+        const normalized = this.normalizeFolderName(name).value;
+        if (!normalized) {
+            return false;
+        }
+
+        const candidate = normalized.toLocaleLowerCase();
+        return existingNames.some((existing) => {
+            const existingNormalized = this.normalizeFolderName(existing).value;
+            return existingNormalized.toLocaleLowerCase() === candidate;
+        });
+    }
+
+    static generateAutoRenameName(name: string, existingNames: string[]): string {
+        const validation = this.getFolderNameValidation(name);
+        if (!validation.isValid) {
+            throw new PathValidationError('Invalid folder name for auto rename', name);
+        }
+
+        const normalized = validation.normalized;
+        const existingSet = new Set(
+            existingNames
+                .map(existing => this.normalizeFolderName(existing).value.toLocaleLowerCase())
+        );
+
+        if (!existingSet.has(normalized.toLocaleLowerCase())) {
+            return normalized;
+        }
+
+        for (let i = 1; i < 10000; i += 1) {
+            const suffix = `-${i}`;
+            const maxBaseLength = this.MAX_NAME_LENGTH - suffix.length;
+            const base = normalized.length > maxBaseLength
+                ? normalized.slice(0, maxBaseLength).replace(/ +$/g, '')
+                : normalized;
+
+            if (!base) {
+                break;
+            }
+
+            const candidate = `${base}${suffix}`;
+            const candidateLower = candidate.toLocaleLowerCase();
+
+            if (!existingSet.has(candidateLower) && this.getFolderNameErrors(candidate).length === 0) {
+                return candidate;
+            }
+        }
+
+        throw new PathValidationError('Unable to generate unique folder name', name);
+    }
+
+    /**
      * Update path prefix for rename/move operations
      * 
      * Used for recursive updates when renaming or moving folders.
@@ -251,28 +388,7 @@ export class PathUtils {
         }
 
         const trimmed = name.trim();
-
-        // Empty after trim
-        if (trimmed.length === 0) {
-            return false;
-        }
-
-        // Too long
-        if (trimmed.length > this.MAX_NAME_LENGTH) {
-            return false;
-        }
-
-        // Contains forbidden characters
-        if (this.FORBIDDEN_CHARS.test(trimmed)) {
-            return false;
-        }
-
-        // Contains directory traversal
-        if (this.TRAVERSAL_PATTERN.test(trimmed)) {
-            return false;
-        }
-
-        return true;
+        return this.getFolderNameErrors(trimmed).length === 0;
     }
 
     /**

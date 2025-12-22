@@ -1,6 +1,13 @@
 # Dependencies
 node_modules/
 
+# Build output
+dist/
+coverage/
+
+# Local
+local/
+
 # Debug files
 Debug/
 mocks/
@@ -50,3 +57,12 @@ tmp/
 ARCHITECTURE.md
 bugs.md
 todo.md
+
+# Tooling artifacts
+vite.config.ts.timestamp-*.mjs
+
+# Backups
+*.bak
+*.bak*
+*.backup
+src/utils/* copy.ts

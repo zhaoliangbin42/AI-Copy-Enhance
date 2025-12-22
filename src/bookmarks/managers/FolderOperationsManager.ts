@@ -51,7 +51,7 @@ export class FolderOperationsManager {
             if (!PathUtils.isValidFolderName(name)) {
                 return {
                     success: false,
-                    error: 'Invalid folder name. Name cannot contain special characters or be empty.'
+                    error: 'Invalid folder name.'
                 };
             }
 
@@ -103,7 +103,7 @@ export class FolderOperationsManager {
             if (!PathUtils.isValidFolderName(newName)) {
                 return {
                     success: false,
-                    error: 'Invalid folder name. Name cannot contain special characters or be empty.'
+                    error: 'Invalid folder name.'
                 };
             }
 
@@ -231,7 +231,7 @@ export class FolderOperationsManager {
         if (!PathUtils.isValidFolderName(name)) {
             return {
                 valid: false,
-                error: 'Invalid folder name. Name cannot contain special characters, be empty, or exceed 50 characters.'
+                error: 'Invalid folder name.'
             };
         }
 

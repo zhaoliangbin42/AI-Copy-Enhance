@@ -295,7 +295,7 @@ export class MarkdownRenderer {
    DARK MODE - GitHub Dark (Shadow DOM compatible)
    ============================================ */
 
-:host-context(html.dark) .markdown-body {
+:host([data-theme='dark']) .markdown-body {
   --fgColor-default: #f0f6fc;
   --fgColor-muted: #9198a1;
   --fgColor-accent: #4493f8;

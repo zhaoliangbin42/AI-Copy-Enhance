@@ -1,6 +1,3 @@
-// Design tokens are injected once by the content script to keep them global.
-import designTokensCss from '../styles/design-tokens.css?raw';
-
 import { adapterRegistry } from './adapters/registry';
 import { MessageObserver } from './observers/mutation-observer';
 import { ToolbarInjector } from './injectors/toolbar-injector';
@@ -44,9 +41,10 @@ class ContentScript {
     private processingMessages: Set<string> = new Set();
     private processingElements: WeakSet<HTMLElement> = new WeakSet();
 
-    constructor() {
-        this.ensureDesignTokens();
+    // Track current theme to keep shadow-root tokens in sync
+    private currentThemeIsDark: boolean = false;
 
+    constructor() {
         // Use INFO in production; switch to DEBUG locally when needed
         logger.setLevel(LogLevel.INFO);
 
@@ -57,33 +55,22 @@ class ContentScript {
 
         // Initialize dark mode detector to follow host website theme
         const darkModeDetector = DarkModeDetector.getInstance();
+        this.currentThemeIsDark = darkModeDetector.isDarkMode();
         darkModeDetector.subscribe((isDark) => {
             logger.info(`[DarkMode] Theme changed: ${isDark ? 'dark' : 'light'}`);
-
-            // CRITICAL: Actually apply/remove the 'dark' class to enable our dark mode styles
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-                logger.info('[DarkMode] Applied dark class to <html>');
-            } else {
-                document.documentElement.classList.remove('dark');
-                logger.info('[DarkMode] Removed dark class from <html>');
-            }
+            this.currentThemeIsDark = isDark;
+            this.applyTheme(isDark);
         });
 
         logger.info('AI-MarkDone initialized');
     }
 
     /**
-     * Inject shared design tokens into the page once.
+     * Apply current theme tokens to extension UI elements.
      */
-    private ensureDesignTokens(): void {
-        const existing = document.getElementById('aicopy-design-tokens');
-        if (existing) return;
-
-        const style = document.createElement('style');
-        style.id = 'aicopy-design-tokens';
-        style.textContent = designTokensCss;
-        (document.head || document.documentElement).appendChild(style);
+    private applyTheme(isDark: boolean): void {
+        this.toolbars.forEach((toolbar) => toolbar.setTheme(isDark));
+        this.reRenderPanel.setTheme(isDark);
     }
 
     /**
@@ -294,6 +281,7 @@ class ContentScript {
         };
 
         const toolbar = new Toolbar(callbacks);
+        toolbar.setTheme(this.currentThemeIsDark);
 
         // Inject toolbar
         if (this.injector) {

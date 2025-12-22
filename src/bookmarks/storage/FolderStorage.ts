@@ -100,7 +100,7 @@ export class FolderStorage {
 
             // Check for duplicate name at same level
             const siblings = await this.getSiblings(path);
-            if (siblings.some(f => f.name === name)) {
+            if (PathUtils.hasNameConflict(name, siblings.map(f => f.name))) {
                 throw new FolderOperationError(
                     `Folder "${name}" already exists at this level`,
                     'create',
@@ -222,7 +222,10 @@ export class FolderStorage {
 
             // Check for duplicate name at same level
             const siblings = await this.getSiblings(newPath);
-            if (siblings.some(f => f.path !== oldPath && f.name === newName)) {
+            const siblingNames = siblings
+                .filter(f => f.path !== oldPath)
+                .map(f => f.name);
+            if (PathUtils.hasNameConflict(newName, siblingNames)) {
                 throw new FolderOperationError(
                     `Folder "${newName}" already exists at this level`,
                     'rename',

@@ -54,10 +54,10 @@ test('design token manager covers key token groups', () => {
   }
 });
 
-test('design tokens are loaded from the content entrypoint', () => {
+test('content entrypoint avoids global design token injection', () => {
   const source = readText('src/content/index.ts');
-  assert.match(source, /design-tokens\.css\?raw/);
-  assert.match(source, /aicopy-design-tokens/);
+  assert.ok(!source.includes('design-tokens.css?raw'));
+  assert.ok(!source.includes('aicopy-design-tokens'));
 });
 
 test('component styles do not import design tokens directly', () => {
@@ -76,19 +76,20 @@ test('toolbar and modal styles avoid per-component dark selectors', () => {
   assert.ok(!modalStyles.includes(':host-context(html.dark)'));
 });
 
-test('modal component does not use token JS helpers', () => {
+test('toolbar and modal components apply design token helpers', () => {
   const modalComponent = readText('src/content/components/modal.ts');
-  assert.ok(!modalComponent.includes('design-tokens'));
+  const toolbarComponent = readText('src/content/components/toolbar.ts');
+
+  assert.ok(modalComponent.includes('DesignTokens.getCompleteTokens'));
+  assert.ok(toolbarComponent.includes('DesignTokens.getCompleteTokens'));
 });
 
 test('bookmark panel dialogs avoid inline style overrides', () => {
   const source = readText('src/bookmarks/components/SimpleBookmarkPanel.ts');
 
   const exportDialog = sliceBetween(source, 'private async showExportOptionsDialog', 'private async handleExport');
-  const conflictDialog = sliceBetween(source, 'private async showConflictDialog', 'private async importBookmarks');
-  const importSummary = sliceBetween(source, 'private async showImportSummary', 'private validateImportData');
+  const mergeDialog = sliceBetween(source, 'private async showMergeDialog', 'private async importBookmarks');
 
   assert.ok(!exportDialog.includes('style.cssText'), 'Export dialog still uses inline cssText');
-  assert.ok(!conflictDialog.includes('style.cssText'), 'Conflict dialog still uses inline cssText');
-  assert.ok(!importSummary.includes('style.cssText'), 'Import summary still uses inline cssText');
+  assert.ok(!mergeDialog.includes('style.cssText'), 'Merge dialog still uses inline cssText');
 });

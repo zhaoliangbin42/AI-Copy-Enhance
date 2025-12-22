@@ -46,6 +46,36 @@ describe('PathUtils', () => {
         });
     });
 
+    describe('normalizeFolderName', () => {
+        it('should trim leading and trailing spaces', () => {
+            const result = PathUtils.normalizeFolderName('  Work  ');
+            expect(result.value).toBe('Work');
+            expect(result.trimmed).toBe(true);
+            expect(result.collapsedSpaces).toBe(false);
+            expect(result.removedSlash).toBe(false);
+        });
+
+        it('should collapse consecutive spaces', () => {
+            const result = PathUtils.normalizeFolderName('AI   Research');
+            expect(result.value).toBe('AI Research');
+            expect(result.collapsedSpaces).toBe(true);
+        });
+
+        it('should remove slashes', () => {
+            const result = PathUtils.normalizeFolderName('Work/AI');
+            expect(result.value).toBe('WorkAI');
+            expect(result.removedSlash).toBe(true);
+        });
+
+        it('should normalize combined cases', () => {
+            const result = PathUtils.normalizeFolderName('  Work//  AI  ');
+            expect(result.value).toBe('Work AI');
+            expect(result.trimmed).toBe(true);
+            expect(result.collapsedSpaces).toBe(true);
+            expect(result.removedSlash).toBe(true);
+        });
+    });
+
     describe('getParentPath', () => {
         it('should return parent path correctly', () => {
             expect(PathUtils.getParentPath('Work/AI Research')).toBe('Work');
@@ -156,6 +186,7 @@ describe('PathUtils', () => {
             expect(PathUtils.isValidFolderName('AI Research')).toBe(true);
             expect(PathUtils.isValidFolderName('Project 2024')).toBe(true);
             expect(PathUtils.isValidFolderName('My-Folder_123')).toBe(true);
+            expect(PathUtils.isValidFolderName('Name: 2024')).toBe(true);
         });
 
         it('should reject empty names', () => {
@@ -165,24 +196,78 @@ describe('PathUtils', () => {
 
         it('should reject names with forbidden characters', () => {
             expect(PathUtils.isValidFolderName('Work/AI')).toBe(false);
-            expect(PathUtils.isValidFolderName('Work\\AI')).toBe(false);
-            expect(PathUtils.isValidFolderName('Work:AI')).toBe(false);
-            expect(PathUtils.isValidFolderName('Work*AI')).toBe(false);
-            expect(PathUtils.isValidFolderName('Work?AI')).toBe(false);
-            expect(PathUtils.isValidFolderName('Work"AI')).toBe(false);
-            expect(PathUtils.isValidFolderName('Work<AI')).toBe(false);
-            expect(PathUtils.isValidFolderName('Work>AI')).toBe(false);
-            expect(PathUtils.isValidFolderName('Work|AI')).toBe(false);
+            expect(PathUtils.isValidFolderName(`Work\u0001AI`)).toBe(false);
         });
 
         it('should reject names with traversal sequences', () => {
             expect(PathUtils.isValidFolderName('..')).toBe(false);
-            expect(PathUtils.isValidFolderName('Work..')).toBe(false);
+            expect(PathUtils.isValidFolderName('Work..')).toBe(true);
         });
 
         it('should reject names that are too long', () => {
-            const longName = 'a'.repeat(51);
+            const longName = 'a'.repeat(101);
             expect(PathUtils.isValidFolderName(longName)).toBe(false);
+        });
+    });
+
+    describe('getFolderNameValidation', () => {
+        it('should return normalization details', () => {
+            const result = PathUtils.getFolderNameValidation('  Work/AI  ');
+            expect(result.normalized).toBe('WorkAI');
+            expect(result.normalization.trimmed).toBe(true);
+            expect(result.normalization.removedSlash).toBe(true);
+            expect(result.isValid).toBe(true);
+        });
+
+        it('should surface empty and length errors', () => {
+            const emptyResult = PathUtils.getFolderNameValidation('   ');
+            expect(emptyResult.isValid).toBe(false);
+            expect(emptyResult.errors).toContain('empty');
+
+            const longResult = PathUtils.getFolderNameValidation('a'.repeat(101));
+            expect(longResult.isValid).toBe(false);
+            expect(longResult.errors).toContain('tooLong');
+        });
+    });
+
+    describe('generateAutoRenameName', () => {
+        it('should generate the next available name', () => {
+            const result = PathUtils.generateAutoRenameName('Work', ['Work', 'Work-1']);
+            expect(result).toBe('Work-2');
+        });
+
+        it('should handle case-insensitive conflicts', () => {
+            const result = PathUtils.generateAutoRenameName('Work', ['work', 'Work-1']);
+            expect(result).toBe('Work-2');
+        });
+
+        it('should truncate base name to fit the suffix', () => {
+            const base = 'a'.repeat(100);
+            const result = PathUtils.generateAutoRenameName(base, [base]);
+            expect(result.length).toBe(100);
+            expect(result.endsWith('-1')).toBe(true);
+        });
+
+        it('should normalize base name before generating', () => {
+            const result = PathUtils.generateAutoRenameName('Work/  AI', ['Work AI']);
+            expect(result).toBe('Work AI-1');
+        });
+    });
+
+    describe('hasNameConflict', () => {
+        it('should detect case-insensitive conflicts', () => {
+            const conflict = PathUtils.hasNameConflict('Work', ['work']);
+            expect(conflict).toBe(true);
+        });
+
+        it('should compare normalized names', () => {
+            const conflict = PathUtils.hasNameConflict('Work  AI', ['Work AI']);
+            expect(conflict).toBe(true);
+        });
+
+        it('should return false when no conflicts exist', () => {
+            const conflict = PathUtils.hasNameConflict('Work', ['Personal', 'Archive']);
+            expect(conflict).toBe(false);
         });
     });
 
@@ -198,7 +283,7 @@ describe('PathUtils', () => {
         });
 
         it('should reject paths with invalid segments', () => {
-            expect(() => PathUtils.validatePath('Work/AI/Research')).toThrow(PathValidationError);
+            expect(() => PathUtils.validatePath(`Work/Bad\u0001Name`)).toThrow(PathValidationError);
             expect(() => PathUtils.validatePath('Work/../Personal')).toThrow(PathValidationError);
         });
     });

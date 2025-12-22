@@ -6,11 +6,19 @@ import { FolderStorage } from '../storage/FolderStorage';
 import { FolderState } from '../state/FolderState';
 import { FolderOperationsManager } from '../managers/FolderOperationsManager';
 import { TreeBuilder } from '../utils/tree-builder';
-import { PathUtils } from '../utils/path-utils';
+import { PathUtils, type FolderNameValidationError } from '../utils/path-utils';
 import { Icons } from '../../assets/icons';
 import { MarkdownRenderer } from '../../utils/markdown-renderer';
 import { ThemeObserver } from '../../utils/theme-observer';
 import { DesignTokens } from '../../utils/design-tokens';  // T2.1.1: Import DesignTokens class
+
+type ImportMergeStatus = 'normal' | 'rename' | 'import';
+
+type ImportMergeEntry = {
+    bookmark: Bookmark;
+    status: ImportMergeStatus;
+    renameTo?: string;
+};
 
 
 
@@ -94,6 +102,7 @@ export class SimpleBookmarkPanel {
         this.overlay.style.alignItems = 'center';
         this.overlay.style.justifyContent = 'center';
         this.overlay.style.background = 'var(--bg-overlay)';
+        this.overlay.dataset.theme = DesignTokens.isDarkMode() ? 'dark' : 'light';
 
         this.shadowRoot = this.overlay.attachShadow({ mode: 'open' });
 
@@ -310,7 +319,7 @@ export class SimpleBookmarkPanel {
                 </button>
                 <button class="tab-btn" data-tab="support">
                     <span class="tab-icon">${Icons.coffee}</span>
-                    <span class="tab-label">Buy Me a Coffee</span>
+                    <span class="tab-label">Support on GitHub</span>
                 </button>
             </div>
 
@@ -373,10 +382,10 @@ export class SimpleBookmarkPanel {
 
                 <div class="tab-content support-tab">
                     <div class="support-content">
-                        <h3>${Icons.coffee} Buy Me a Coffee</h3>
-                        <p>If you find this extension helpful, consider supporting the development!</p>
-                        <a href="https://www.buymeacoffee.com/yourusername" target="_blank" class="support-btn">
-                            Support Development
+                        <h3>${Icons.coffee} Support on GitHub</h3>
+                        <p>If this extension helps you, please support it on GitHub.</p>
+                        <a href="https://github.com/zhaoliangbin42/AI-MarkDone" target="_blank" rel="noopener noreferrer" class="support-btn">
+                            Open GitHub
                         </a>
                     </div>
                 </div>
@@ -576,14 +585,6 @@ export class SimpleBookmarkPanel {
         } else {
             return 'now';
         }
-    }
-
-    /**
-     * Truncate text
-     */
-    private truncate(text: string, maxLength: number): string {
-        if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength) + '...';
     }
 
     /**
@@ -937,9 +938,10 @@ export class SimpleBookmarkPanel {
         this.shadowRoot?.querySelectorAll('.folder-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 const target = e.target as HTMLElement;
-                // Don't toggle if clicking checkbox or action buttons
+                // Don't toggle if clicking checkbox, action buttons, or inline edit controls
                 if (target.classList.contains('item-checkbox') ||
-                    target.closest('.item-actions')) {
+                    target.closest('.item-actions') ||
+                    target.closest('.inline-edit-wrapper')) {
                     return;
                 }
 
@@ -1532,27 +1534,33 @@ export class SimpleBookmarkPanel {
         // TODO: Implement inline creation in tree view
         const name = prompt('Enter folder name:');
         if (!name) return;
-
-        // Validate name
-        if (name.length > 50) {
+        const validation = PathUtils.getFolderNameValidation(name);
+        if (!validation.isValid) {
             await this.showNotification({
                 type: 'error',
                 title: 'Invalid Folder Name',
-                message: 'Folder name must be 50 characters or less'
+                message: this.getFolderNameErrorMessage(validation.errors)
             });
             return;
         }
 
-        if (name.includes('/')) {
-            await this.showNotification({
-                type: 'error',
-                title: 'Invalid Folder Name',
-                message: 'Folder name cannot contain "/"'
-            });
-            return;
-        }
+        this.handleCreateFolder(parentPath, validation.normalized);
+    }
 
-        this.handleCreateFolder(parentPath, name);
+    private getFolderNameErrorMessage(errors: FolderNameValidationError[]): string {
+        if (errors.includes('empty')) {
+            return 'Folder name cannot be empty.';
+        }
+        if (errors.includes('tooLong')) {
+            return `Folder name must be ${PathUtils.MAX_NAME_LENGTH} characters or less.`;
+        }
+        if (errors.includes('traversal')) {
+            return 'Folder name cannot contain "..".';
+        }
+        if (errors.includes('forbiddenChars')) {
+            return 'Folder name contains invalid characters.';
+        }
+        return 'Invalid folder name.';
     }
 
     private async handleCreateFolder(parentPath: string | null, name: string): Promise<void> {
@@ -1601,6 +1609,10 @@ export class SimpleBookmarkPanel {
         const folder = this.folders.find(f => f.path === path);
         if (!folder) return;
 
+        if (this.shadowRoot?.querySelector('.inline-edit-input')) {
+            return;
+        }
+
         // Find the folder item in DOM
         const folderItems = this.shadowRoot?.querySelectorAll('.folder-item');
         if (!folderItems) return;
@@ -1617,85 +1629,485 @@ export class SimpleBookmarkPanel {
         if (!nameSpan) return;
 
         const originalName = folder.name;
+        const parentPath = PathUtils.getParentPath(path);
+        const siblingNames = this.folders
+            .filter(f => f.path !== path && PathUtils.getParentPath(f.path) === parentPath)
+            .map(f => f.name);
+
+        type InputNormalization = {
+            collapsedSpaces: boolean;
+            removedSlash: boolean;
+        };
+
+        const normalizeInputValue = (value: string): { value: string; normalization: InputNormalization } => {
+            let nextValue = typeof value === 'string' ? value : '';
+            const removedSlash = nextValue.includes(PathUtils.SEPARATOR);
+            if (removedSlash) {
+                nextValue = nextValue.replace(/\//g, '');
+            }
+
+            const collapsed = nextValue.replace(/ {2,}/g, ' ');
+            const collapsedSpaces = collapsed !== nextValue;
+            nextValue = collapsed;
+
+            return {
+                value: nextValue,
+                normalization: { collapsedSpaces, removedSlash }
+            };
+        };
+
+        const normalizeCommitValue = (value: string): string => {
+            const collapsed = value.replace(/ {2,}/g, ' ');
+            return collapsed.replace(/^ +| +$/g, '');
+        };
+
+        const normalizedOriginal = normalizeCommitValue(originalName);
+
+        const describeTarget = (target: EventTarget | null): string => {
+            if (!target) return 'null';
+            if (target instanceof HTMLElement) {
+                const className = typeof target.className === 'string' ? target.className.trim() : '';
+                const classSuffix = className ? `.${className.replace(/\s+/g, '.')}` : '';
+                return `${target.tagName.toLowerCase()}${classSuffix}`;
+            }
+            return Object.prototype.toString.call(target);
+        };
+
+        const logRename = (label: string, data?: Record<string, unknown>) => {
+            logger.info(`[Rename] ${label}`, {
+                path,
+                parentPath: parentPath || '',
+                ...data
+            });
+        };
+
+        logRename('start', {
+            originalName,
+            normalizedOriginal,
+            siblingCount: siblingNames.length
+        });
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'inline-edit-wrapper';
+
+        const row = document.createElement('div');
+        row.className = 'inline-edit-row';
 
         // Create input element
         const input = document.createElement('input');
         input.type = 'text';
         input.value = originalName;
         input.className = 'inline-edit-input';
-        input.style.cssText = `
-            width: 100%;
-            padding: 2px 6px;
-            border: 1px solid var(--primary-600);
-            border-radius: var(--radius-extra-small);
-            font-size: var(--text-base);
-            font-family: inherit;
-            outline: none;
-            box-shadow: var(--shadow-focus);
-        `;
+        input.setAttribute('aria-label', 'Rename folder');
+
+        const actions = document.createElement('div');
+        actions.className = 'inline-edit-actions';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.className = 'inline-edit-btn inline-edit-confirm';
+        confirmBtn.title = 'Confirm rename';
+        confirmBtn.setAttribute('aria-label', 'Confirm rename');
+        confirmBtn.innerHTML = Icons.check;
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'inline-edit-btn inline-edit-cancel';
+        cancelBtn.title = 'Cancel rename';
+        cancelBtn.setAttribute('aria-label', 'Cancel rename');
+        cancelBtn.innerHTML = Icons.x;
+
+        const error = document.createElement('div');
+        error.className = 'inline-edit-error';
+        error.setAttribute('aria-live', 'polite');
+
+        const suggestion = document.createElement('div');
+        suggestion.className = 'inline-edit-suggestion';
+        suggestion.setAttribute('aria-live', 'polite');
+
+        const suggestionText = document.createElement('span');
+        suggestionText.className = 'inline-edit-suggestion-text';
+        suggestionText.textContent = '重命名为：';
+
+        const suggestionValue = document.createElement('span');
+        suggestionValue.className = 'inline-edit-suggestion-value';
+
+        const autoRenameBtn = document.createElement('button');
+        autoRenameBtn.type = 'button';
+        autoRenameBtn.className = 'inline-edit-auto-rename';
+        autoRenameBtn.textContent = '自动重命名';
+
+        suggestion.appendChild(suggestionText);
+        suggestion.appendChild(suggestionValue);
+        suggestion.appendChild(autoRenameBtn);
+
+        actions.appendChild(confirmBtn);
+        actions.appendChild(cancelBtn);
+        row.appendChild(input);
+        row.appendChild(actions);
+        wrapper.appendChild(row);
+        wrapper.appendChild(error);
+        wrapper.appendChild(suggestion);
 
         // Replace name span with input
         const parent = nameSpan.parentElement;
         if (!parent) return;
 
-        parent.replaceChild(input, nameSpan);
+        parent.replaceChild(wrapper, nameSpan);
+        const originalTabIndex = targetItem.getAttribute('tabindex');
+        targetItem.classList.add('is-editing');
+        targetItem.setAttribute('tabindex', '-1');
+        targetItem.scrollIntoView({ block: 'nearest' });
         input.focus();
         input.select();
 
-        // Handle save
-        const saveEdit = async () => {
-            const newName = input.value.trim();
+        let ignoreBlur = false;
+        let lastPointerDownTarget: EventTarget | null = null;
+        let lastPointerDownInside = true;
+        let lastStableValue = originalName;
+        let currentBlocking = false;
+        let isSubmitting = false;
+        lastPointerDownTarget = wrapper;
 
-            // Restore original if unchanged or empty
-            if (!newName || newName === originalName) {
-                parent.replaceChild(nameSpan, input);
-                return;
+        const stopPropagation = (event: Event) => event.stopPropagation();
+        wrapper.addEventListener('mousedown', stopPropagation);
+        wrapper.addEventListener('click', stopPropagation);
+        input.addEventListener('mousedown', stopPropagation);
+        input.addEventListener('click', stopPropagation);
+        actions.addEventListener('mousedown', stopPropagation);
+        actions.addEventListener('click', stopPropagation);
+        suggestion.addEventListener('mousedown', stopPropagation);
+        suggestion.addEventListener('click', stopPropagation);
+
+        const cleanup = () => {
+            if (!parent.contains(wrapper)) return;
+            parent.replaceChild(nameSpan, wrapper);
+            targetItem.classList.remove('is-editing');
+            if (originalTabIndex === null) {
+                targetItem.removeAttribute('tabindex');
+            } else {
+                targetItem.setAttribute('tabindex', originalTabIndex);
             }
-
-            // Validate
-            if (newName.length > 50) {
-                await this.showNotification({
-                    type: 'error',
-                    title: 'Invalid Folder Name',
-                    message: 'Folder name must be 50 characters or less'
-                });
-                input.focus();
-                return;
-            }
-
-            if (newName.includes('/')) {
-                await this.showNotification({
-                    type: 'error',
-                    title: 'Invalid Folder Name',
-                    message: 'Folder name cannot contain "/"'
-                });
-                input.focus();
-                return;
-            }
-
-            // Save
-            await this.handleRenameFolder(path, newName);
+            document.removeEventListener('pointerdown', handlePointerDown, true);
+            document.removeEventListener('focusin', handleFocusIn, true);
+            document.removeEventListener('focusout', handleFocusOut, true);
+            document.removeEventListener('keydown', handleGlobalKeydown, true);
+            logRename('cleanup');
         };
 
-        // Handle cancel
+        let autoRenameValue = '';
+
+        const updateStatus = (
+            normalization: InputNormalization,
+            overrideMessage?: string,
+            overrideBlocking = false
+        ): void => {
+            const commitValue = normalizeCommitValue(input.value);
+            const validation = PathUtils.getFolderNameValidation(commitValue);
+            const conflict = validation.isValid
+                ? PathUtils.hasNameConflict(commitValue, siblingNames)
+                : false;
+
+            let message = '';
+            let blocking = false;
+            autoRenameValue = '';
+
+            if (overrideMessage) {
+                message = overrideMessage;
+                blocking = overrideBlocking;
+            } else if (!validation.isValid) {
+                message = this.getFolderNameErrorMessage(validation.errors);
+                blocking = true;
+            } else if (conflict) {
+                message = 'Folder name already exists.';
+                blocking = true;
+            } else if (normalization.removedSlash) {
+                message = 'Folder name cannot contain "/".';
+            } else if (normalization.collapsedSpaces) {
+                message = 'Consecutive spaces were collapsed.';
+            }
+
+            currentBlocking = blocking;
+            confirmBtn.disabled = blocking;
+            input.classList.toggle('error', blocking);
+            error.textContent = message;
+            error.style.display = message ? 'block' : 'none';
+            logRename('status', {
+                value: input.value,
+                blocking,
+                message,
+                collapsedSpaces: normalization.collapsedSpaces,
+                removedSlash: normalization.removedSlash
+            });
+
+            if (!overrideMessage && validation.isValid && conflict) {
+                try {
+                    autoRenameValue = PathUtils.generateAutoRenameName(commitValue, siblingNames);
+                } catch (err) {
+                    logger.warn('[Folder] Auto-rename preview unavailable', err);
+                }
+            }
+
+            if (autoRenameValue) {
+                suggestionValue.textContent = autoRenameValue;
+                suggestion.style.display = 'flex';
+                autoRenameBtn.disabled = false;
+            } else {
+                suggestion.style.display = 'none';
+                autoRenameBtn.disabled = true;
+                suggestionValue.textContent = '';
+            }
+        };
+
+        const applyNormalization = (): InputNormalization => {
+            const { value: nextValue, normalization } = normalizeInputValue(input.value);
+            const commitValue = normalizeCommitValue(nextValue);
+
+            if (normalization.removedSlash) {
+                input.value = lastStableValue;
+                updateStatus(
+                    normalization,
+                    'Folder name cannot contain "/".',
+                    true
+                );
+                logRename('normalize-revert-slash', {
+                    attempted: nextValue,
+                    revertedTo: lastStableValue
+                });
+                return normalization;
+            }
+
+            if (commitValue.length > PathUtils.MAX_NAME_LENGTH) {
+                input.value = lastStableValue;
+                updateStatus(
+                    normalization,
+                    `Folder name must be ${PathUtils.MAX_NAME_LENGTH} characters or less.`,
+                    true
+                );
+                logRename('normalize-revert-too-long', {
+                    attempted: nextValue,
+                    revertedTo: lastStableValue
+                });
+                return normalization;
+            }
+
+            if (input.value !== nextValue) {
+                input.value = nextValue;
+                const cursor = nextValue.length;
+                input.setSelectionRange(cursor, cursor);
+                logRename('normalize-adjust', {
+                    from: input.value,
+                    to: nextValue
+                });
+            }
+
+            lastStableValue = input.value;
+            updateStatus(normalization);
+            return normalization;
+        };
+
+        const commitEdit = async (): Promise<void> => {
+            if (isSubmitting) {
+                logRename('commit-skip-submitting');
+                return;
+            }
+            const commitValue = normalizeCommitValue(input.value);
+            const validation = PathUtils.getFolderNameValidation(commitValue);
+            const conflict = validation.isValid
+                ? PathUtils.hasNameConflict(commitValue, siblingNames)
+                : false;
+
+            if (!validation.isValid || conflict) {
+                updateStatus({ collapsedSpaces: false, removedSlash: false });
+                input.focus();
+                input.select();
+                logRename('commit-blocked', {
+                    value: input.value,
+                    normalized: commitValue,
+                    errors: validation.errors,
+                    conflict
+                });
+                return;
+            }
+
+            if (commitValue !== input.value) {
+                input.value = commitValue;
+            }
+
+            if (commitValue === normalizedOriginal) {
+                logRename('commit-no-change', { normalized: commitValue });
+                cleanup();
+                return;
+            }
+
+            isSubmitting = true;
+            confirmBtn.disabled = true;
+            logRename('commit-submit', {
+                value: input.value,
+                normalized: commitValue
+            });
+            const success = await this.handleRenameFolder(path, commitValue);
+            if (!success) {
+                isSubmitting = false;
+                confirmBtn.disabled = false;
+                input.focus();
+                input.select();
+                logRename('commit-failed');
+            } else {
+                logRename('commit-success');
+            }
+        };
+
         const cancelEdit = () => {
-            parent.replaceChild(nameSpan, input);
+            logRename('cancel');
+            cleanup();
         };
+
+        const handlePointerDown = (event: PointerEvent) => {
+            lastPointerDownTarget = event.target;
+            const insideWrapper = event.composedPath().includes(wrapper);
+            lastPointerDownInside = insideWrapper;
+            logRename('pointerdown', {
+                target: describeTarget(event.target),
+                insideWrapper
+            });
+        };
+
+        const handleFocusIn = (event: FocusEvent) => {
+            logRename('focusin', {
+                target: describeTarget(event.target),
+                active: describeTarget(document.activeElement)
+            });
+        };
+
+        const handleFocusOut = (event: FocusEvent) => {
+            logRename('focusout', {
+                target: describeTarget(event.target),
+                active: describeTarget(document.activeElement)
+            });
+        };
+
+        const handleGlobalKeydown = (event: KeyboardEvent) => {
+            logRename('keydown-capture', {
+                key: event.key,
+                target: describeTarget(event.target),
+                active: describeTarget(document.activeElement)
+            });
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown, true);
+        document.addEventListener('focusin', handleFocusIn, true);
+        document.addEventListener('focusout', handleFocusOut, true);
+        document.addEventListener('keydown', handleGlobalKeydown, true);
 
         // Event listeners
-        input.addEventListener('blur', saveEdit);
+        input.addEventListener('focus', () => {
+            logRename('input-focus');
+        });
+        input.addEventListener('beforeinput', (event) => {
+            const evt = event as InputEvent;
+            logRename('beforeinput', {
+                inputType: evt.inputType,
+                data: evt.data
+            });
+        });
+        input.addEventListener('input', (e) => {
+            e.stopPropagation();
+            applyNormalization();
+            logRename('input', { value: input.value });
+        });
+        input.addEventListener('blur', () => {
+            if (ignoreBlur) return;
+            if (isSubmitting) return;
+            if (!lastPointerDownTarget) {
+                input.focus();
+                logRename('blur-no-pointerdown');
+                return;
+            }
+            const clickedOutside = !lastPointerDownInside;
+            if (!clickedOutside) {
+                input.focus();
+                logRename('blur-inside-wrapper', {
+                    target: describeTarget(lastPointerDownTarget)
+                });
+                return;
+            }
+            if (currentBlocking) {
+                input.focus();
+                logRename('blur-blocked', {
+                    target: describeTarget(lastPointerDownTarget)
+                });
+                return;
+            }
+            logRename('blur-commit', {
+                target: describeTarget(lastPointerDownTarget)
+            });
+            void commitEdit();
+        });
         input.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            logRename('keydown', { key: e.key });
             if (e.key === 'Enter') {
                 e.preventDefault();
-                saveEdit();
+                void commitEdit();
             } else if (e.key === 'Escape') {
                 e.preventDefault();
                 cancelEdit();
             }
         });
+
+        confirmBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            ignoreBlur = true;
+        });
+        confirmBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            logRename('confirm-click');
+            await commitEdit();
+            ignoreBlur = false;
+        });
+
+        cancelBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            ignoreBlur = true;
+        });
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            cancelEdit();
+            ignoreBlur = false;
+        });
+
+        autoRenameBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            ignoreBlur = true;
+        });
+        autoRenameBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!autoRenameValue) {
+                ignoreBlur = false;
+                return;
+            }
+            confirmBtn.disabled = true;
+            autoRenameBtn.disabled = true;
+            logRename('auto-rename', { value: autoRenameValue });
+            const success = await this.handleRenameFolder(path, autoRenameValue);
+            if (!success) {
+                confirmBtn.disabled = false;
+                autoRenameBtn.disabled = false;
+                input.focus();
+                input.select();
+                logRename('auto-rename-failed');
+            } else {
+                logRename('auto-rename-success');
+            }
+            ignoreBlur = false;
+        });
+
+        const initialNormalization = normalizeInputValue(input.value);
+        updateStatus(initialNormalization.normalization);
     }
 
-    private async handleRenameFolder(path: string, newName: string): Promise<void> {
+    private async handleRenameFolder(path: string, newName: string): Promise<boolean> {
         const result = await this.folderOpsManager.renameFolder(path, newName);
 
         if (result.success) {
@@ -1704,6 +2116,7 @@ export class SimpleBookmarkPanel {
 
             await this.refreshTreeView();
             logger.info(`[Folder] Renamed: ${path} -> ${newName}`);
+            return true;
         } else {
             await this.showNotification({
                 type: 'error',
@@ -1712,44 +2125,45 @@ export class SimpleBookmarkPanel {
             });
             logger.error(`[Folder] Rename failed:`, result.error);
         }
+        return false;
     }
 
     private async handleDeleteFolder(path: string): Promise<void> {
-        const hasBookmarks = this.bookmarks.some(b =>
+        const analysis = this.buildFolderDeleteAnalysis(path);
+        if (!analysis) return;
+
+        const confirmed = await this.showBatchDeleteConfirmation(analysis);
+        if (!confirmed) return;
+
+        await this.executeBatchDelete(analysis);
+        await this.refresh();
+    }
+
+    private buildFolderDeleteAnalysis(path: string): {
+        folders: Folder[];
+        subfolders: Folder[];
+        bookmarks: Bookmark[];
+    } | null {
+        const target = this.folders.find(f => f.path === path);
+        if (!target) return null;
+
+        const descendantFolders = this.folders.filter(f => f.path.startsWith(path + '/'));
+        const bookmarks = this.bookmarks.filter(b =>
             b.folderPath === path || b.folderPath?.startsWith(path + '/')
         );
 
-        const hasSubfolders = this.folders.some(f =>
-            f.path.startsWith(path + '/')
-        );
+        const folders: Folder[] = [];
+        const subfolders: Folder[] = [];
 
-        if (hasBookmarks || hasSubfolders) {
-            await this.showNotification({
-                type: 'error',
-                title: 'Folder Not Empty',
-                message: 'Please remove all items before deleting folder'
-            });
-            return;
-        }
-
-        if (!confirm(`Delete folder "${path}"?`)) {
-            return;
-        }
-
-        const result = await this.folderOpsManager.deleteFolder(path);
-
-        if (result.success) {
-            this.folders = await FolderStorage.getAll();
-            await this.refreshTreeView();
-            logger.info(`[Folder] Deleted: ${path}`);
+        if (target.depth === 1) {
+            folders.push(target);
         } else {
-            await this.showNotification({
-                type: 'error',
-                title: 'Failed to Delete',
-                message: `Failed to delete folder: ${result.error}`
-            });
-            logger.error(`[Folder] Delete failed:`, result.error);
+            subfolders.push(target);
         }
+
+        descendantFolders.forEach(folder => subfolders.push(folder));
+
+        return { folders, subfolders, bookmarks };
     }
 
     /**
@@ -2918,19 +3332,14 @@ ${options.message}
 
                 // Analyze import data for folder path issues (Issue 2)
                 const analysis = this.analyzeImportData(bookmarks);
+                const importFolderSet = new Set<Bookmark>([
+                    ...analysis.noFolder,
+                    ...analysis.tooDeep
+                ]);
 
-                // Show summary if there are folder path issues
-                if (analysis.noFolder.length > 0 || analysis.tooDeep.length > 0) {
-                    const shouldProceed = await this.showImportSummary(analysis);
-                    if (!shouldProceed) {
-                        logger.info('[Import] User cancelled import');
-                        return;
-                    }
-
-                    // Adjust folder paths for problematic bookmarks
-                    analysis.noFolder.forEach(b => b.folderPath = 'Import');
-                    analysis.tooDeep.forEach(b => b.folderPath = 'Import');
-                }
+                // Adjust folder paths for problematic bookmarks
+                analysis.noFolder.forEach(b => b.folderPath = 'Import');
+                analysis.tooDeep.forEach(b => b.folderPath = 'Import');
 
                 // Combine all bookmarks
                 const allBookmarks = [...analysis.valid, ...analysis.noFolder, ...analysis.tooDeep];
@@ -2968,20 +3377,34 @@ ${options.message}
                 this.folders = await FolderStorage.getAll();
                 logger.info(`[Import] Loaded ${this.folders.length} folders after creation`);
 
-                // Detect conflicts
+                // Detect conflicts (existing bookmarks with same url+position)
                 const conflicts = await this.detectConflicts(allBookmarks);
+                const mergeEntries = await this.buildImportMergeEntries(allBookmarks, importFolderSet);
+                const hasRenameConflicts = mergeEntries.some(entry => entry.status === 'rename');
+                const hasImportFolder = mergeEntries.some(entry => entry.status === 'import');
+                const shouldPrompt = conflicts.length > 0 || hasRenameConflicts || hasImportFolder;
 
-                // Handle conflicts if any
-                if (conflicts.length > 0) {
-                    const shouldMerge = await this.showConflictDialog(conflicts, allBookmarks);
-                    if (!shouldMerge) {
+                if (shouldPrompt) {
+                    const action = await this.showMergeDialog(mergeEntries, {
+                        hasRenameConflicts,
+                        duplicateCount: conflicts.length
+                    });
+                    if (action === 'cancel') {
                         logger.info('[Import] User cancelled import');
                         return;
                     }
+
+                    if (action === 'rename-merge') {
+                        mergeEntries.forEach(entry => {
+                            if (entry.renameTo) {
+                                entry.bookmark.title = entry.renameTo;
+                            }
+                        });
+                    }
                 }
 
-                // Import all bookmarks (merge will overwrite duplicates)
-                await this.importBookmarks(allBookmarks, false);
+                // Import all bookmarks (skip duplicates)
+                await this.importBookmarks(allBookmarks, true);
 
                 // Refresh panel
                 await this.refresh();
@@ -3052,92 +3475,6 @@ ${options.message}
         logger.info(`[Import Analysis] Results: valid=${valid.length}, noFolder=${noFolder.length}, tooDeep=${tooDeep.length}`);
         return { valid, noFolder, tooDeep };
     }
-
-    /**
-     * Show import summary dialog
-     * Issue 2: Display summary and ask for confirmation
-     */
-    private async showImportSummary(analysis: {
-        valid: Bookmark[];
-        noFolder: Bookmark[];
-        tooDeep: Bookmark[];
-    }): Promise<boolean> {
-        return new Promise((resolve) => {
-            const overlay = document.createElement('div');
-            overlay.className = 'import-summary-overlay';
-
-            const modal = document.createElement('div');
-            modal.className = 'import-summary-modal';
-
-            const totalIssues = analysis.noFolder.length + analysis.tooDeep.length;
-
-            modal.innerHTML = `
-                <h3 class="import-summary-title">
-                    📥 导入摘要
-                </h3>
-                <div class="import-summary-content">
-                    <p class="import-summary-text">
-                        准备导入 <strong>${analysis.valid.length + analysis.noFolder.length + analysis.tooDeep.length}</strong> 个书签：
-                    </p>
-                    <ul class="import-summary-list">
-                        <li>${Icons.check} ${analysis.valid.length} 个书签将正常导入</li>
-                        ${analysis.noFolder.length > 0 ? `<li>${Icons.folder} ${analysis.noFolder.length} 个书签无文件夹 → 将导入到 <strong>Import</strong> 文件夹</li>` : ''}
-                        ${analysis.tooDeep.length > 0 ? `<li>${Icons.folder} ${analysis.tooDeep.length} 个书签文件夹层级过深 → 将导入到 <strong>Import</strong> 文件夹</li>` : ''}
-                    </ul>
-                    ${totalIssues > 0 ? `
-                        <div class="import-summary-warning">
-                            <div class="import-summary-warning-title">ℹ️ 注意</div>
-                            <div class="import-summary-warning-text">
-                                ${analysis.noFolder.length + analysis.tooDeep.length} 个书签将自动归类到 Import 文件夹
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-                <div class="import-summary-footer">
-                    <button class="cancel-btn">Cancel</button>
-                    <button class="proceed-btn">Continue</button>
-                </div>
-            `;
-
-            overlay.appendChild(modal);
-
-            // CRITICAL: Append to Shadow DOM instead of document.body
-            if (this.shadowRoot) {
-                this.shadowRoot.appendChild(overlay);
-            }
-
-            const cancelBtn = modal.querySelector('.cancel-btn') as HTMLElement;
-            const proceedBtn = modal.querySelector('.proceed-btn') as HTMLElement;
-
-            cancelBtn.addEventListener('click', () => {
-                overlay.remove();
-                resolve(false);
-            });
-
-            proceedBtn.addEventListener('click', () => {
-                overlay.remove();
-                resolve(true);
-            });
-
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    overlay.remove();
-                    resolve(false);
-                }
-            });
-
-            const handleEscape = (e: KeyboardEvent) => {
-                if (e.key === 'Escape') {
-                    overlay.remove();
-                    document.removeEventListener('keydown', handleEscape);
-                    resolve(false);
-                }
-            };
-            document.addEventListener('keydown', handleEscape);
-        });
-    }
-
-    /**
 
     /**
      * Validate import data
@@ -3213,19 +3550,110 @@ ${options.message}
     }
 
     /**
-     * Show conflict resolution dialog
-     * Returns: true (merge) or false (cancel)
+     * Build merge entries with status + rename preview
      */
-    private async showConflictDialog(
-        conflicts: Bookmark[],
-        allBookmarks: Bookmark[]
-    ): Promise<boolean> {
+    private async buildImportMergeEntries(
+        bookmarks: Bookmark[],
+        importFolderSet: Set<Bookmark>
+    ): Promise<ImportMergeEntry[]> {
+        const existingBookmarks = this.bookmarks.length > 0
+            ? this.bookmarks
+            : await SimpleBookmarkStorage.getAllBookmarks();
+
+        const usedTitlesByFolder = new Map<string, Set<string>>();
+        const entries: ImportMergeEntry[] = [];
+
+        const getUsedTitles = (folderPath: string): Set<string> => {
+            const key = folderPath || 'Import';
+            let existing = usedTitlesByFolder.get(key);
+            if (!existing) {
+                existing = new Set<string>();
+                usedTitlesByFolder.set(key, existing);
+            }
+            return existing;
+        };
+
+        existingBookmarks.forEach((bookmark) => {
+            const usedTitles = getUsedTitles(bookmark.folderPath);
+            usedTitles.add(this.normalizeBookmarkTitle(bookmark.title));
+        });
+
+        for (const bookmark of bookmarks) {
+            const folderPath = bookmark.folderPath || 'Import';
+            const usedTitles = getUsedTitles(folderPath);
+            const normalizedTitle = this.normalizeBookmarkTitle(bookmark.title);
+
+            let status: ImportMergeStatus = 'normal';
+            let renameTo: string | undefined;
+
+            if (normalizedTitle && usedTitles.has(normalizedTitle)) {
+                status = 'rename';
+                renameTo = this.generateUniqueTitle(bookmark.title, usedTitles);
+                usedTitles.add(this.normalizeBookmarkTitle(renameTo));
+            } else if (normalizedTitle) {
+                usedTitles.add(normalizedTitle);
+            }
+
+            if (status !== 'rename' && importFolderSet.has(bookmark)) {
+                status = 'import';
+            }
+
+            entries.push({ bookmark, status, renameTo });
+        }
+
+        return entries;
+    }
+
+    private normalizeBookmarkTitle(title: string): string {
+        return title.trim().toLocaleLowerCase();
+    }
+
+    private generateUniqueTitle(baseTitle: string, usedTitles: Set<string>): string {
+        const trimmedBase = baseTitle.trim() || 'Untitled';
+        let candidate = trimmedBase;
+        let counter = 1;
+
+        while (usedTitles.has(this.normalizeBookmarkTitle(candidate))) {
+            candidate = `${trimmedBase}-${counter}`;
+            counter += 1;
+        }
+
+        return candidate;
+    }
+
+    /**
+     * Show merge confirmation dialog
+     * Returns: merge, rename-merge, or cancel
+     */
+    private async showMergeDialog(
+        entries: ImportMergeEntry[],
+        options: {
+            hasRenameConflicts: boolean;
+            duplicateCount: number;
+        }
+    ): Promise<'merge' | 'rename-merge' | 'cancel'> {
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
             overlay.className = 'duplicate-dialog-overlay';
 
             const modal = document.createElement('div');
             modal.className = 'duplicate-dialog-modal';
+
+            const statusLabels: Record<ImportMergeStatus, string> = {
+                normal: '正常导入',
+                rename: '重命名合并',
+                import: '合并到 import 文件夹'
+            };
+
+            const counts = entries.reduce(
+                (acc, entry) => {
+                    acc[entry.status] += 1;
+                    return acc;
+                },
+                { normal: 0, rename: 0, import: 0 } as Record<ImportMergeStatus, number>
+            );
+
+            const primaryLabel = options.hasRenameConflicts ? '重命名合并' : '合并';
 
             modal.innerHTML = `
             <style>
@@ -3236,7 +3664,7 @@ ${options.message}
                     right: 0;
                     bottom: 0;
                     background: var(--modal-overlay-bg);
-                    z-index: var(--z-modal-backdrop);
+                    z-index: 2147483647;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -3256,21 +3684,29 @@ ${options.message}
                     font-family: var(--font-sans);
                 }
 
-                /* Duplicate Dialog Styles */
+                /* Merge Dialog Styles */
                 .duplicate-dialog-content { padding: 20px; }
                 .duplicate-dialog-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
                 .duplicate-dialog-icon { color: var(--warning-600); font-size: 24px; line-height: 1; flex-shrink: 0; }
                 .duplicate-dialog-title { margin: 0; font-size: 20px; font-weight: var(--font-medium); color: var(--md-on-surface); line-height: 1.2; }
                 .duplicate-dialog-body { color: var(--md-on-surface); font-size: 14px; line-height: 1.5; }
                 .duplicate-dialog-text { margin: 0 0 10px 0; }
-                .duplicate-list-container { background: var(--md-surface-variant); border-radius: var(--radius-small); padding: 12px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
-                .duplicate-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--md-outline-variant); }
-                .duplicate-list-item:last-child { border-bottom: none; }
-                .duplicate-platform-badge { flex-shrink: 0; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-                .duplicate-platform-badge.platform-chatgpt { background: var(--platform-chatgpt-bg); color: var(--platform-chatgpt-text); }
-                .duplicate-platform-badge.platform-gemini { background: var(--platform-gemini-bg); color: var(--platform-gemini-text); }
-                .duplicate-bookmark-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--md-on-surface); }
-                .duplicate-highlight { color: var(--primary-600); font-weight: var(--font-semibold); }
+                .merge-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+                .merge-summary-item { background: var(--md-surface-variant); border-radius: var(--radius-small); padding: 8px 10px; }
+                .merge-summary-label { font-size: 12px; color: var(--md-on-surface-variant); display: block; }
+                .merge-summary-value { font-size: 16px; font-weight: var(--font-semibold); color: var(--md-on-surface); }
+                .merge-list-container { border: 1px solid var(--md-outline-variant); border-radius: var(--radius-small); max-height: 320px; overflow-y: auto; }
+                .merge-list-item { padding: 10px 12px; border-bottom: 1px solid var(--md-outline-variant); display: flex; flex-direction: column; gap: 4px; }
+                .merge-list-item:last-child { border-bottom: none; }
+                .merge-item-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+                .merge-item-title { font-weight: var(--font-medium); color: var(--md-on-surface); word-break: break-word; }
+                .merge-item-path { font-size: 12px; color: var(--md-on-surface-variant); word-break: break-word; }
+                .merge-item-path-label { margin-right: 6px; color: var(--md-on-surface-variant); font-weight: var(--font-medium); }
+                .merge-item-rename { font-size: 12px; color: var(--danger-500); }
+                .merge-badge { font-size: 12px; padding: 2px 6px; border-radius: 999px; font-weight: var(--font-medium); white-space: nowrap; }
+                .merge-badge-normal { background: var(--success-50); color: var(--success-700); }
+                .merge-badge-rename { background: var(--warning-50); color: var(--warning-700); }
+                .merge-badge-import { background: var(--info-bg); color: var(--primary-700); }
                 .duplicate-dialog-hint { margin: 6px 0 0 0; color: var(--md-on-surface-variant); font-size: 13px; font-style: italic; opacity: 0.9; }
                 .import-summary-footer { padding: 12px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--md-outline); }
                 .cancel-btn { padding: 8px 16px; border: none; border-radius: 6px; background: var(--gray-100); color: var(--md-on-surface); font-size: var(--text-sm); font-weight: var(--font-medium); cursor: pointer; transition: all 0.2s; }
@@ -3281,32 +3717,51 @@ ${options.message}
             <div class="duplicate-dialog-content">
                 <div class="duplicate-dialog-header">
                     <span class="duplicate-dialog-icon">${Icons.alertTriangle}</span>
-                    <h3 class="duplicate-dialog-title">Duplicate Bookmarks Detected</h3>
+                    <h3 class="duplicate-dialog-title">导入确认</h3>
                 </div>
                 <div class="duplicate-dialog-body">
-                    <p class="duplicate-dialog-text">Found <strong>${conflicts.length}</strong> bookmark(s) that already exist.</p>
-                    <p class="duplicate-dialog-text">Total bookmarks to import: <strong>${allBookmarks.length}</strong></p>
-                    
-                    <div class="duplicate-list-container">
-                        ${conflicts.map(b => `
-                            <div class="duplicate-list-item">
-                                <span class="duplicate-platform-badge platform-${b.platform?.toLowerCase() === 'gemini' ? 'gemini' : 'chatgpt'}">
-                                    ${b.platform || 'ChatGPT'}
-                                </span>
-                                <span class="duplicate-bookmark-title">
-                                    ${this.escapeHtml(this.truncate(b.title || b.userMessage, 40))}
-                                </span>
+                    <p class="duplicate-dialog-text">本次导入 <strong>${entries.length}</strong> 条记录。</p>
+                    <div class="merge-summary">
+                        <div class="merge-summary-item">
+                            <span class="merge-summary-label">正常导入</span>
+                            <span class="merge-summary-value">${counts.normal}</span>
+                        </div>
+                        <div class="merge-summary-item">
+                            <span class="merge-summary-label">重命名合并</span>
+                            <span class="merge-summary-value">${counts.rename}</span>
+                        </div>
+                        <div class="merge-summary-item">
+                            <span class="merge-summary-label">合并到 import 文件夹</span>
+                            <span class="merge-summary-value">${counts.import}</span>
+                        </div>
+                    </div>
+                    ${options.duplicateCount > 0 ? `
+                        <p class="duplicate-dialog-hint">检测到 ${options.duplicateCount} 个重复书签，将保留现有条目并跳过导入。</p>
+                    ` : ''}
+                    <div class="merge-list-container">
+                        ${entries.map((entry) => `
+                            <div class="merge-list-item">
+                                <div class="merge-item-header">
+                                    <div class="merge-item-title">${this.escapeHtml(entry.bookmark.title)}</div>
+                                    <span class="merge-badge merge-badge-${entry.status}">
+                                        ${statusLabels[entry.status]}
+                                    </span>
+                                </div>
+                                <div class="merge-item-path">
+                                    <span class="merge-item-path-label">Folder:</span>
+                                    ${this.escapeHtml(entry.bookmark.folderPath || 'Import')}
+                                </div>
+                                ${entry.renameTo ? `
+                                    <div class="merge-item-rename">重命名为：${this.escapeHtml(entry.renameTo)}</div>
+                                ` : ''}
                             </div>
                         `).join('')}
                     </div>
-                    
-                    <p class="duplicate-dialog-text">Click <strong class="duplicate-highlight">Merge</strong> to import all bookmarks (duplicates will be overwritten).</p>
-                    <p class="duplicate-dialog-hint">💡 Items without folders will be imported to the <strong>Import</strong> folder.</p>
                 </div>
             </div>
             <div class="import-summary-footer">
-                <button class="cancel-btn">Cancel</button>
-                <button class="merge-btn">Merge</button>
+                <button class="cancel-btn">取消</button>
+                <button class="merge-btn">${primaryLabel}</button>
             </div>
         `;
 
@@ -3320,19 +3775,19 @@ ${options.message}
 
             cancelBtn.addEventListener('click', () => {
                 overlay.remove();
-                resolve(false);
+                resolve('cancel');
             });
 
             mergeBtn.addEventListener('click', () => {
                 overlay.remove();
-                resolve(true);
+                resolve(options.hasRenameConflicts ? 'rename-merge' : 'merge');
             });
 
             overlay.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (e.target === overlay) {
                     overlay.remove();
-                    resolve(false);
+                    resolve('cancel');
                 }
             });
 
@@ -3344,7 +3799,7 @@ ${options.message}
                 if (e.key === 'Escape') {
                     overlay.remove();
                     document.removeEventListener('keydown', handleEscape);
-                    resolve(false);
+                    resolve('cancel');
                 }
             };
             document.addEventListener('keydown', handleEscape);
@@ -3695,6 +4150,9 @@ ${options.message}
         if (styleElement) {
             // Regenerate styles with updated token values
             styleElement.textContent = this.getStyles();
+            if (this.overlay) {
+                this.overlay.dataset.theme = DesignTokens.isDarkMode() ? 'dark' : 'light';
+            }
             logger.debug('[SimpleBookmarkPanel] Theme styles updated');
         } else {
             logger.warn('[SimpleBookmarkPanel] Cannot update theme: style element not found');
@@ -3762,7 +4220,7 @@ ${options.message}
                 border-radius: var(--radius-large);  /* Material Design 16px */
                 box-shadow: var(--elevation-3);      /* Material Design elevation */
                 display: flex;
-                z-index: var(--z-modal);
+                z-index: var(--z-fixed);
                 font-family: var(--font-sans);
                 overflow: hidden;
             }
@@ -4483,7 +4941,7 @@ ${options.message}
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: var(--z-modal-backdrop);
+                z-index: 2147483647;
             }
 
             .conflict-dialog {
@@ -4654,6 +5112,23 @@ ${options.message}
                 transform: translateY(-1px);
             }
 
+            .ok-btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: var(--radius-small);
+                background: var(--button-primary-bg);
+                color: var(--button-primary-text);
+                font-size: var(--text-sm);
+                font-weight: var(--font-medium);
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .ok-btn:hover {
+                background: var(--button-primary-hover);
+                transform: translateY(-1px);
+            }
+
             /* Import Summary Dialog */
             .import-summary-overlay {
                 position: fixed;
@@ -4662,7 +5137,7 @@ ${options.message}
                 right: 0;
                 bottom: 0;
                 background: var(--bg-overlay);
-                z-index: var(--z-modal-backdrop);
+                z-index: 2147483647;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -5007,7 +5482,7 @@ ${options.message}
                 right: 0;
                 bottom: 0;
                 background: var(--bg-overlay);
-                z-index: var(--z-modal-backdrop);
+                z-index: 2147483647;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -5520,6 +5995,10 @@ ${options.message}
                 box-shadow: inset 3px 0 0 var(--interactive-primary);
             }
 
+            .folder-item.is-editing:hover {
+                background: transparent;
+            }
+
             .folder-toggle {
                 display: inline-flex;
                 align-items: center;
@@ -5575,6 +6054,144 @@ ${options.message}
                 color: var(--gray-500);
                 font-weight: 400;
                 user-select: none;
+            }
+
+            .folder-item.is-editing .item-actions {
+                display: none;
+            }
+
+            .inline-edit-wrapper {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-1);
+                min-width: 0;
+            }
+
+            .inline-edit-row {
+                display: flex;
+                align-items: center;
+                gap: var(--space-2);
+                min-width: 0;
+            }
+
+            .inline-edit-input {
+                flex: 1;
+                min-width: 0;
+                padding: 2px 6px;
+                border: 1px solid var(--md-outline);
+                border-radius: var(--radius-extra-small);
+                font-size: var(--text-base);
+                font-family: inherit;
+                background: var(--md-surface);
+                color: var(--md-on-surface);
+                outline: none;
+                line-height: 1.4;
+            }
+
+            .inline-edit-input:focus {
+                border-color: var(--primary-600);
+                box-shadow: var(--shadow-focus);
+            }
+
+            .inline-edit-input.error {
+                border-color: var(--danger-500);
+                box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
+            }
+
+            .inline-edit-actions {
+                display: inline-flex;
+                gap: var(--space-1);
+                flex-shrink: 0;
+            }
+
+            .inline-edit-btn {
+                width: 24px;
+                height: 24px;
+                border: 1px solid var(--md-outline);
+                border-radius: 4px;
+                background: var(--md-surface);
+                color: var(--md-on-surface);
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                transition: all var(--duration-fast);
+            }
+
+            .inline-edit-btn:hover {
+                background: var(--gray-100);
+                transform: translateY(-1px);
+            }
+
+            .inline-edit-confirm {
+                border-color: var(--success-200);
+                color: var(--success-600);
+            }
+
+            .inline-edit-confirm:hover {
+                background: var(--success-50);
+            }
+
+            .inline-edit-cancel {
+                border-color: var(--danger-200);
+                color: var(--danger-500);
+            }
+
+            .inline-edit-cancel:hover {
+                background: var(--danger-50);
+            }
+
+            .inline-edit-btn:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .inline-edit-error {
+                font-size: 12px;
+                color: var(--danger-500);
+                line-height: 1.2;
+            }
+
+            .inline-edit-suggestion {
+                display: none;
+                align-items: center;
+                gap: var(--space-2);
+                font-size: 12px;
+                color: var(--danger-500);
+            }
+
+            .inline-edit-suggestion-text {
+                color: var(--danger-500);
+            }
+
+            .inline-edit-suggestion-value {
+                color: var(--md-on-surface);
+                font-weight: var(--font-medium);
+            }
+
+            .inline-edit-auto-rename {
+                padding: 2px 8px;
+                border-radius: 6px;
+                border: 1px solid var(--primary-200);
+                background: var(--primary-50);
+                color: var(--primary-700);
+                font-size: 12px;
+                cursor: pointer;
+                transition: all var(--duration-fast);
+            }
+
+            .inline-edit-auto-rename:hover {
+                background: var(--primary-100);
+                transform: translateY(-1px);
+            }
+
+            .inline-edit-auto-rename:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none;
             }
 
             /* VSCode-style folder children visibility */
@@ -5648,6 +6265,10 @@ ${options.message}
 
             .tree-item:hover .item-actions {
                 display: flex;
+            }
+
+            .tree-item.is-editing:hover .item-actions {
+                display: none;
             }
 
             .action-btn {

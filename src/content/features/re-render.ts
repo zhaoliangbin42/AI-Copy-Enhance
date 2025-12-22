@@ -139,11 +139,11 @@ const panelStyles = `
    DARK MODE - Shadow DOM compatible
    ============================================ */
 
-:host-context(html.dark) .aicopy-panel-overlay {
+:host([data-theme='dark']) .aicopy-panel-overlay {
   background: rgba(0, 0, 0, 0.8);
 }
 
-:host-context(html.dark) .aicopy-panel {
+:host([data-theme='dark']) .aicopy-panel {
   background: #1E1E1E;
   box-shadow: 
     0 0 0 1px rgba(255, 255, 255, 0.1),
@@ -152,34 +152,34 @@ const panelStyles = `
     0 24px 80px rgba(0, 0, 0, 0.4);
 }
 
-:host-context(html.dark) .aicopy-panel-header {
+:host([data-theme='dark']) .aicopy-panel-header {
   background: #1E1E1E;
   border-bottom-color: #3F3F46;
 }
 
-:host-context(html.dark) .aicopy-panel-title {
+:host([data-theme='dark']) .aicopy-panel-title {
   color: #FFFFFF;
 }
 
-:host-context(html.dark) .aicopy-panel-fullscreen-btn {
+:host([data-theme='dark']) .aicopy-panel-fullscreen-btn {
   color: #A1A1AA;
 }
 
-:host-context(html.dark) .aicopy-panel-fullscreen-btn:hover {
+:host([data-theme='dark']) .aicopy-panel-fullscreen-btn:hover {
   background: #27272A;
   color: #FFFFFF;
 }
 
-:host-context(html.dark) .aicopy-panel-close {
+:host([data-theme='dark']) .aicopy-panel-close {
   color: #A1A1AA;
 }
 
-:host-context(html.dark) .aicopy-panel-close:hover {
+:host([data-theme='dark']) .aicopy-panel-close:hover {
   background: #27272A;
   color: #FFFFFF;
 }
 
-:host-context(html.dark) .aicopy-panel-body {
+:host([data-theme='dark']) .aicopy-panel-body {
   background: #1E1E1E;
 }
 `;
@@ -381,7 +381,7 @@ const markdownStyles = `
    DARK MODE - GitHub Dark (Shadow DOM compatible)
    ============================================ */
 
-:host-context(html.dark) .markdown-body {
+:host([data-theme='dark']) .markdown-body {
   --fgColor-default: #f0f6fc;
   --fgColor-muted: #9198a1;
   --fgColor-accent: #4493f8;
@@ -401,6 +401,7 @@ const markdownStyles = `
  */
 export class ReRenderPanel {
     private container: HTMLElement | null = null;
+    private currentThemeIsDark: boolean = false;
 
     constructor() {
         // Configure marked with GitHub Flavored Markdown
@@ -415,6 +416,7 @@ export class ReRenderPanel {
             output: 'html',
             nonStandard: true  // Allow non-standard syntax
         }));
+
     }
 
     /**
@@ -436,6 +438,16 @@ export class ReRenderPanel {
     }
 
     /**
+     * Apply theme to the panel host
+     */
+    setTheme(isDark: boolean): void {
+        this.currentThemeIsDark = isDark;
+        if (this.container) {
+            this.container.dataset.theme = isDark ? 'dark' : 'light';
+        }
+    }
+
+    /**
      * Create panel with Shadow DOM for style isolation
      */
     private createPanel(markdown: string): void {
@@ -449,6 +461,7 @@ export class ReRenderPanel {
 
         // Create container
         this.container = document.createElement('div');
+        this.container.dataset.theme = this.currentThemeIsDark ? 'dark' : 'light';
 
         // Attach Shadow DOM for style isolation
         const shadowRoot = this.container.attachShadow({ mode: 'open' });

@@ -265,6 +265,39 @@ export class DesignTokens {
             --modal-tree-item-text: var(--text-primary);
             --modal-tree-item-icon: var(--color-gray-600);
 
+            /* Toolbar Tokens */
+            --toolbar-gradient-solid-from: #3B82F6;
+            --toolbar-gradient-solid-to: #1D4ED8;
+            --toolbar-gradient-light-from: rgba(59, 130, 246, 0.12);
+            --toolbar-gradient-light-to: rgba(29, 78, 216, 0.12);
+            --toolbar-theme-color: #3B82F6;
+            --toolbar-bg: rgba(255, 255, 255, 0.98);
+            --toolbar-border: rgba(0, 0, 0, 0.06);
+            --toolbar-border-strong: rgba(0, 0, 0, 0.08);
+            --toolbar-shadow-1: rgba(0, 0, 0, 0.06);
+            --toolbar-shadow-2: rgba(0, 0, 0, 0.04);
+            --toolbar-hover-shadow-1: rgba(0, 0, 0, 0.08);
+            --toolbar-hover-shadow-2: rgba(0, 0, 0, 0.06);
+            --toolbar-divider: var(--gray-200);
+            --toolbar-button-text: var(--gray-600);
+            --toolbar-button-hover-bg: var(--gray-100);
+            --toolbar-button-hover-text: var(--gray-900);
+            --toolbar-button-active-bg: var(--gray-200);
+            --toolbar-stats-text: var(--gray-600);
+            --toolbar-bookmark-hover-bg: rgba(59, 130, 246, 0.2);
+
+            /* Modal Tokens */
+            --modal-overlay-bg: rgba(0, 0, 0, 0.6);
+            --modal-surface: #FFFFFF;
+            --modal-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08),
+                0 4px 12px rgba(0, 0, 0, 0.12),
+                0 16px 48px rgba(0, 0, 0, 0.18),
+                0 24px 80px rgba(0, 0, 0, 0.12);
+            --modal-primary-bg: #2563EB;
+            --modal-primary-text: #FFFFFF;
+            --modal-primary-hover-bg: #1D4ED8;
+            --modal-primary-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+
             /* Button Tokens - Primary */
             --button-primary-bg: var(--color-blue-600);
             --button-primary-hover: var(--color-blue-700);
@@ -452,6 +485,39 @@ export class DesignTokens {
             --modal-tree-item-hover: var(--color-gray-dark-100);
             --modal-tree-item-text: var(--color-gray-dark-900);
             --modal-tree-item-icon: var(--color-gray-dark-400);
+
+            /* Toolbar Tokens */
+            --toolbar-gradient-solid-from: #60A5FA;
+            --toolbar-gradient-solid-to: #3B82F6;
+            --toolbar-gradient-light-from: rgba(96, 165, 250, 0.25);
+            --toolbar-gradient-light-to: rgba(59, 130, 246, 0.25);
+            --toolbar-theme-color: #60A5FA;
+            --toolbar-bg: rgba(40, 40, 40, 0.98);
+            --toolbar-border: rgba(255, 255, 255, 0.08);
+            --toolbar-border-strong: rgba(255, 255, 255, 0.12);
+            --toolbar-shadow-1: rgba(0, 0, 0, 0.4);
+            --toolbar-shadow-2: rgba(0, 0, 0, 0.3);
+            --toolbar-hover-shadow-1: rgba(0, 0, 0, 0.5);
+            --toolbar-hover-shadow-2: rgba(0, 0, 0, 0.4);
+            --toolbar-divider: rgba(255, 255, 255, 0.12);
+            --toolbar-button-text: rgba(255, 255, 255, 0.6);
+            --toolbar-button-hover-bg: rgba(255, 255, 255, 0.08);
+            --toolbar-button-hover-text: rgba(255, 255, 255, 0.9);
+            --toolbar-button-active-bg: rgba(255, 255, 255, 0.12);
+            --toolbar-stats-text: rgba(255, 255, 255, 0.5);
+            --toolbar-bookmark-hover-bg: rgba(59, 130, 246, 0.2);
+
+            /* Modal Tokens */
+            --modal-overlay-bg: rgba(0, 0, 0, 0.8);
+            --modal-surface: #1E1E1E;
+            --modal-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
+                0 4px 12px rgba(0, 0, 0, 0.5),
+                0 16px 48px rgba(0, 0, 0, 0.6),
+                0 24px 80px rgba(0, 0, 0, 0.4);
+            --modal-primary-bg: #3B82F6;
+            --modal-primary-text: #FFFFFF;
+            --modal-primary-hover-bg: #2563EB;
+            --modal-primary-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 
             /* Button Tokens - Primary */
             --button-primary-bg: var(--color-blue-400);

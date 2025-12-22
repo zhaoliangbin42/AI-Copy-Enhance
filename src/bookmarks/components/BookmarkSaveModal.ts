@@ -1,7 +1,7 @@
 import { Folder, FolderTreeNode } from '../storage/types';
 import { FolderStorage } from '../storage/FolderStorage';
 import { TreeBuilder } from '../utils/tree-builder';
-import { PathUtils } from '../utils/path-utils';
+import { PathUtils, type FolderNameValidationError } from '../utils/path-utils';
 import { logger } from '../../utils/logger';
 import { Icons } from '../../assets/icons';
 import { DesignTokens } from '../../utils/design-tokens';
@@ -641,22 +641,33 @@ export class BookmarkSaveModal {
         alert(message);
     }
 
+    private getFolderNameErrorMessage(errors: FolderNameValidationError[]): string {
+        if (errors.includes('empty')) {
+            return 'Folder name cannot be empty.';
+        }
+        if (errors.includes('tooLong')) {
+            return `Folder name must be ${PathUtils.MAX_NAME_LENGTH} characters or less.`;
+        }
+        if (errors.includes('traversal')) {
+            return 'Folder name cannot contain "..".';
+        }
+        if (errors.includes('forbiddenChars')) {
+            return 'Folder name contains invalid characters.';
+        }
+        return 'Invalid folder name.';
+    }
+
     /**
      * Create folder
      */
     private async createFolder(name: string, parentPath: string | null): Promise<void> {
-        // Validate name
-        if (name.length > 50) {
-            this.showSimpleNotification('error', 'Folder name too long (max 50 characters)');
+        const validation = PathUtils.getFolderNameValidation(name);
+        if (!validation.isValid) {
+            this.showSimpleNotification('error', this.getFolderNameErrorMessage(validation.errors));
             return;
         }
 
-        if (name.includes('/')) {
-            this.showSimpleNotification('error', 'Folder name cannot contain "/"');
-            return;
-        }
-
-        const newPath = parentPath ? `${parentPath}/${name}` : name;
+        const newPath = parentPath ? `${parentPath}/${validation.normalized}` : validation.normalized;
 
         // Check depth limit (max 4 levels: a/b/c/d, not a/b/c/d/e)
         const depth = newPath.split('/').length;
@@ -667,7 +678,7 @@ export class BookmarkSaveModal {
 
         const exists = this.folders.find(f => f.path === newPath);
         if (exists) {
-            this.showSimpleNotification('error', `Folder "${name}" already exists`);
+            this.showSimpleNotification('error', `Folder "${validation.normalized}" already exists`);
             return;
         }
 
