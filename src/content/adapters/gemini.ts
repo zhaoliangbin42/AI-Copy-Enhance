@@ -12,12 +12,12 @@ export class GeminiAdapter extends SiteAdapter {
 
     getMessageSelector(): string {
         // Gemini uses custom element 'model-response' for AI responses
-        return 'model-response';
+        return 'model-response, structured-content-container[data-test-id="message-content"]';
     }
 
     getMessageContentSelector(): string {
         // Main content area inside response
-        return '.model-response-text';
+        return '.model-response-text, #extended-response-markdown-content, .markdown';
     }
 
     getActionBarSelector(): string {
@@ -87,7 +87,7 @@ export class GeminiAdapter extends SiteAdapter {
      * Gemini uses KaTeX just like ChatGPT
      */
     getMathElements(element: HTMLElement): NodeListOf<Element> {
-        return element.querySelectorAll('.katex');
+        return element.querySelectorAll('.math-inline, .math-block, .katex');
     }
 
     /**

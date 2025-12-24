@@ -1,6 +1,7 @@
 import TurndownService from 'turndown';
 import { tables } from 'turndown-plugin-gfm';
 import { logger } from '../../utils/logger';
+import { extractLatexSource } from './latex-extractor';
 
 /**
  * 方案C：双路径提取 + 按序合并
@@ -116,22 +117,7 @@ export class MarkdownParser {
             },
             replacement: (content, node) => {
                 const element = node as HTMLElement;
-
-                // 尝试从容器元素的 data-latex-source 属性提取
-                let latex = element.getAttribute('data-latex-source');
-
-                // Fallback: Gemini 的 .math-block 有时使用 data-math 而不是 data-latex-source
-                if (!latex) {
-                    latex = element.getAttribute('data-math');
-                }
-
-                // 如果容器没有,尝试从内部 .katex 元素提取
-                if (!latex) {
-                    const katexEl = element.querySelector('.katex, .katex-display');
-                    if (katexEl) {
-                        latex = this.extractLatex(katexEl as HTMLElement);
-                    }
-                }
+                const latex = this.extractLatex(element);
 
                 if (latex) {
                     // 块级公式 (.math-block 或 .katex-display)
@@ -152,23 +138,26 @@ export class MarkdownParser {
         // 处理 .katex 元素：从 annotation 提取 LaTeX，避免重复
         this.turndownService.addRule('katexFormulas', {
             filter: (node) => {
-                return node.nodeName === 'SPAN' &&
-                    (node.classList.contains('katex') || node.classList.contains('katex-display'));
+                if (node.nodeType !== 1) return false;
+                const element = node as HTMLElement;
+                if (element.classList.contains('katex-display')) return true;
+                if (element.classList.contains('katex')) {
+                    return !element.closest('.katex-display');
+                }
+                return false;
             },
             replacement: (content, node) => {
-                // 提取 LaTeX 源码
-                const annotation = (node as HTMLElement).querySelector('annotation[encoding="application/x-tex"]');
-                if (annotation && annotation.textContent) {
-                    const latex = annotation.textContent.trim();
-                    // 块级公式
-                    if ((node as HTMLElement).classList.contains('katex-display')) {
-                        return `\n\n$$\n${latex}\n$$\n\n`;
-                    }
-                    // 行内公式
-                    return `$${latex}$`;
+                const element = node as HTMLElement;
+                const latex = this.extractLatex(element);
+                if (!latex) {
+                    // 无 LaTeX，返回原内容（避免丢失）
+                    return content;
                 }
-                // 无 annotation，返回原内容（避免丢失）
-                return content;
+                const isBlock = element.classList.contains('katex-display') || !!element.closest('.katex-display');
+                if (isBlock) {
+                    return `\n\n$$\n${latex}\n$$\n\n`;
+                }
+                return `$${latex}$`;
             }
         });
 
@@ -238,7 +227,7 @@ export class MarkdownParser {
 
             // 替换 katex-error 为占位符
             katexErrors.forEach((errorEl, i) => {
-                const latex = errorEl.textContent?.trim() || '';
+                const latex = this.extractLatex(errorEl as HTMLElement);
                 if (latex) {
                     const charCount = latex.length;
                     logger.debug(`[Deep Research] katex-error ${i}: ${charCount} chars`);
@@ -312,6 +301,20 @@ export class MarkdownParser {
                     logger.debug(`[Extract] Block math ${blockMathCount}: ${latex.substring(0, 40)}...`);
                 }
                 return; // 处理完，不继续遍历子节点
+            }
+
+            // 1.5 块级数学公式容器 (.math-block)
+            if (node.classList.contains('math-block')) {
+                const latex = this.extractLatex(node);
+                if (latex) {
+                    blocks.push({
+                        type: 'block-math',
+                        content: `$$\n${latex}\n$$`
+                    });
+                    blockMathCount++;
+                    logger.debug(`[Extract] Block math ${blockMathCount}: ${latex.substring(0, 40)}...`);
+                }
+                return;
             }
 
             // 2. 代码块 (pre > code)
@@ -456,15 +459,22 @@ export class MarkdownParser {
 
                 // 继续处理内联公式
                 const inlineMaths: InlineMath[] = [];
-                clone.querySelectorAll('.katex').forEach((katex) => {
-                    if (katex.closest('.katex-display')) return; // 跳过块公式内的
+                const inlineCandidates = Array.from(
+                    clone.querySelectorAll('.math-inline, .katex, .katex-error')
+                );
+                inlineCandidates.forEach((candidate) => {
+                    const element = candidate as HTMLElement;
+                    // 跳过块公式容器内的元素
+                    if (element.closest('.katex-display') || element.closest('.math-block')) return;
+                    // math-inline 包裹的子节点不重复处理
+                    if (!element.classList.contains('math-inline') && element.closest('.math-inline')) return;
 
-                    const latex = this.extractLatex(katex as HTMLElement);
+                    const latex = this.extractLatex(element);
                     if (latex) {
                         const placeholder = `__INLINE${inlineMathCount}__`;
                         inlineMaths.push({ placeholder, latex });
                         const textNode = document.createTextNode(placeholder);
-                        katex.replaceWith(textNode);
+                        element.replaceWith(textNode);
                         inlineMathCount++;
                         logger.debug(`[Extract] Inline math ${inlineMathCount}: ${latex.substring(0, 30)}...`);
                     }
@@ -503,13 +513,11 @@ export class MarkdownParser {
      * 从 KaTeX 元素提取 LaTeX 源码
      */
     private extractLatex(element: HTMLElement): string | null {
-        const annotation = element.querySelector('annotation[encoding="application/x-tex"]');
-        if (!annotation?.textContent) return null;
+        const latex = extractLatexSource(element);
+        if (!latex) return null;
 
         // 基本清理：合并空白字符（ChatGPT 的 annotation 内容有换行）
-        return annotation.textContent
-            .replace(/\s+/g, ' ')
-            .trim();
+        return latex.replace(/\s+/g, ' ').trim();
     }
 
     /**

@@ -194,10 +194,10 @@ class GeminiAdapter extends SiteAdapter {
     return url.includes("gemini.google.com");
   }
   getMessageSelector() {
-    return "model-response";
+    return 'model-response, structured-content-container[data-test-id="message-content"]';
   }
   getMessageContentSelector() {
-    return ".model-response-text";
+    return ".model-response-text, #extended-response-markdown-content, .markdown";
   }
   getActionBarSelector() {
     return ".response-container-footer";
@@ -247,7 +247,7 @@ class GeminiAdapter extends SiteAdapter {
    * Gemini uses KaTeX just like ChatGPT
    */
   getMathElements(element) {
-    return element.querySelectorAll(".katex");
+    return element.querySelectorAll(".math-inline, .math-block, .katex");
   }
   /**
    * Get all code blocks in the message
@@ -3798,6 +3798,64 @@ function tables (turndownService) {
   for (var key in rules) turndownService.addRule(key, rules[key]);
 }
 
+const LATEX_ATTRIBUTE_KEYS = ["data-latex-source", "data-math"];
+const looksLikeLatex = (value) => /\\[a-zA-Z]+/.test(value) || /\\[^\s]/.test(value);
+const getAttributeLatex = (element) => {
+  for (const key of LATEX_ATTRIBUTE_KEYS) {
+    const value = element.getAttribute(key);
+    if (value && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+};
+const getClosestAttributeLatex = (element) => {
+  let current = element;
+  while (current) {
+    const value = getAttributeLatex(current);
+    if (value) {
+      return value;
+    }
+    current = current.parentElement;
+  }
+  return null;
+};
+const getAnnotationLatex = (element) => {
+  const annotation = element.querySelector('annotation[encoding="application/x-tex"]');
+  if (annotation?.textContent) {
+    return annotation.textContent.trim();
+  }
+  return null;
+};
+const getKatexErrorLatex = (element) => {
+  const errorElement = element.classList.contains("katex-error") ? element : element.querySelector(".katex-error");
+  if (!errorElement) {
+    return null;
+  }
+  const text = errorElement.textContent?.trim() || "";
+  if (!text) {
+    return null;
+  }
+  if (!looksLikeLatex(text)) {
+    return null;
+  }
+  return text;
+};
+const extractLatexSource = (element) => {
+  if (!element) {
+    return null;
+  }
+  const attributeLatex = getClosestAttributeLatex(element);
+  if (attributeLatex) {
+    return attributeLatex;
+  }
+  const annotationLatex = getAnnotationLatex(element);
+  if (annotationLatex) {
+    return annotationLatex;
+  }
+  return getKatexErrorLatex(element);
+};
+
 class MarkdownParser {
   turndownService;
   constructor() {
@@ -3873,16 +3931,7 @@ ${codeText.trimEnd()}
       },
       replacement: (content, node) => {
         const element = node;
-        let latex = element.getAttribute("data-latex-source");
-        if (!latex) {
-          latex = element.getAttribute("data-math");
-        }
-        if (!latex) {
-          const katexEl = element.querySelector(".katex, .katex-display");
-          if (katexEl) {
-            latex = this.extractLatex(katexEl);
-          }
-        }
+        const latex = this.extractLatex(element);
         if (latex) {
           if (element.classList.contains("math-block") || element.querySelector(".katex-display")) {
             return `
@@ -3900,24 +3949,31 @@ $$
     });
     this.turndownService.addRule("katexFormulas", {
       filter: (node) => {
-        return node.nodeName === "SPAN" && (node.classList.contains("katex") || node.classList.contains("katex-display"));
+        if (node.nodeType !== 1) return false;
+        const element = node;
+        if (element.classList.contains("katex-display")) return true;
+        if (element.classList.contains("katex")) {
+          return !element.closest(".katex-display");
+        }
+        return false;
       },
       replacement: (content, node) => {
-        const annotation = node.querySelector('annotation[encoding="application/x-tex"]');
-        if (annotation && annotation.textContent) {
-          const latex = annotation.textContent.trim();
-          if (node.classList.contains("katex-display")) {
-            return `
+        const element = node;
+        const latex = this.extractLatex(element);
+        if (!latex) {
+          return content;
+        }
+        const isBlock = element.classList.contains("katex-display") || !!element.closest(".katex-display");
+        if (isBlock) {
+          return `
 
 $$
 ${latex}
 $$
 
 `;
-          }
-          return `$${latex}$`;
         }
-        return content;
+        return `$${latex}$`;
       }
     });
     this.turndownService.addRule("tableContainer", {
@@ -3967,7 +4023,7 @@ ${content.trim()}
       const errorBlocks = [];
       logger$1.debug(`[Deep Research] Div ${idx + 1}: Found ${katexErrors.length} katex-error elements`);
       katexErrors.forEach((errorEl, i) => {
-        const latex = errorEl.textContent?.trim() || "";
+        const latex = this.extractLatex(errorEl);
         if (latex) {
           const charCount = latex.length;
           logger$1.debug(`[Deep Research] katex-error ${i}: ${charCount} chars`);
@@ -4006,6 +4062,20 @@ ${content.trim()}
     const processNode = (node) => {
       if (node.nodeType !== 1) return;
       if (node.classList.contains("katex-display")) {
+        const latex = this.extractLatex(node);
+        if (latex) {
+          blocks.push({
+            type: "block-math",
+            content: `$$
+${latex}
+$$`
+          });
+          blockMathCount++;
+          logger$1.debug(`[Extract] Block math ${blockMathCount}: ${latex.substring(0, 40)}...`);
+        }
+        return;
+      }
+      if (node.classList.contains("math-block")) {
         const latex = this.extractLatex(node);
         if (latex) {
           blocks.push({
@@ -4125,14 +4195,19 @@ $$` });
         });
         clone.querySelectorAll(".katex-display").forEach((d) => d.remove());
         const inlineMaths = [];
-        clone.querySelectorAll(".katex").forEach((katex) => {
-          if (katex.closest(".katex-display")) return;
-          const latex = this.extractLatex(katex);
+        const inlineCandidates = Array.from(
+          clone.querySelectorAll(".math-inline, .katex, .katex-error")
+        );
+        inlineCandidates.forEach((candidate) => {
+          const element = candidate;
+          if (element.closest(".katex-display") || element.closest(".math-block")) return;
+          if (!element.classList.contains("math-inline") && element.closest(".math-inline")) return;
+          const latex = this.extractLatex(element);
           if (latex) {
             const placeholder = `__INLINE${inlineMathCount}__`;
             inlineMaths.push({ placeholder, latex });
             const textNode = document.createTextNode(placeholder);
-            katex.replaceWith(textNode);
+            element.replaceWith(textNode);
             inlineMathCount++;
             logger$1.debug(`[Extract] Inline math ${inlineMathCount}: ${latex.substring(0, 30)}...`);
           }
@@ -4159,9 +4234,9 @@ $$` });
    * 从 KaTeX 元素提取 LaTeX 源码
    */
   extractLatex(element) {
-    const annotation = element.querySelector('annotation[encoding="application/x-tex"]');
-    if (!annotation?.textContent) return null;
-    return annotation.textContent.replace(/\s+/g, " ").trim();
+    const latex = extractLatexSource(element);
+    if (!latex) return null;
+    return latex.replace(/\s+/g, " ").trim();
   }
   /**
    * 判断是否为文本容器（段落、标题、列表项等）
@@ -4345,8 +4420,9 @@ class MathClickHandler {
     const targetEl = element.classList.contains("katex-display") ? mathEl : mathEl.querySelector(".katex") || mathEl;
     targetEl.style.cursor = "pointer";
     targetEl.style.transition = "background-color 0.2s";
+    const hoverColor = "rgba(37, 99, 235, 0.12)";
     const mouseenterHandler = () => {
-      targetEl.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+      targetEl.style.backgroundColor = hoverColor;
     };
     const mouseleaveHandler = () => {
       targetEl.style.backgroundColor = "";
@@ -4387,25 +4463,18 @@ class MathClickHandler {
    * Extract LaTeX source from a math element
    */
   getLatexSource(element) {
-    const annotation = element.querySelector('annotation[encoding="application/x-tex"]');
-    if (annotation?.textContent) {
-      return annotation.textContent.trim();
-    }
-    if (element.classList.contains("katex-error")) {
-      return element.textContent?.trim() || null;
-    }
-    return element.textContent?.trim() || null;
+    return extractLatexSource(element);
   }
   /**
    * Show visual feedback after successful copy
    */
   showCopyFeedback(element) {
-    element.style.backgroundColor = "rgba(139, 92, 246, 0.2)";
+    element.style.backgroundColor = "rgba(37, 99, 235, 0.28)";
     const tooltip = document.createElement("div");
     tooltip.textContent = "Copied!";
     tooltip.style.cssText = `
       position: absolute;
-      background: #8b5cf6;
+      background: #2563EB;
       color: white;
       padding: 4px 8px;
       border-radius: 4px;
@@ -4432,7 +4501,7 @@ class MathClickHandler {
       style.remove();
       element.style.backgroundColor = "";
       if (element.matches(":hover")) {
-        element.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+        element.style.backgroundColor = "rgba(37, 99, 235, 0.12)";
       }
     }, 1500);
   }
@@ -23278,9 +23347,11 @@ const panelStyles = `
   background: white;
 }
 
-.aicopy-panel-body .markdown-content {
-  max-width: 1000px;
+.aicopy-panel-body .markdown-body {
+  max-width: 800px;
+  width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* ============================================
