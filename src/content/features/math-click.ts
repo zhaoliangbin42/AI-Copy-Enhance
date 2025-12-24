@@ -16,7 +16,7 @@ export class MathClickHandler {
         click: EventListener;
     }>();
     private pendingNodes = new Set<Element>();
-    private idleCallbackId: ReturnType<typeof setTimeout> | null = null;
+    private idleCallbackId: number | ReturnType<typeof setTimeout> | null = null;
 
     /**
      * Enable click-to-copy for all math elements in a container
@@ -128,10 +128,10 @@ export class MathClickHandler {
             this.processPendingNodes(nodes);
         };
 
-        const globalScope: any = typeof window !== 'undefined' ? window : globalThis;
+        const globalScope = (typeof window !== 'undefined' ? window : globalThis) as typeof globalThis & Window;
 
         if (typeof globalScope.requestIdleCallback === 'function') {
-            this.idleCallbackId = globalScope.requestIdleCallback(flush, { timeout: 200 }) as unknown as ReturnType<typeof setTimeout>;
+            this.idleCallbackId = globalScope.requestIdleCallback(flush, { timeout: 200 });
         } else {
             this.idleCallbackId = globalScope.setTimeout(flush, 16);
         }
@@ -154,7 +154,7 @@ export class MathClickHandler {
         }
 
         const globalScope = (typeof window !== 'undefined' ? window : globalThis) as typeof globalThis & Window;
-        if ('cancelIdleCallback' in globalScope) {
+        if (typeof globalScope.cancelIdleCallback === 'function') {
             globalScope.cancelIdleCallback(this.idleCallbackId as number);
         } else {
             globalScope.clearTimeout(this.idleCallbackId);
