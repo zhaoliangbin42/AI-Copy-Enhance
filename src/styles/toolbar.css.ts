@@ -18,6 +18,13 @@ export const toolbarStyles = `
   --theme-color: var(--toolbar-theme-color);
 }
 
+/* Wrapper for positioning (injected into DOM) */
+.aicopy-toolbar-wrapper {
+  display: block;
+  position: relative;
+  z-index: 50; /* Ensure it sits above standard content */
+}
+
 /* Notion-style floating toolbar */
 .aicopy-toolbar {
   /* Floating card container */

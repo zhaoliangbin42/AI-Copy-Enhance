@@ -112,14 +112,14 @@ class ChatGPTAdapter extends SiteAdapter {
     return "div.z-0.flex.min-h-\\[46px\\].justify-start";
   }
   extractMessageHTML(element) {
+    const contentElement = element.querySelector(this.getMessageContentSelector());
+    if (contentElement) {
+      return contentElement.innerHTML;
+    }
     if (element.tagName.toLowerCase() === "article") {
       return element.innerHTML;
     }
-    const contentElement = element.querySelector(this.getMessageContentSelector());
-    if (!contentElement) {
-      return element.innerHTML;
-    }
-    return contentElement.innerHTML;
+    return element.innerHTML;
   }
   isStreamingMessage(_element) {
     const stopButton = document.querySelector('button[aria-label*="Stop"]');
@@ -354,31 +354,24 @@ async function copyToClipboard(text) {
     }
   }
 }
-function safeQuerySelector(parent, selector) {
-  try {
-    return parent.querySelector(selector);
-  } catch (error) {
-    console.error("Invalid selector:", selector, error);
-    return null;
-  }
-}
 
 const DEBOUNCE_DELAYS = {
   MUTATION: 200};
-const RESCAN_COOLDOWN_MS = 5e3;
 class MessageObserver {
   observer = null;
   copyButtonObserver = null;
   intersectionObserver = null;
   adapter;
+  injector;
+  // Dependency for reconciliation
   observerContainer = null;
   processedMessages = /* @__PURE__ */ new Set();
   pendingMessages = /* @__PURE__ */ new Set();
-  rescanCooldowns = /* @__PURE__ */ new Map();
   onMessageDetected;
   lastCopyButtonCount = 0;
-  constructor(adapter, onMessageDetected) {
+  constructor(adapter, injector, onMessageDetected) {
     this.adapter = adapter;
+    this.injector = injector;
     this.onMessageDetected = onMessageDetected;
     this.handleMutations = debounce(this.handleMutations.bind(this), DEBOUNCE_DELAYS.MUTATION);
   }
@@ -477,6 +470,7 @@ class MessageObserver {
     const articles = document.querySelectorAll("article");
     if (articles.length === 0) return;
     const lastArticle = articles[articles.length - 1];
+    this.injector.reconcileToolbarPosition(lastArticle);
     const messageId = this.adapter.getMessageId(lastArticle);
     if (!messageId) {
       logger$1.debug("Latest article has no ID, processing anyway");
@@ -484,15 +478,11 @@ class MessageObserver {
       return;
     }
     if (this.processedMessages.has(messageId)) {
-      const hasToolbar = lastArticle.querySelector(".aicopy-toolbar-container");
-      if (!hasToolbar) {
-        logger$1.debug("Latest message processed but toolbar missing, retrying:", messageId);
-        this.onMessageDetected(lastArticle);
-      }
-      return;
+      logger$1.debug("[WordCountDebug] Streaming completion detected for known message (Copy button), forcing update:", messageId);
+    } else {
+      logger$1.debug("[WordCountDebug] New streaming message completed:", messageId);
+      this.processedMessages.add(messageId);
     }
-    this.processedMessages.add(messageId);
-    logger$1.debug("New streaming message completed:", messageId);
     this.onMessageDetected(lastArticle);
   }
   /**
@@ -503,6 +493,7 @@ class MessageObserver {
       entries.forEach((entry) => {
         if (entry.isIntersecting && entry.target instanceof HTMLElement) {
           const messageId = this.adapter.getMessageId(entry.target);
+          this.injector.reconcileToolbarPosition(entry.target);
           if (messageId && !this.processedMessages.has(messageId)) {
             logger$1.debug("Message entered viewport:", messageId);
             this.processedMessages.add(messageId);
@@ -539,20 +530,13 @@ class MessageObserver {
       this.intersectionObserver = null;
     }
     this.observerContainer = null;
-    this.rescanCooldowns.clear();
     logger$1.info("Message observer stopped");
   }
   /**
    * Handle DOM mutations
    */
-  handleMutations(mutations) {
-    logger$1.debug("Processing mutations:", mutations.length);
+  handleMutations(_mutations) {
     this.ensureObserverContainer();
-    const isStreaming = this.adapter.isStreamingMessage(document.body);
-    if (isStreaming) {
-      logger$1.debug("Streaming in progress, delaying processing");
-      return;
-    }
     this.processExistingMessages();
   }
   /**
@@ -569,54 +553,16 @@ class MessageObserver {
         const fallbackId = `msg-${Array.from(messages).indexOf(message)}`;
         logger$1.debug("Message has no ID, using fallback:", fallbackId);
         if (this.processedMessages.has(fallbackId)) {
-          const hasToolbar = message.querySelector(".aicopy-toolbar-container");
-          if (!hasToolbar && this.shouldRescan(fallbackId)) {
-            this.markRescan(fallbackId);
-            this.onMessageDetected(message);
-          }
+          this.injector.reconcileToolbarPosition(message);
           return;
-        }
-        const isArticleFallback = message.tagName.toLowerCase() === "article";
-        if (isArticleFallback) {
-          const hasActionBar = message.querySelector("div.z-0") !== null;
-          if (!hasActionBar) {
-            if (this.pendingMessages.has(fallbackId)) {
-              return;
-            }
-            this.pendingMessages.add(fallbackId);
-            newMessages++;
-            this.onMessageDetected(message);
-            return;
-          }
         }
         this.processedMessages.add(fallbackId);
         newMessages++;
         this.onMessageDetected(message);
         return;
       }
-      const isArticle = message.tagName.toLowerCase() === "article";
-      if (isArticle) {
-        const hasActionBar = message.querySelector("div.z-0") !== null;
-        if (!hasActionBar) {
-          logger$1.debug("Message still streaming (no action bar), skipping:", messageId);
-          if (this.pendingMessages.has(messageId)) {
-            return;
-          }
-          this.pendingMessages.add(messageId);
-          newMessages++;
-          this.onMessageDetected(message);
-          return;
-        }
-      }
+      this.injector.reconcileToolbarPosition(message);
       if (this.processedMessages.has(messageId)) {
-        const hasToolbar = message.querySelector(".aicopy-toolbar-container");
-        if (!hasToolbar) {
-          logger$1.debug("Message processed but toolbar missing, retrying injection:", messageId);
-          if (this.shouldRescan(messageId)) {
-            this.markRescan(messageId);
-            this.onMessageDetected(message);
-          }
-        }
         return;
       }
       this.processedMessages.add(messageId);
@@ -638,7 +584,6 @@ class MessageObserver {
   reset() {
     this.processedMessages.clear();
     this.pendingMessages.clear();
-    this.rescanCooldowns.clear();
     this.lastCopyButtonCount = 0;
     logger$1.info("Observer reset");
   }
@@ -657,7 +602,6 @@ class MessageObserver {
     this.observerContainer = container;
     this.processedMessages.clear();
     this.pendingMessages.clear();
-    this.rescanCooldowns.clear();
     this.observer = new MutationObserver((mutations) => {
       this.handleMutations(mutations);
     });
@@ -665,153 +609,70 @@ class MessageObserver {
     logger$1.info("[Observer] Rebound to new container");
     this.processExistingMessages();
   }
-  shouldRescan(messageId) {
-    const lastAttempt = this.rescanCooldowns.get(messageId) ?? 0;
-    return Date.now() - lastAttempt >= RESCAN_COOLDOWN_MS;
-  }
-  markRescan(messageId) {
-    this.rescanCooldowns.set(messageId, Date.now());
-  }
 }
 
 class ToolbarInjector {
   adapter;
   injectedElements = /* @__PURE__ */ new WeakSet();
-  pendingObservers = /* @__PURE__ */ new Map();
-  // Changed from WeakMap to Map for cleanup
+  /**
+   * Stores toolbars that are instantiated but waiting for the Action Bar to appear.
+   * key: Message Element, value: Toolbar Element
+   */
+  pendingToolbars = /* @__PURE__ */ new WeakMap();
   constructor(adapter) {
     this.adapter = adapter;
   }
   /**
-   * Inject toolbar into a message element
+   * Entry point to inject a toolbar.
+   * Effectively registers the toolbar and attempts an immediate reconciliation.
    */
   inject(messageElement, toolbar) {
     if (this.injectedElements.has(messageElement)) {
-      logger$1.debug("Toolbar already injected for this message");
       return false;
     }
-    if (messageElement.querySelector(".aicopy-toolbar-container")) {
-      logger$1.debug("Toolbar container already exists");
-      return false;
-    }
-    const isArticle = messageElement.tagName.toLowerCase() === "article";
-    const isModelResponse = messageElement.tagName.toLowerCase() === "model-response";
-    const selector = this.adapter.getActionBarSelector();
-    if (isArticle) {
-      return this.injectArticle(messageElement, toolbar, selector);
-    } else if (isModelResponse) {
-      return this.injectGemini(messageElement, toolbar, selector);
-    } else {
-      return this.injectNonArticle(messageElement, toolbar, selector);
-    }
-  }
-  /**
-   * Inject for article messages with smart waiting
-   */
-  injectArticle(article, toolbar, selector) {
-    const actionBar = safeQuerySelector(article, selector);
-    if (actionBar) {
-      logger$1.debug("Action bar found, injecting toolbar");
-      return this.doInject(article, actionBar, toolbar);
-    } else {
-      logger$1.debug("Action bar not found, waiting for it to appear...");
-      this.injectPending(article, toolbar, false);
-      this.waitForActionBar(article, toolbar, selector);
-      return false;
-    }
-  }
-  /**
-   * Inject for Gemini model-response elements
-   * Gemini's structure: action bar is INSIDE model-response
-   */
-  injectGemini(modelResponse, toolbar, selector) {
-    const actionBar = safeQuerySelector(modelResponse, selector);
-    if (actionBar) {
-      logger$1.debug("Gemini action bar found, injecting toolbar");
-      return this.doInject(modelResponse, actionBar, toolbar, true);
-    } else {
-      logger$1.debug("Gemini action bar not found, waiting for it to appear...");
-      this.injectPending(modelResponse, toolbar, true);
-      this.waitForActionBar(modelResponse, toolbar, selector, true);
-      return false;
-    }
-  }
-  /**
-   * Wait for action bar to appear using interval checking
-   */
-  waitForActionBar(article, toolbar, selector, isGemini = false) {
-    const existingTimer = this.pendingObservers.get(article);
-    if (existingTimer) {
-      window.clearInterval(existingTimer);
-    }
-    let attempts = 0;
-    const maxAttempts = 15;
-    const checkInterval = window.setInterval(() => {
-      attempts++;
-      const actionBar = safeQuerySelector(article, selector);
-      if (actionBar) {
-        window.clearInterval(checkInterval);
-        this.pendingObservers.delete(article);
-        logger$1.debug(`Action bar appeared after ${attempts} seconds`);
-        const existing = article.querySelector(".aicopy-toolbar-container");
-        if (existing) {
-          actionBar.parentElement?.insertBefore(existing, actionBar);
-          this.injectedElements.add(article);
-        } else {
-          this.doInject(article, actionBar, toolbar, isGemini);
-        }
-      } else if (attempts >= maxAttempts) {
-        window.clearInterval(checkInterval);
-        this.pendingObservers.delete(article);
-        logger$1.warn("Action bar did not appear after 15 seconds");
-      }
-    }, 1e3);
-    this.pendingObservers.set(article, checkInterval);
-  }
-  /**
-   * Inject for non-article messages
-   */
-  injectNonArticle(messageElement, toolbar, selector) {
-    const parent = messageElement.parentElement;
-    if (!parent) {
-      logger$1.warn("Message element has no parent");
-      return false;
-    }
-    const actionBarContainer = parent.nextElementSibling;
-    if (!actionBarContainer) {
-      logger$1.warn("No next sibling found after message parent");
-      return false;
-    }
-    const actionBar = actionBarContainer.matches(selector) ? actionBarContainer : safeQuerySelector(actionBarContainer, selector);
-    if (!actionBar) {
-      logger$1.warn("Action bar not found in expected location");
-      return false;
-    }
-    return this.doInject(messageElement, actionBar, toolbar);
-  }
-  /**
-   * Perform actual toolbar injection
-   */
-  doInject(messageElement, actionBar, toolbar, isGemini = false) {
-    const wrapper = this.createWrapper(toolbar, isGemini);
-    actionBar.parentElement?.insertBefore(wrapper, actionBar);
-    this.injectedElements.add(messageElement);
-    logger$1.debug("Toolbar injected successfully");
+    this.reconcileToolbarPosition(messageElement, toolbar);
     return true;
   }
   /**
-   * Inject a pending toolbar into the message element while waiting for action bar.
+   * Core Logic: Ensures toolbar is positioned immediately before the action bar.
+   * - If Wrapper exists: Moves it if misplaced.
+   * - If Wrapper missing: Injects it ONLY if Action Bar exists.
+   * - If Action Bar missing: Stores toolbar in pending map and waits (DOES NOT INJECT).
    */
-  injectPending(messageElement, toolbar, isGemini) {
-    if (messageElement.querySelector(".aicopy-toolbar-container")) {
+  reconcileToolbarPosition(message, newToolbar) {
+    const selector = this.adapter.getActionBarSelector();
+    const actionBar = message.querySelector(selector);
+    const wrapper = message.querySelector(".aicopy-toolbar-wrapper");
+    if (wrapper) {
+      if (actionBar && actionBar.parentElement) {
+        if (wrapper.nextElementSibling !== actionBar) {
+          requestAnimationFrame(() => {
+            if (wrapper.isConnected && actionBar.isConnected) {
+              actionBar.parentElement?.insertBefore(wrapper, actionBar);
+            }
+          });
+        }
+      }
       return;
     }
-    const wrapper = this.createWrapper(toolbar, isGemini);
-    messageElement.appendChild(wrapper);
+    if (newToolbar) {
+      this.pendingToolbars.set(message, newToolbar);
+    }
+    if (actionBar && actionBar.parentElement) {
+      const toolbarToInject = this.pendingToolbars.get(message);
+      if (toolbarToInject) {
+        const isGemini = message.tagName.toLowerCase() === "model-response";
+        const newWrapper = this.createWrapper(toolbarToInject, isGemini);
+        actionBar.parentElement.insertBefore(newWrapper, actionBar);
+        this.injectedElements.add(message);
+        this.pendingToolbars.delete(message);
+        logger$1.debug("Toolbar injected (strict mode)");
+      }
+    }
   }
   createWrapper(toolbar, isGemini) {
     const wrapper = document.createElement("div");
-    wrapper.className = "aicopy-toolbar-container";
+    wrapper.className = "aicopy-toolbar-wrapper";
     if (isGemini) {
       wrapper.style.cssText = "margin-bottom: 8px; padding-left: 60px;";
     } else {
@@ -824,10 +685,11 @@ class ToolbarInjector {
    * Remove toolbar from a message element
    */
   remove(messageElement) {
-    const toolbar = messageElement.querySelector(".aicopy-toolbar-container");
-    if (toolbar) {
-      toolbar.remove();
+    const wrapper = messageElement.querySelector(".aicopy-toolbar-wrapper");
+    if (wrapper) {
+      wrapper.remove();
       this.injectedElements.delete(messageElement);
+      this.pendingToolbars.delete(messageElement);
       logger$1.debug("Toolbar removed");
       return true;
     }
@@ -840,17 +702,12 @@ class ToolbarInjector {
     return this.injectedElements.has(messageElement);
   }
   /**
-   * Cleanup all pending observers and reset state
-   * Called when ContentScript is stopped (e.g., on page navigation)
+   * Cleanup state
    */
   cleanup() {
-    this.pendingObservers.forEach((timerId) => {
-      window.clearInterval(timerId);
-      logger$1.debug("[Injector] Cleared pending interval timer");
-    });
-    this.pendingObservers.clear();
     this.injectedElements = /* @__PURE__ */ new WeakSet();
-    logger$1.info("[Injector] Cleaned up all pending observers");
+    this.pendingToolbars = /* @__PURE__ */ new WeakMap();
+    logger$1.info("[Injector] Cleaned up state");
   }
 }
 
@@ -865,6 +722,13 @@ const toolbarStyles = `
   --gradient-light-from: var(--toolbar-gradient-light-from);
   --gradient-light-to: var(--toolbar-gradient-light-to);
   --theme-color: var(--toolbar-theme-color);
+}
+
+/* Wrapper for positioning (injected into DOM) */
+.aicopy-toolbar-wrapper {
+  display: block;
+  position: relative;
+  z-index: 50; /* Ensure it sits above standard content */
 }
 
 /* Notion-style floating toolbar */
@@ -2213,15 +2077,22 @@ class Toolbar {
    * Initialize word count with retry mechanism
    */
   async initWordCountWithRetry() {
+    logger$1.debug(`[WordCountDebug] initWordCountWithRetry called. pending=${this.pending}, inFlight=${this.wordCountInitInFlight}, initialized=${this.wordCountInitialized}`);
     if (this.pending || this.wordCountInitInFlight || this.wordCountInitialized) return;
     this.wordCountInitInFlight = true;
     const maxRetries = 10;
     let attempt = 0;
     await new Promise((resolve) => setTimeout(resolve, 500));
+    if (this.pending) {
+      logger$1.debug("[WordCountDebug] Aborting initWordCountWithRetry because pending became true during delay");
+      this.wordCountInitInFlight = false;
+      return;
+    }
     while (attempt < maxRetries) {
       try {
         const markdown = await this.callbacks.onCopyMarkdown();
         if (markdown && markdown.trim().length > 0) {
+          logger$1.debug(`[WordCountDebug] Attempt ${attempt + 1}: Got markdown length ${markdown.length}`);
           const stats2 = this.shadowRoot.querySelector("#word-stats");
           if (stats2) {
             const result = this.wordCounter.count(markdown);
@@ -2380,6 +2251,7 @@ class Toolbar {
    * Set pending/disabled state for streaming/thinking messages
    */
   setPending(isPending) {
+    logger$1.debug(`[WordCountDebug] setPending(${isPending}). Current pending=${this.pending}`);
     if (this.pending === isPending) return;
     this.pending = isPending;
     const toolbar = this.shadowRoot.querySelector(".aicopy-toolbar");
@@ -2397,6 +2269,7 @@ class Toolbar {
       stats.textContent = isPending ? "loading ..." : stats.textContent;
     }
     if (!isPending && !this.wordCountInitialized) {
+      logger$1.debug("[WordCountDebug] Pending cleared, triggering word count init");
       this.initWordCountWithRetry();
     }
   }
@@ -59663,7 +59536,7 @@ class ContentScript {
   // Track current theme to keep shadow-root tokens in sync
   currentThemeIsDark = false;
   constructor() {
-    logger$1.setLevel(LogLevel.INFO);
+    logger$1.setLevel(LogLevel.DEBUG);
     this.markdownParser = new MarkdownParser();
     this.mathClickHandler = new MathClickHandler();
     this.reRenderPanel = new ReRenderPanel();
@@ -59693,13 +59566,14 @@ class ContentScript {
       return;
     }
     logger$1.info("Starting extension on supported page");
+    this.injector = new ToolbarInjector(adapter);
     this.observer = new MessageObserver(
       adapter,
+      this.injector,
       (messageElement) => {
         this.handleNewMessage(messageElement);
       }
     );
-    this.injector = new ToolbarInjector(adapter);
     if ("isGemini" in adapter && typeof adapter.isGemini === "function" && adapter.isGemini()) {
       this.deepResearchHandler = new DeepResearchHandler();
       this.deepResearchHandler.enable();
@@ -59817,6 +59691,7 @@ class ContentScript {
       logger$1.debug("Toolbar already exists, skipping");
       const existingToolbar = existingToolbarContainer.__toolbar;
       if (hasActionBar && existingToolbar && typeof existingToolbar.setPending === "function") {
+        logger$1.debug(`[WordCountDebug] Existing toolbar found. Updating pending state to false (ActionBar exists)`);
         existingToolbar.setPending(false);
       }
       if (messageId) {
@@ -59841,6 +59716,7 @@ class ContentScript {
     const toolbar = new Toolbar(callbacks);
     toolbar.setTheme(this.currentThemeIsDark);
     if (!hasActionBar || adapter.isStreamingMessage(messageElement)) {
+      logger$1.debug(`[WordCountDebug] Setting new toolbar to pending. NoActionBar=${!hasActionBar}, IsStreaming=${adapter.isStreamingMessage(messageElement)}`);
       toolbar.setPending(true);
     }
     if (this.injector) {
@@ -60153,6 +60029,7 @@ function handleNavigation(contentScript) {
   return contentScript;
 }
 function initExtension() {
+  console.log("[AI-MarkDone] Script injected and running");
   logger$1.info("Initializing AI-MarkDone extension");
   logger$1.debug("Document readyState:", document.readyState);
   logger$1.debug("Current URL:", window.location.href);

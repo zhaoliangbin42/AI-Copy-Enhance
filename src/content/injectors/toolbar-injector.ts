@@ -1,185 +1,93 @@
 import { SiteAdapter } from '../adapters/base';
 import { logger } from '../../utils/logger';
-import { safeQuerySelector } from '../../utils/dom-utils';
 
 /**
- * Toolbar injector with smart action bar waiting
- * Inspired by successful ChatGPT extensions
+ * Toolbar injector with strict, event-driven reconciliation.
+ * Replaces legacy polling with "Reconcile on Signal" architecture.
  */
 export class ToolbarInjector {
     private adapter: SiteAdapter;
     private injectedElements = new WeakSet<HTMLElement>();
-    private pendingObservers = new Map<HTMLElement, number>();  // Changed from WeakMap to Map for cleanup
+    /**
+     * Stores toolbars that are instantiated but waiting for the Action Bar to appear.
+     * key: Message Element, value: Toolbar Element
+     */
+    private pendingToolbars = new WeakMap<HTMLElement, HTMLElement>();
 
     constructor(adapter: SiteAdapter) {
         this.adapter = adapter;
     }
 
     /**
-     * Inject toolbar into a message element
+     * Entry point to inject a toolbar.
+     * Effectively registers the toolbar and attempts an immediate reconciliation.
      */
     inject(messageElement: HTMLElement, toolbar: HTMLElement): boolean {
-        // Check if already injected
+        // If already fully injected and tracked, ignore
         if (this.injectedElements.has(messageElement)) {
-            logger.debug('Toolbar already injected for this message');
             return false;
         }
 
-        // Check if already has toolbar (injected by previous call)
-        if (messageElement.querySelector('.aicopy-toolbar-container')) {
-            logger.debug('Toolbar container already exists');
-            return false;
-        }
-
-        const isArticle = messageElement.tagName.toLowerCase() === 'article';
-        const isModelResponse = messageElement.tagName.toLowerCase() === 'model-response';
-        const selector = this.adapter.getActionBarSelector();
-
-        if (isArticle) {
-            return this.injectArticle(messageElement, toolbar, selector);
-        } else if (isModelResponse) {
-            // Gemini: action bar is INSIDE model-response
-            return this.injectGemini(messageElement, toolbar, selector);
-        } else {
-            return this.injectNonArticle(messageElement, toolbar, selector);
-        }
-    }
-
-    /**
-     * Inject for article messages with smart waiting
-     */
-    private injectArticle(article: HTMLElement, toolbar: HTMLElement, selector: string): boolean {
-        const actionBar = safeQuerySelector(article, selector);
-
-        if (actionBar) {
-            // Action bar already exists, inject immediately
-            logger.debug('Action bar found, injecting toolbar');
-            return this.doInject(article, actionBar, toolbar);
-        } else {
-            // Action bar not yet rendered, wait for it
-            logger.debug('Action bar not found, waiting for it to appear...');
-            this.injectPending(article, toolbar, false);
-            this.waitForActionBar(article, toolbar, selector);
-            return false;
-        }
-    }
-
-    /**
-     * Inject for Gemini model-response elements
-     * Gemini's structure: action bar is INSIDE model-response
-     */
-    private injectGemini(modelResponse: HTMLElement, toolbar: HTMLElement, selector: string): boolean {
-        const actionBar = safeQuerySelector(modelResponse, selector);
-
-        if (actionBar) {
-            // Action bar already exists, inject immediately with Gemini-specific padding
-            logger.debug('Gemini action bar found, injecting toolbar');
-            return this.doInject(modelResponse, actionBar, toolbar, true);
-        } else {
-            // Action bar not yet rendered, wait for it
-            logger.debug('Gemini action bar not found, waiting for it to appear...');
-            this.injectPending(modelResponse, toolbar, true);
-            this.waitForActionBar(modelResponse, toolbar, selector, true);
-            return false;
-        }
-    }
-
-    /**
-     * Wait for action bar to appear using interval checking
-     */
-    private waitForActionBar(article: HTMLElement, toolbar: HTMLElement, selector: string, isGemini: boolean = false): void {
-        // Clear any existing observer for this article
-        const existingTimer = this.pendingObservers.get(article);
-        if (existingTimer) {
-            window.clearInterval(existingTimer);
-        }
-
-        let attempts = 0;
-        const maxAttempts = 15; // 15 seconds max
-
-        const checkInterval = window.setInterval(() => {
-            attempts++;
-
-            const actionBar = safeQuerySelector(article, selector);
-            if (actionBar) {
-                window.clearInterval(checkInterval);
-                this.pendingObservers.delete(article);
-                logger.debug(`Action bar appeared after ${attempts} seconds`);
-                const existing = article.querySelector('.aicopy-toolbar-container');
-                if (existing) {
-                    actionBar.parentElement?.insertBefore(existing, actionBar);
-                    this.injectedElements.add(article);
-                } else {
-                    this.doInject(article, actionBar, toolbar, isGemini);
-                }
-            } else if (attempts >= maxAttempts) {
-                window.clearInterval(checkInterval);
-                this.pendingObservers.delete(article);
-                logger.warn('Action bar did not appear after 15 seconds');
-            }
-        }, 1000); // Check every 1 second
-
-        this.pendingObservers.set(article, checkInterval);
-    }
-
-    /**
-     * Inject for non-article messages
-     */
-    private injectNonArticle(messageElement: HTMLElement, toolbar: HTMLElement, selector: string): boolean {
-        const parent = messageElement.parentElement;
-        if (!parent) {
-            logger.warn('Message element has no parent');
-            return false;
-        }
-
-        const actionBarContainer = parent.nextElementSibling;
-        if (!actionBarContainer) {
-            logger.warn('No next sibling found after message parent');
-            return false;
-        }
-
-        const actionBar = actionBarContainer.matches(selector)
-            ? actionBarContainer
-            : safeQuerySelector(actionBarContainer as HTMLElement, selector);
-
-        if (!actionBar) {
-            logger.warn('Action bar not found in expected location');
-            return false;
-        }
-
-        return this.doInject(messageElement, actionBar, toolbar);
-    }
-
-    /**
-     * Perform actual toolbar injection
-     */
-    private doInject(messageElement: HTMLElement, actionBar: Element, toolbar: HTMLElement, isGemini: boolean = false): boolean {
-        const wrapper = this.createWrapper(toolbar, isGemini);
-
-        // Insert wrapper BEFORE the action bar
-        actionBar.parentElement?.insertBefore(wrapper, actionBar);
-
-        // Mark as injected
-        this.injectedElements.add(messageElement);
-
-        logger.debug('Toolbar injected successfully');
+        // Attempt reconciliation (which handles "Pending" logic internally)
+        this.reconcileToolbarPosition(messageElement, toolbar);
         return true;
     }
 
     /**
-     * Inject a pending toolbar into the message element while waiting for action bar.
+     * Core Logic: Ensures toolbar is positioned immediately before the action bar.
+     * - If Wrapper exists: Moves it if misplaced.
+     * - If Wrapper missing: Injects it ONLY if Action Bar exists.
+     * - If Action Bar missing: Stores toolbar in pending map and waits (DOES NOT INJECT).
      */
-    private injectPending(messageElement: HTMLElement, toolbar: HTMLElement, isGemini: boolean): void {
-        if (messageElement.querySelector('.aicopy-toolbar-container')) {
+    public reconcileToolbarPosition(message: HTMLElement, newToolbar?: HTMLElement): void {
+        const selector = this.adapter.getActionBarSelector();
+        const actionBar = message.querySelector(selector);
+        const wrapper = message.querySelector('.aicopy-toolbar-wrapper');
+
+        // 1. Wrapper Exists: Enforce Position
+        if (wrapper) {
+            if (actionBar && actionBar.parentElement) {
+                // Performance: Only move if order is wrong [Wrapper] -> [Action Bar]
+                if (wrapper.nextElementSibling !== actionBar) {
+                    // Use requestAnimationFrame to avoid layout thrashing
+                    requestAnimationFrame(() => {
+                        if (wrapper.isConnected && actionBar.isConnected) {
+                            actionBar.parentElement?.insertBefore(wrapper, actionBar);
+                        }
+                    });
+                }
+            }
             return;
         }
-        const wrapper = this.createWrapper(toolbar, isGemini);
-        messageElement.appendChild(wrapper);
+
+        // 2. Wrapper Missing: Attempt Injection
+
+        // Store the toolbar if provided (so we can inject it later if Action Bar is missing now)
+        if (newToolbar) {
+            this.pendingToolbars.set(message, newToolbar);
+        }
+
+        // Only inject if Action Bar is present
+        if (actionBar && actionBar.parentElement) {
+            const toolbarToInject = this.pendingToolbars.get(message);
+
+            if (toolbarToInject) {
+                const isGemini = message.tagName.toLowerCase() === 'model-response';
+                const newWrapper = this.createWrapper(toolbarToInject, isGemini);
+
+                actionBar.parentElement.insertBefore(newWrapper, actionBar);
+
+                this.injectedElements.add(message);
+                this.pendingToolbars.delete(message); // No longer pending
+                logger.debug('Toolbar injected (strict mode)');
+            }
+        }
+        // If no Action Bar, we do nothing. The toolbar sits in `pendingToolbars` waiting for a mutation.
     }
 
     private createWrapper(toolbar: HTMLElement, isGemini: boolean): HTMLElement {
         const wrapper = document.createElement('div');
-        wrapper.className = 'aicopy-toolbar-container';
+        wrapper.className = 'aicopy-toolbar-wrapper';
 
         if (isGemini) {
             // Gemini: match official toolbar padding (60px left), no fixed width
@@ -197,10 +105,11 @@ export class ToolbarInjector {
      * Remove toolbar from a message element
      */
     remove(messageElement: HTMLElement): boolean {
-        const toolbar = messageElement.querySelector('.aicopy-toolbar-container');
-        if (toolbar) {
-            toolbar.remove();
+        const wrapper = messageElement.querySelector('.aicopy-toolbar-wrapper');
+        if (wrapper) {
+            wrapper.remove();
             this.injectedElements.delete(messageElement);
+            this.pendingToolbars.delete(messageElement);
             logger.debug('Toolbar removed');
             return true;
         }
@@ -215,19 +124,11 @@ export class ToolbarInjector {
     }
 
     /**
-     * Cleanup all pending observers and reset state
-     * Called when ContentScript is stopped (e.g., on page navigation)
+     * Cleanup state
      */
     cleanup(): void {
-        // Clear all pending interval timers
-        this.pendingObservers.forEach((timerId) => {
-            window.clearInterval(timerId);
-            logger.debug('[Injector] Cleared pending interval timer');
-        });
-
-        this.pendingObservers.clear();
         this.injectedElements = new WeakSet<HTMLElement>();
-
-        logger.info('[Injector] Cleaned up all pending observers');
+        this.pendingToolbars = new WeakMap<HTMLElement, HTMLElement>();
+        logger.info('[Injector] Cleaned up state');
     }
 }

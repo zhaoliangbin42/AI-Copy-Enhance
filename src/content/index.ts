@@ -46,7 +46,7 @@ class ContentScript {
 
     constructor() {
         // Use INFO in production; switch to DEBUG locally when needed
-        logger.setLevel(LogLevel.INFO);
+        logger.setLevel(LogLevel.DEBUG);
 
         // Initialize components
         this.markdownParser = new MarkdownParser();
@@ -85,14 +85,17 @@ class ContentScript {
 
         logger.info('Starting extension on supported page');
 
-        // Create observer and injector
+        // Create injector first (needed by observer)
+        this.injector = new ToolbarInjector(adapter);
+
+        // Create observer with injector dependency
         this.observer = new MessageObserver(
             adapter,
+            this.injector,
             (messageElement) => {
                 this.handleNewMessage(messageElement);
             }
         );
-        this.injector = new ToolbarInjector(adapter);
 
         // Initialize Deep Research handler for Gemini
         if ('isGemini' in adapter && typeof adapter.isGemini === 'function' && adapter.isGemini()) {
@@ -266,6 +269,7 @@ class ContentScript {
             logger.debug('Toolbar already exists, skipping');
             const existingToolbar = (existingToolbarContainer as any).__toolbar;
             if (hasActionBar && existingToolbar && typeof existingToolbar.setPending === 'function') {
+                logger.debug(`[WordCountDebug] Existing toolbar found. Updating pending state to false (ActionBar exists)`);
                 existingToolbar.setPending(false);
             }
             // Remove from processing set since we're done
@@ -294,6 +298,7 @@ class ContentScript {
         const toolbar = new Toolbar(callbacks);
         toolbar.setTheme(this.currentThemeIsDark);
         if (!hasActionBar || adapter.isStreamingMessage(messageElement)) {
+            logger.debug(`[WordCountDebug] Setting new toolbar to pending. NoActionBar=${!hasActionBar}, IsStreaming=${adapter.isStreamingMessage(messageElement)}`);
             toolbar.setPending(true);
         }
 
@@ -754,6 +759,7 @@ function handleNavigation(contentScript: ContentScript | null): ContentScript | 
  * Initialize extension and setup URL change detection
  */
 function initExtension() {
+    console.log('[AI-MarkDone] Script injected and running');
     logger.info('Initializing AI-MarkDone extension');
     logger.debug('Document readyState:', document.readyState);
     logger.debug('Current URL:', window.location.href);

@@ -139,6 +139,7 @@ export class Toolbar {
      * Initialize word count with retry mechanism
      */
     private async initWordCountWithRetry(): Promise<void> {
+        logger.debug(`[WordCountDebug] initWordCountWithRetry called. pending=${this.pending}, inFlight=${this.wordCountInitInFlight}, initialized=${this.wordCountInitialized}`);
         if (this.pending || this.wordCountInitInFlight || this.wordCountInitialized) return;
         this.wordCountInitInFlight = true;
         const maxRetries = 10;
@@ -147,12 +148,22 @@ export class Toolbar {
         // Wait 500ms before first attempt
         await new Promise(resolve => setTimeout(resolve, 500));
 
+        // RACE CONDITION FIX:
+        // If pending was set to true during the delay (e.g. by handleNewMessage identifying streaming),
+        // we MUST abort this premature initialization.
+        if (this.pending) {
+            logger.debug('[WordCountDebug] Aborting initWordCountWithRetry because pending became true during delay');
+            this.wordCountInitInFlight = false;
+            return;
+        }
+
         while (attempt < maxRetries) {
             try {
                 const markdown = await this.callbacks.onCopyMarkdown();
 
                 // Check if we got actual content
                 if (markdown && markdown.trim().length > 0) {
+                    logger.debug(`[WordCountDebug] Attempt ${attempt + 1}: Got markdown length ${markdown.length}`);
                     const stats = this.shadowRoot.querySelector('#word-stats');
                     if (stats) {
                         const result = this.wordCounter.count(markdown);
@@ -367,6 +378,7 @@ export class Toolbar {
      * Set pending/disabled state for streaming/thinking messages
      */
     setPending(isPending: boolean): void {
+        logger.debug(`[WordCountDebug] setPending(${isPending}). Current pending=${this.pending}`);
         if (this.pending === isPending) return;
         this.pending = isPending;
 
@@ -388,6 +400,7 @@ export class Toolbar {
         }
 
         if (!isPending && !this.wordCountInitialized) {
+            logger.debug('[WordCountDebug] Pending cleared, triggering word count init');
             this.initWordCountWithRetry();
         }
     }

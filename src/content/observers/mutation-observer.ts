@@ -1,6 +1,7 @@
 import { SiteAdapter } from '../adapters/base';
 import { debounce } from '../../utils/dom-utils';
 import { logger } from '../../utils/logger';
+import { ToolbarInjector } from '../injectors/toolbar-injector';
 
 /**
  * Debounce delays for different operations
@@ -10,7 +11,7 @@ const DEBOUNCE_DELAYS = {
     SCROLL: 150,
     RESIZE: 300
 };
-const RESCAN_COOLDOWN_MS = 5000;
+
 
 /**
  * Message observer that monitors DOM for new messages
@@ -21,18 +22,21 @@ export class MessageObserver {
     private copyButtonObserver: MutationObserver | null = null;
     private intersectionObserver: IntersectionObserver | null = null;
     private adapter: SiteAdapter;
+    private injector: ToolbarInjector; // Dependency for reconciliation
     private observerContainer: HTMLElement | null = null;
     private processedMessages = new Set<string>();
     private pendingMessages = new Set<string>();
-    private rescanCooldowns = new Map<string, number>();
+
     private onMessageDetected: (element: HTMLElement) => void;
     private lastCopyButtonCount: number = 0;
 
     constructor(
         adapter: SiteAdapter,
+        injector: ToolbarInjector,
         onMessageDetected: (element: HTMLElement) => void
     ) {
         this.adapter = adapter;
+        this.injector = injector;
         this.onMessageDetected = onMessageDetected;
         this.handleMutations = debounce(this.handleMutations.bind(this), DEBOUNCE_DELAYS.MUTATION);
     }
@@ -167,6 +171,8 @@ export class MessageObserver {
         if (articles.length === 0) return;
 
         const lastArticle = articles[articles.length - 1] as HTMLElement;
+        this.injector.reconcileToolbarPosition(lastArticle); // Force reconcile
+
         const messageId = this.adapter.getMessageId(lastArticle);
 
         if (!messageId) {
@@ -175,20 +181,15 @@ export class MessageObserver {
             return;
         }
 
-        // Check if already processed
+        // FORCE update when copy buttons change (Streaming -> Done)
+        // index.ts will handle idempotency and setPending(false)
         if (this.processedMessages.has(messageId)) {
-            // Check if toolbar is missing
-            const hasToolbar = lastArticle.querySelector('.aicopy-toolbar-container');
-            if (!hasToolbar) {
-                logger.debug('Latest message processed but toolbar missing, retrying:', messageId);
-                this.onMessageDetected(lastArticle);
-            }
-            return;
+            logger.debug('[WordCountDebug] Streaming completion detected for known message (Copy button), forcing update:', messageId);
+        } else {
+            logger.debug('[WordCountDebug] New streaming message completed:', messageId);
+            this.processedMessages.add(messageId);
         }
 
-        // Mark as processed and inject toolbar
-        this.processedMessages.add(messageId);
-        logger.debug('New streaming message completed:', messageId);
         this.onMessageDetected(lastArticle);
     }
 
@@ -200,6 +201,9 @@ export class MessageObserver {
             entries.forEach((entry) => {
                 if (entry.isIntersecting && entry.target instanceof HTMLElement) {
                     const messageId = this.adapter.getMessageId(entry.target);
+                    // Reconcile on visibility
+                    this.injector.reconcileToolbarPosition(entry.target);
+
                     if (messageId && !this.processedMessages.has(messageId)) {
                         logger.debug('Message entered viewport:', messageId);
                         this.processedMessages.add(messageId);
@@ -241,7 +245,6 @@ export class MessageObserver {
             this.intersectionObserver = null;
         }
         this.observerContainer = null;
-        this.rescanCooldowns.clear();
 
         logger.info('Message observer stopped');
     }
@@ -249,20 +252,15 @@ export class MessageObserver {
     /**
      * Handle DOM mutations
      */
-    private handleMutations(mutations: MutationRecord[]): void {
-        logger.debug('Processing mutations:', mutations.length);
+    private handleMutations(_mutations: MutationRecord[]): void {
+        // Trigger Reconciliation Loop - processed inside processExistingMessages
+        // this.reconcileAllMessages();
 
         this.ensureObserverContainer();
-
-        // Check if streaming is in progress
-        const isStreaming = this.adapter.isStreamingMessage(document.body);
-        if (isStreaming) {
-            logger.debug('Streaming in progress, delaying processing');
-            return;
-        }
-
         this.processExistingMessages();
     }
+
+
 
     /**
      * Process all existing messages in the DOM
@@ -282,61 +280,23 @@ export class MessageObserver {
                 logger.debug('Message has no ID, using fallback:', fallbackId);
 
                 if (this.processedMessages.has(fallbackId)) {
-                    const hasToolbar = message.querySelector('.aicopy-toolbar-container');
-                    if (!hasToolbar && this.shouldRescan(fallbackId)) {
-                        this.markRescan(fallbackId);
-                        this.onMessageDetected(message);
-                    }
+                    // Reconcile anyway
+                    this.injector.reconcileToolbarPosition(message);
                     return;
                 }
 
-                const isArticleFallback = message.tagName.toLowerCase() === 'article';
-                if (isArticleFallback) {
-                    const hasActionBar = message.querySelector('div.z-0') !== null;
-                    if (!hasActionBar) {
-                        if (this.pendingMessages.has(fallbackId)) {
-                            return;
-                        }
-                        this.pendingMessages.add(fallbackId);
-                        newMessages++;
-                        this.onMessageDetected(message);
-                        return;
-                    }
-                }
+                // Inject logic handles existence check
                 this.processedMessages.add(fallbackId);
                 newMessages++;
                 this.onMessageDetected(message);
                 return;
             }
 
-            // Check if message is still streaming (missing action bar DOM)
-            const isArticle = message.tagName.toLowerCase() === 'article';
-            if (isArticle) {
-                // For article messages, check if action bar exists
-                const hasActionBar = message.querySelector('div.z-0') !== null;
-                if (!hasActionBar) {
-                    logger.debug('Message still streaming (no action bar), skipping:', messageId);
-                    if (this.pendingMessages.has(messageId)) {
-                        return;
-                    }
-                    this.pendingMessages.add(messageId);
-                    newMessages++;
-                    this.onMessageDetected(message);
-                    return;
-                }
-            }
+            // Always reconcile known messages
+            this.injector.reconcileToolbarPosition(message);
 
             // Skip if already processed
             if (this.processedMessages.has(messageId)) {
-                // Still try to inject toolbar if it's missing (handles late-loading action bars)
-                const hasToolbar = message.querySelector('.aicopy-toolbar-container');
-                if (!hasToolbar) {
-                    logger.debug('Message processed but toolbar missing, retrying injection:', messageId);
-                    if (this.shouldRescan(messageId)) {
-                        this.markRescan(messageId);
-                        this.onMessageDetected(message);
-                    }
-                }
                 return;
             }
 
@@ -366,7 +326,6 @@ export class MessageObserver {
     reset(): void {
         this.processedMessages.clear();
         this.pendingMessages.clear();
-        this.rescanCooldowns.clear();
         this.lastCopyButtonCount = 0;
         logger.info('Observer reset');
     }
@@ -389,7 +348,6 @@ export class MessageObserver {
         this.observerContainer = container;
         this.processedMessages.clear();
         this.pendingMessages.clear();
-        this.rescanCooldowns.clear();
 
         this.observer = new MutationObserver((mutations) => {
             this.handleMutations(mutations);
@@ -397,14 +355,5 @@ export class MessageObserver {
         this.observer.observe(container, { childList: true, subtree: true, attributes: false });
         logger.info('[Observer] Rebound to new container');
         this.processExistingMessages();
-    }
-
-    private shouldRescan(messageId: string): boolean {
-        const lastAttempt = this.rescanCooldowns.get(messageId) ?? 0;
-        return Date.now() - lastAttempt >= RESCAN_COOLDOWN_MS;
-    }
-
-    private markRescan(messageId: string): void {
-        this.rescanCooldowns.set(messageId, Date.now());
     }
 }
