@@ -111,6 +111,9 @@ class ChatGPTAdapter extends SiteAdapter {
   getActionBarSelector() {
     return "div.z-0.flex.min-h-\\[46px\\].justify-start";
   }
+  getCopyButtonSelector() {
+    return 'button[aria-label="Copy"]';
+  }
   extractMessageHTML(element) {
     const contentElement = element.querySelector(this.getMessageContentSelector());
     if (contentElement) {
@@ -206,13 +209,16 @@ class GeminiAdapter extends SiteAdapter {
     return url.includes("gemini.google.com");
   }
   getMessageSelector() {
-    return 'model-response, structured-content-container[data-test-id="message-content"]';
+    return "model-response";
   }
   getMessageContentSelector() {
     return ".model-response-text, #extended-response-markdown-content, .markdown";
   }
   getActionBarSelector() {
-    return ".response-container-footer";
+    return ".response-container-footer, .response-footer";
+  }
+  getCopyButtonSelector() {
+    return 'button[aria-label*="Copy"], button[data-tooltip*="Copy"]';
   }
   extractMessageHTML(element) {
     const contentElement = element.querySelector(this.getMessageContentSelector());
@@ -222,7 +228,17 @@ class GeminiAdapter extends SiteAdapter {
     return element.innerHTML;
   }
   isStreamingMessage(element) {
-    const footer = element.querySelector(".response-footer");
+    const hasStopButton = document.querySelector('button[aria-label*="Stop"]') !== null || document.querySelector('button[aria-label*="停止"]') !== null;
+    if (!hasStopButton) {
+      return false;
+    }
+    const allMessages = document.querySelectorAll(this.getMessageSelector());
+    if (allMessages.length === 0) return false;
+    const lastMessage = allMessages[allMessages.length - 1];
+    if (lastMessage !== element) {
+      return false;
+    }
+    const footer = element.querySelector(".response-footer, .response-container-footer");
     if (!footer) {
       return true;
     }
@@ -366,7 +382,6 @@ class MessageObserver {
   // Dependency for reconciliation
   observerContainer = null;
   processedMessages = /* @__PURE__ */ new Set();
-  pendingMessages = /* @__PURE__ */ new Set();
   onMessageDetected;
   lastCopyButtonCount = 0;
   constructor(adapter, injector, onMessageDetected) {
@@ -425,14 +440,15 @@ class MessageObserver {
    * This is more reliable than waiting for action bars
    */
   setupCopyButtonMonitoring() {
-    this.lastCopyButtonCount = document.querySelectorAll('button[aria-label="Copy"]').length;
+    const selector = this.adapter.getCopyButtonSelector();
+    this.lastCopyButtonCount = document.querySelectorAll(selector).length;
     logger$1.debug(`Initial copy button count: ${this.lastCopyButtonCount}`);
     const handleCopyButtonChange = debounce(() => {
-      const currentCount = document.querySelectorAll('button[aria-label="Copy"]').length;
+      const currentCount = document.querySelectorAll(selector).length;
       if (currentCount > this.lastCopyButtonCount) {
         logger$1.debug(`Copy button added: ${this.lastCopyButtonCount} → ${currentCount}`);
         this.lastCopyButtonCount = currentCount;
-        this.processLatestMessage();
+        this.handleStreamingComplete();
       }
     }, 300);
     this.copyButtonObserver = new MutationObserver((mutations) => {
@@ -440,11 +456,11 @@ class MessageObserver {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node instanceof HTMLElement) {
-            if (node.matches('button[aria-label="Copy"]')) {
+            if (node.matches(selector)) {
               foundNewButton = true;
               break;
             }
-            if (node.querySelector('button[aria-label="Copy"]')) {
+            if (node.querySelector(selector)) {
               foundNewButton = true;
               break;
             }
@@ -464,26 +480,50 @@ class MessageObserver {
     logger$1.debug("Copy button monitoring active");
   }
   /**
-   * Process only the latest message (for streaming completion)
+   * Handle streaming completion (Copy Button appeared)
+   * This is triggered when a new copy button is added to the page.
    */
-  processLatestMessage() {
-    const articles = document.querySelectorAll("article");
+  handleStreamingComplete() {
+    const selector = this.adapter.getMessageSelector();
+    const articles = document.querySelectorAll(selector);
     if (articles.length === 0) return;
     const lastArticle = articles[articles.length - 1];
-    this.injector.reconcileToolbarPosition(lastArticle);
     const messageId = this.adapter.getMessageId(lastArticle);
-    if (!messageId) {
-      logger$1.debug("Latest article has no ID, processing anyway");
+    const currentState = this.injector.getState(lastArticle);
+    if (currentState === "null") {
+      if (messageId && !this.processedMessages.has(messageId)) {
+        this.processedMessages.add(messageId);
+      }
       this.onMessageDetected(lastArticle);
-      return;
+    } else if (currentState === "injected") {
+      this.onMessageDetected(lastArticle);
+    } else if (currentState === "active") {
+      logger$1.debug("[StreamingComplete] Toolbar already active, refreshing word count");
+      this.refreshWordCount(lastArticle);
     }
-    if (this.processedMessages.has(messageId)) {
-      logger$1.debug("[WordCountDebug] Streaming completion detected for known message (Copy button), forcing update:", messageId);
-    } else {
-      logger$1.debug("[WordCountDebug] New streaming message completed:", messageId);
-      this.processedMessages.add(messageId);
+    setTimeout(() => {
+      const allMessages = document.querySelectorAll(selector);
+      allMessages.forEach((msg) => {
+        if (!(msg instanceof HTMLElement)) return;
+        const state = this.injector.getState(msg);
+        if (state === "injected") {
+          this.onMessageDetected(msg);
+        }
+      });
+    }, 5e3);
+  }
+  /**
+   * Refresh word count for an already active toolbar
+   * Used for Deep Think scenarios where content loads progressively
+   */
+  refreshWordCount(messageElement) {
+    const toolbarContainer = messageElement.querySelector(".aicopy-toolbar-container");
+    if (!toolbarContainer) return;
+    const toolbar = toolbarContainer.__toolbar;
+    if (toolbar && typeof toolbar.refreshWordCount === "function") {
+      toolbar.refreshWordCount();
+      logger$1.debug("[StreamingComplete] Word count refreshed");
     }
-    this.onMessageDetected(lastArticle);
   }
   /**
    * Setup IntersectionObserver to detect messages entering viewport
@@ -493,7 +533,6 @@ class MessageObserver {
       entries.forEach((entry) => {
         if (entry.isIntersecting && entry.target instanceof HTMLElement) {
           const messageId = this.adapter.getMessageId(entry.target);
-          this.injector.reconcileToolbarPosition(entry.target);
           if (messageId && !this.processedMessages.has(messageId)) {
             logger$1.debug("Message entered viewport:", messageId);
             this.processedMessages.add(messageId);
@@ -544,16 +583,13 @@ class MessageObserver {
    */
   processExistingMessages() {
     const messages = document.querySelectorAll(this.adapter.getMessageSelector());
-    logger$1.debug(`Found ${messages.length} messages (${this.processedMessages.size} already processed)`);
     let newMessages = 0;
     messages.forEach((message) => {
       if (!(message instanceof HTMLElement)) return;
       const messageId = this.adapter.getMessageId(message);
       if (!messageId) {
         const fallbackId = `msg-${Array.from(messages).indexOf(message)}`;
-        logger$1.debug("Message has no ID, using fallback:", fallbackId);
         if (this.processedMessages.has(fallbackId)) {
-          this.injector.reconcileToolbarPosition(message);
           return;
         }
         this.processedMessages.add(fallbackId);
@@ -561,14 +597,11 @@ class MessageObserver {
         this.onMessageDetected(message);
         return;
       }
-      this.injector.reconcileToolbarPosition(message);
       if (this.processedMessages.has(messageId)) {
         return;
       }
       this.processedMessages.add(messageId);
-      this.pendingMessages.delete(messageId);
       newMessages++;
-      logger$1.debug("New message detected:", messageId);
       this.onMessageDetected(message);
       if (this.intersectionObserver) {
         this.intersectionObserver.observe(message);
@@ -583,7 +616,6 @@ class MessageObserver {
    */
   reset() {
     this.processedMessages.clear();
-    this.pendingMessages.clear();
     this.lastCopyButtonCount = 0;
     logger$1.info("Observer reset");
   }
@@ -601,7 +633,6 @@ class MessageObserver {
     }
     this.observerContainer = container;
     this.processedMessages.clear();
-    this.pendingMessages.clear();
     this.observer = new MutationObserver((mutations) => {
       this.handleMutations(mutations);
     });
@@ -613,61 +644,76 @@ class MessageObserver {
 
 class ToolbarInjector {
   adapter;
-  injectedElements = /* @__PURE__ */ new WeakSet();
-  /**
-   * Stores toolbars that are instantiated but waiting for the Action Bar to appear.
-   * key: Message Element, value: Toolbar Element
-   */
-  pendingToolbars = /* @__PURE__ */ new WeakMap();
+  messageStates = /* @__PURE__ */ new WeakMap();
   constructor(adapter) {
     this.adapter = adapter;
   }
   /**
-   * Entry point to inject a toolbar.
-   * Effectively registers the toolbar and attempts an immediate reconciliation.
+   * Stage 1: Inject toolbar (hidden state)
+   * Creates DOM and inserts into page, but keeps it hidden.
    */
   inject(messageElement, toolbar) {
-    if (this.injectedElements.has(messageElement)) {
+    const currentState = this.getState(messageElement);
+    logger$1.info(`[toolbar] 🔧 inject() called. currentState=${currentState}`);
+    if (currentState !== "null" /* NULL */) {
+      logger$1.info(`[toolbar] ⏭️  inject() skipped: already ${currentState}`);
       return false;
     }
-    this.reconcileToolbarPosition(messageElement, toolbar);
+    const selector = this.adapter.getActionBarSelector();
+    const actionBar = messageElement.querySelector(selector);
+    if (!actionBar || !actionBar.parentElement) {
+      return false;
+    }
+    const isGemini = messageElement.tagName.toLowerCase() === "model-response";
+    const wrapper = this.createWrapper(toolbar, isGemini);
+    wrapper.style.display = "none";
+    actionBar.parentElement.insertBefore(wrapper, actionBar);
+    this.messageStates.set(messageElement, "injected" /* INJECTED */);
     return true;
   }
   /**
-   * Core Logic: Ensures toolbar is positioned immediately before the action bar.
-   * - If Wrapper exists: Moves it if misplaced.
-   * - If Wrapper missing: Injects it ONLY if Action Bar exists.
-   * - If Action Bar missing: Stores toolbar in pending map and waits (DOES NOT INJECT).
+   * Stage 2: Activate toolbar (visible + initialized)
+   * Makes toolbar visible and returns true to signal word count initialization.
    */
-  reconcileToolbarPosition(message, newToolbar) {
+  activate(messageElement) {
+    const currentState = this.getState(messageElement);
+    if (currentState !== "injected" /* INJECTED */) {
+      return false;
+    }
+    const wrapper = messageElement.querySelector(".aicopy-toolbar-wrapper");
+    if (!wrapper) {
+      logger$1.error(`[toolbar] ❌ activate() failed: Wrapper not found in DOM`);
+      return false;
+    }
+    logger$1.info(`[toolbar] 👁️  Making wrapper visible (display: flex)`);
+    wrapper.style.display = "flex";
+    this.messageStates.set(messageElement, "active" /* ACTIVE */);
+    return true;
+  }
+  /**
+   * Get current state of toolbar for a message
+   */
+  getState(messageElement) {
+    return this.messageStates.get(messageElement) || "null" /* NULL */;
+  }
+  /**
+   * Reconcile toolbar position (legacy compatibility)
+   * Ensures toolbar is correctly positioned before action bar.
+   */
+  reconcileToolbarPosition(message) {
     const selector = this.adapter.getActionBarSelector();
     const actionBar = message.querySelector(selector);
     const wrapper = message.querySelector(".aicopy-toolbar-wrapper");
-    if (wrapper) {
-      if (actionBar && actionBar.parentElement) {
-        if (wrapper.nextElementSibling !== actionBar) {
-          requestAnimationFrame(() => {
-            if (wrapper.isConnected && actionBar.isConnected) {
-              actionBar.parentElement?.insertBefore(wrapper, actionBar);
-            }
-          });
-        }
-      }
+    if (!wrapper || !actionBar || !actionBar.parentElement) {
       return;
     }
-    if (newToolbar) {
-      this.pendingToolbars.set(message, newToolbar);
-    }
-    if (actionBar && actionBar.parentElement) {
-      const toolbarToInject = this.pendingToolbars.get(message);
-      if (toolbarToInject) {
-        const isGemini = message.tagName.toLowerCase() === "model-response";
-        const newWrapper = this.createWrapper(toolbarToInject, isGemini);
-        actionBar.parentElement.insertBefore(newWrapper, actionBar);
-        this.injectedElements.add(message);
-        this.pendingToolbars.delete(message);
-        logger$1.debug("Toolbar injected (strict mode)");
-      }
+    if (wrapper.nextElementSibling !== actionBar) {
+      requestAnimationFrame(() => {
+        if (wrapper.isConnected && actionBar.isConnected) {
+          actionBar.parentElement?.insertBefore(wrapper, actionBar);
+          logger$1.debug("[Injector] Toolbar position reconciled");
+        }
+      });
     }
   }
   createWrapper(toolbar, isGemini) {
@@ -688,25 +734,24 @@ class ToolbarInjector {
     const wrapper = messageElement.querySelector(".aicopy-toolbar-wrapper");
     if (wrapper) {
       wrapper.remove();
-      this.injectedElements.delete(messageElement);
-      this.pendingToolbars.delete(messageElement);
-      logger$1.debug("Toolbar removed");
+      this.messageStates.delete(messageElement);
+      logger$1.debug("[Injector] Toolbar removed");
       return true;
     }
     return false;
   }
   /**
-   * Check if toolbar is already injected
+   * Check if toolbar is already injected (INJECTED or ACTIVE state)
    */
   isInjected(messageElement) {
-    return this.injectedElements.has(messageElement);
+    const state = this.getState(messageElement);
+    return state === "injected" /* INJECTED */ || state === "active" /* ACTIVE */;
   }
   /**
    * Cleanup state
    */
   cleanup() {
-    this.injectedElements = /* @__PURE__ */ new WeakSet();
-    this.pendingToolbars = /* @__PURE__ */ new WeakMap();
+    this.messageStates = /* @__PURE__ */ new WeakMap();
     logger$1.info("[Injector] Cleaned up state");
   }
 }
@@ -2077,40 +2122,24 @@ class Toolbar {
    * Initialize word count with retry mechanism
    */
   async initWordCountWithRetry() {
-    logger$1.debug(`[WordCountDebug] initWordCountWithRetry called. pending=${this.pending}, inFlight=${this.wordCountInitInFlight}, initialized=${this.wordCountInitialized}`);
     if (this.pending || this.wordCountInitInFlight || this.wordCountInitialized) return;
     this.wordCountInitInFlight = true;
     const maxRetries = 10;
     let attempt = 0;
     await new Promise((resolve) => setTimeout(resolve, 500));
     if (this.pending) {
-      logger$1.debug("[WordCountDebug] Aborting initWordCountWithRetry because pending became true during delay");
       this.wordCountInitInFlight = false;
       return;
     }
     while (attempt < maxRetries) {
       try {
         const markdown = await this.callbacks.onCopyMarkdown();
-        if (markdown && markdown.trim().length > 0) {
-          logger$1.debug(`[WordCountDebug] Attempt ${attempt + 1}: Got markdown length ${markdown.length}`);
-          const stats2 = this.shadowRoot.querySelector("#word-stats");
-          if (stats2) {
-            const result = this.wordCounter.count(markdown);
-            const formatted = this.wordCounter.format(result);
-            if (formatted !== "No content") {
-              const parts = formatted.split(" / ");
-              if (parts.length >= 2) {
-                stats2.innerHTML = `<div>${parts[0]}</div><div>${parts.slice(1).join(" ")}</div>`;
-              } else {
-                stats2.textContent = formatted;
-              }
-              this.wordCountInitialized = true;
-              this.wordCountInitInFlight = false;
-              this.setPending(false);
-              logger$1.debug(`[WordCount] Initialized on attempt ${attempt + 1}`);
-              return;
-            }
-          }
+        if (markdown && markdown.trim().length > 0 && this.updateStatsDisplay(markdown)) {
+          this.wordCountInitialized = true;
+          this.wordCountInitInFlight = false;
+          this.setPending(false);
+          logger$1.debug(`[WordCount] Initialized on attempt ${attempt + 1}`);
+          return;
         }
       } catch (error) {
         logger$1.debug("[WordCount] Retry failed:", error);
@@ -2125,6 +2154,41 @@ class Toolbar {
     const stats = this.shadowRoot.querySelector("#word-stats");
     if (stats) stats.textContent = "Click copy";
     this.wordCountInitInFlight = false;
+  }
+  /**
+   * Update stats display with formatted word count
+   * Returns true if successful
+   */
+  updateStatsDisplay(markdown) {
+    if (!markdown || markdown.trim().length === 0) return false;
+    const stats = this.shadowRoot.querySelector("#word-stats");
+    if (!stats) return false;
+    const result = this.wordCounter.count(markdown);
+    const formatted = this.wordCounter.format(result);
+    if (formatted !== "No content") {
+      const parts = formatted.split(" / ");
+      if (parts.length >= 2) {
+        stats.innerHTML = `<div>${parts[0]}</div><div>${parts.slice(1).join(" ")}</div>`;
+      } else {
+        stats.textContent = formatted;
+      }
+      return true;
+    }
+    return false;
+  }
+  /**
+   * Refresh word count display
+   * Public method for external triggers (e.g. Deep Think content updates, copy action)
+   */
+  async refreshWordCount() {
+    try {
+      const markdown = await this.callbacks.onCopyMarkdown();
+      if (this.updateStatsDisplay(markdown)) {
+        logger$1.debug("[WordCount] Refreshed");
+      }
+    } catch (error) {
+      logger$1.warn("[WordCount] Refresh failed:", error);
+    }
   }
   /**
    * Create icon button with hover tooltip (using feedback mechanism)
@@ -2170,6 +2234,7 @@ class Toolbar {
       const markdown = await this.callbacks.onCopyMarkdown();
       const success = await copyToClipboard(markdown);
       if (success) {
+        await this.refreshWordCount();
         const originalIcon = btn.innerHTML;
         btn.innerHTML = Icons.check;
         btn.style.color = "var(--theme-color)";
@@ -2251,7 +2316,6 @@ class Toolbar {
    * Set pending/disabled state for streaming/thinking messages
    */
   setPending(isPending) {
-    logger$1.debug(`[WordCountDebug] setPending(${isPending}). Current pending=${this.pending}`);
     if (this.pending === isPending) return;
     this.pending = isPending;
     const toolbar = this.shadowRoot.querySelector(".aicopy-toolbar");
@@ -2269,7 +2333,6 @@ class Toolbar {
       stats.textContent = isPending ? "loading ..." : stats.textContent;
     }
     if (!isPending && !this.wordCountInitialized) {
-      logger$1.debug("[WordCountDebug] Pending cleared, triggering word count init");
       this.initWordCountWithRetry();
     }
   }
@@ -59653,24 +59716,17 @@ class ContentScript {
   }
   /**
    * Handle new message detected
+   * State machine: NULL → inject (hidden) → activate (visible + init)
    */
   handleNewMessage(messageElement) {
     logger$1.debug("Handling new message");
     const adapter = adapterRegistry.getAdapter();
     if (!adapter) return;
-    const isArticle = messageElement.tagName.toLowerCase() === "article";
-    const isModelResponse = messageElement.tagName.toLowerCase() === "model-response";
-    const hasActionBar = isArticle || isModelResponse ? messageElement.querySelector(adapter.getActionBarSelector()) !== null : true;
     const messageId = adapter.getMessageId(messageElement);
     if (!messageId) {
       logger$1.warn("Message has no ID, cannot track processing state");
       if (this.processingElements.has(messageElement)) {
         logger$1.debug("Element is already being processed (no ID), skipping");
-        return;
-      }
-      const hasToolbar = messageElement.querySelector(".aicopy-toolbar-container");
-      if (hasToolbar) {
-        logger$1.debug("Toolbar already exists (no ID), skipping");
         return;
       }
       this.processingElements.add(messageElement);
@@ -59686,55 +59742,61 @@ class ContentScript {
       logger$1.info("[ContentScript] First message detected, checking bookmark navigation");
       this.checkBookmarkNavigation();
     }
-    const existingToolbarContainer = messageElement.querySelector(".aicopy-toolbar-container");
-    if (existingToolbarContainer) {
-      logger$1.debug("Toolbar already exists, skipping");
-      const existingToolbar = existingToolbarContainer.__toolbar;
-      if (hasActionBar && existingToolbar && typeof existingToolbar.setPending === "function") {
-        logger$1.debug(`[WordCountDebug] Existing toolbar found. Updating pending state to false (ActionBar exists)`);
-        existingToolbar.setPending(false);
+    const currentState = this.injector?.getState(messageElement);
+    if (currentState === "null") {
+      const callbacks = {
+        onCopyMarkdown: async () => {
+          return this.getMarkdown(messageElement);
+        },
+        onViewSource: () => {
+          this.showSourceModal(messageElement);
+        },
+        onReRender: () => {
+          this.showReRenderPanel(messageElement);
+        },
+        onBookmark: async () => {
+          await this.handleBookmark(messageElement);
+        }
+      };
+      const toolbar = new Toolbar(callbacks);
+      toolbar.setTheme(this.currentThemeIsDark);
+      if (this.injector) {
+        const injected = this.injector.inject(messageElement, toolbar.getElement());
+        if (injected) {
+          const toolbarContainer = toolbar.getElement();
+          toolbarContainer.__toolbar = toolbar;
+          const position = this.getMessagePosition(messageElement);
+          this.toolbars.set(position, toolbar);
+          const isBookmarked = this.bookmarkedPositions.has(position);
+          toolbar.setBookmarkState(isBookmarked);
+          this.mathClickHandler.enable(messageElement);
+          const isStreaming = adapter.isStreamingMessage && adapter.isStreamingMessage(messageElement);
+          if (!isStreaming) {
+            const activated = this.injector.activate(messageElement);
+            if (activated) {
+              toolbar.setPending(false);
+            }
+          }
+        }
       }
-      if (messageId) {
-        this.processingMessages.delete(messageId);
+    } else if (currentState === "injected") {
+      if (this.injector) {
+        const activated = this.injector.activate(messageElement);
+        if (activated) {
+          const toolbarContainer = messageElement.querySelector(".aicopy-toolbar-container");
+          if (toolbarContainer) {
+            const toolbar = toolbarContainer.__toolbar;
+            if (toolbar && typeof toolbar.setPending === "function") {
+              toolbar.setPending(false);
+            }
+          }
+        }
       }
-      return;
-    }
-    const callbacks = {
-      onCopyMarkdown: async () => {
-        return this.getMarkdown(messageElement);
-      },
-      onViewSource: () => {
-        this.showSourceModal(messageElement);
-      },
-      onReRender: () => {
-        this.showReRenderPanel(messageElement);
-      },
-      onBookmark: async () => {
-        await this.handleBookmark(messageElement);
-      }
-    };
-    const toolbar = new Toolbar(callbacks);
-    toolbar.setTheme(this.currentThemeIsDark);
-    if (!hasActionBar || adapter.isStreamingMessage(messageElement)) {
-      logger$1.debug(`[WordCountDebug] Setting new toolbar to pending. NoActionBar=${!hasActionBar}, IsStreaming=${adapter.isStreamingMessage(messageElement)}`);
-      toolbar.setPending(true);
-    }
-    if (this.injector) {
-      this.injector.inject(messageElement, toolbar.getElement());
-    }
-    const toolbarContainer = messageElement.querySelector(".aicopy-toolbar-container");
-    if (toolbarContainer) {
-      toolbarContainer.__toolbar = toolbar;
-    }
-    const position = this.getMessagePosition(messageElement);
-    this.toolbars.set(position, toolbar);
-    const isBookmarked = this.bookmarkedPositions.has(position);
-    toolbar.setBookmarkState(isBookmarked);
-    this.mathClickHandler.enable(messageElement);
+    } else ;
     if (messageId) {
       setTimeout(() => {
         this.processingMessages.delete(messageId);
-        logger$1.info(`[DEBUG] ⏰ Timeout: Removed ${messageId}. Size: ${this.processingMessages.size}`);
+        logger$1.debug(`[handleNewMessage] Removed ${messageId} from processing set`);
       }, 1e3);
     }
     logger$1.info("=== handleNewMessage END ===");

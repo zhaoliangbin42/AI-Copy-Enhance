@@ -25,7 +25,6 @@ export class MessageObserver {
     private injector: ToolbarInjector; // Dependency for reconciliation
     private observerContainer: HTMLElement | null = null;
     private processedMessages = new Set<string>();
-    private pendingMessages = new Set<string>();
 
     private onMessageDetected: (element: HTMLElement) => void;
     private lastCopyButtonCount: number = 0;
@@ -108,20 +107,23 @@ export class MessageObserver {
      * This is more reliable than waiting for action bars
      */
     private setupCopyButtonMonitoring(): void {
+        // P0: Use adapter to get copy button selector
+        const selector = this.adapter.getCopyButtonSelector();
+
         // Count initial copy buttons
-        this.lastCopyButtonCount = document.querySelectorAll('button[aria-label="Copy"]').length;
+        this.lastCopyButtonCount = document.querySelectorAll(selector).length;
         logger.debug(`Initial copy button count: ${this.lastCopyButtonCount}`);
 
         // Debounced handler to prevent multiple rapid triggers
         const handleCopyButtonChange = debounce(() => {
-            const currentCount = document.querySelectorAll('button[aria-label="Copy"]').length;
+            const currentCount = document.querySelectorAll(selector).length;
             if (currentCount > this.lastCopyButtonCount) {
                 logger.debug(`Copy button added: ${this.lastCopyButtonCount} → ${currentCount}`);
                 this.lastCopyButtonCount = currentCount;
 
                 // New copy button = streaming message completed
-                // Process only the last article (most recent message)
-                this.processLatestMessage();
+                // Handle streaming completion (inject or activate)
+                this.handleStreamingComplete();
             }
         }, 300); // 300ms debounce to prevent multiple triggers
 
@@ -134,12 +136,12 @@ export class MessageObserver {
                 for (const node of mutation.addedNodes) {
                     if (node instanceof HTMLElement) {
                         // Check if the node itself is a copy button
-                        if (node.matches('button[aria-label="Copy"]')) {
+                        if (node.matches(selector)) {
                             foundNewButton = true;
                             break;
                         }
                         // Or if it contains a copy button
-                        if (node.querySelector('button[aria-label="Copy"]')) {
+                        if (node.querySelector(selector)) {
                             foundNewButton = true;
                             break;
                         }
@@ -164,33 +166,65 @@ export class MessageObserver {
     }
 
     /**
-     * Process only the latest message (for streaming completion)
+     * Handle streaming completion (Copy Button appeared)
+     * This is triggered when a new copy button is added to the page.
      */
-    private processLatestMessage(): void {
-        const articles = document.querySelectorAll('article');
+    private handleStreamingComplete(): void {
+        // P0: Use adapter to get message selector
+        const selector = this.adapter.getMessageSelector();
+        const articles = document.querySelectorAll(selector);
         if (articles.length === 0) return;
 
         const lastArticle = articles[articles.length - 1] as HTMLElement;
-        this.injector.reconcileToolbarPosition(lastArticle); // Force reconcile
-
         const messageId = this.adapter.getMessageId(lastArticle);
 
-        if (!messageId) {
-            logger.debug('Latest article has no ID, processing anyway');
+        // Get current toolbar state
+        const currentState = this.injector.getState(lastArticle);
+
+        if (currentState === 'null') {
+            // No toolbar yet → trigger creation and injection
+            if (messageId && !this.processedMessages.has(messageId)) {
+                this.processedMessages.add(messageId);
+            }
             this.onMessageDetected(lastArticle);
-            return;
+        } else if (currentState === 'injected') {
+            // Toolbar injected but not activated → activate it
+            this.onMessageDetected(lastArticle);
+        } else if (currentState === 'active') {
+            // 🔑 FIX: Toolbar already active (e.g. Deep Think scenario)
+            // Native Action Bar just appeared → refresh word count
+            logger.debug('[StreamingComplete] Toolbar already active, refreshing word count');
+            this.refreshWordCount(lastArticle);
         }
 
-        // FORCE update when copy buttons change (Streaming -> Done)
-        // index.ts will handle idempotency and setPending(false)
-        if (this.processedMessages.has(messageId)) {
-            logger.debug('[WordCountDebug] Streaming completion detected for known message (Copy button), forcing update:', messageId);
-        } else {
-            logger.debug('[WordCountDebug] New streaming message completed:', messageId);
-            this.processedMessages.add(messageId);
-        }
+        // 🔑 Fallback: Scan for missed toolbars after 5 seconds
+        // This ensures 100% injection even if something goes wrong
+        setTimeout(() => {
+            const allMessages = document.querySelectorAll(selector);
+            allMessages.forEach(msg => {
+                if (!(msg instanceof HTMLElement)) return;
+                const state = this.injector.getState(msg);
+                if (state === 'injected') {
+                    // Found hidden toolbar → activate it
+                    this.onMessageDetected(msg);
+                }
+            });
+        }, 5000);
+    }
 
-        this.onMessageDetected(lastArticle);
+    /**
+     * Refresh word count for an already active toolbar
+     * Used for Deep Think scenarios where content loads progressively
+     */
+    private refreshWordCount(messageElement: HTMLElement): void {
+        const toolbarContainer = messageElement.querySelector('.aicopy-toolbar-container');
+        if (!toolbarContainer) return;
+
+        const toolbar = (toolbarContainer as any).__toolbar;
+        if (toolbar && typeof toolbar.refreshWordCount === 'function') {
+            toolbar.refreshWordCount();
+            logger.debug('[StreamingComplete] Word count refreshed');
+        }
     }
 
     /**
@@ -201,8 +235,6 @@ export class MessageObserver {
             entries.forEach((entry) => {
                 if (entry.isIntersecting && entry.target instanceof HTMLElement) {
                     const messageId = this.adapter.getMessageId(entry.target);
-                    // Reconcile on visibility
-                    this.injector.reconcileToolbarPosition(entry.target);
 
                     if (messageId && !this.processedMessages.has(messageId)) {
                         logger.debug('Message entered viewport:', messageId);
@@ -267,33 +299,27 @@ export class MessageObserver {
      */
     private processExistingMessages(): void {
         const messages = document.querySelectorAll(this.adapter.getMessageSelector());
-        logger.debug(`Found ${messages.length} messages (${this.processedMessages.size} already processed)`);
 
         let newMessages = 0;
         messages.forEach((message) => {
             if (!(message instanceof HTMLElement)) return;
 
             const messageId = this.adapter.getMessageId(message);
+
             if (!messageId) {
                 // Generate a fallback ID based on position if no ID attribute
                 const fallbackId = `msg-${Array.from(messages).indexOf(message)}`;
-                logger.debug('Message has no ID, using fallback:', fallbackId);
 
                 if (this.processedMessages.has(fallbackId)) {
-                    // Reconcile anyway
-                    this.injector.reconcileToolbarPosition(message);
                     return;
                 }
 
-                // Inject logic handles existence check
+                // Mark as processed and trigger creation
                 this.processedMessages.add(fallbackId);
                 newMessages++;
                 this.onMessageDetected(message);
                 return;
             }
-
-            // Always reconcile known messages
-            this.injector.reconcileToolbarPosition(message);
 
             // Skip if already processed
             if (this.processedMessages.has(messageId)) {
@@ -302,11 +328,9 @@ export class MessageObserver {
 
             // Mark as processed
             this.processedMessages.add(messageId);
-            this.pendingMessages.delete(messageId);
             newMessages++;
 
             // Trigger callback
-            logger.debug('New message detected:', messageId);
             this.onMessageDetected(message);
 
             // Also observe with IntersectionObserver for future viewport checks
@@ -325,7 +349,6 @@ export class MessageObserver {
      */
     reset(): void {
         this.processedMessages.clear();
-        this.pendingMessages.clear();
         this.lastCopyButtonCount = 0;
         logger.info('Observer reset');
     }
@@ -347,7 +370,6 @@ export class MessageObserver {
         }
         this.observerContainer = container;
         this.processedMessages.clear();
-        this.pendingMessages.clear();
 
         this.observer = new MutationObserver((mutations) => {
             this.handleMutations(mutations);

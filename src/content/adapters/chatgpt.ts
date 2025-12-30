@@ -29,6 +29,11 @@ export class ChatGPTAdapter extends SiteAdapter {
         return 'div.z-0.flex.min-h-\\[46px\\].justify-start';
     }
 
+    getCopyButtonSelector(): string {
+        // ChatGPT uses exact "Copy" aria-label
+        return 'button[aria-label="Copy"]';
+    }
+
     extractMessageHTML(element: HTMLElement): string {
         // 1. Try to find specific content container FIRST
         // This avoids including "ChatGPT said" labels which are often inside the article but outside the prose

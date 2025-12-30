@@ -2,87 +2,123 @@ import { SiteAdapter } from '../adapters/base';
 import { logger } from '../../utils/logger';
 
 /**
- * Toolbar injector with strict, event-driven reconciliation.
- * Replaces legacy polling with "Reconcile on Signal" architecture.
+ * Toolbar state machine
+ */
+export enum ToolbarState {
+    NULL = 'null',           // Not created
+    INJECTED = 'injected',   // DOM created and inserted, but hidden (display: none)
+    ACTIVE = 'active'        // Initialized and visible (display: flex)
+}
+
+/**
+ * Toolbar injector with state machine architecture.
+ * Separates injection (hidden DOM creation) from activation (show + initialize).
  */
 export class ToolbarInjector {
     private adapter: SiteAdapter;
-    private injectedElements = new WeakSet<HTMLElement>();
-    /**
-     * Stores toolbars that are instantiated but waiting for the Action Bar to appear.
-     * key: Message Element, value: Toolbar Element
-     */
-    private pendingToolbars = new WeakMap<HTMLElement, HTMLElement>();
+    private messageStates = new WeakMap<HTMLElement, ToolbarState>();
 
     constructor(adapter: SiteAdapter) {
         this.adapter = adapter;
     }
 
     /**
-     * Entry point to inject a toolbar.
-     * Effectively registers the toolbar and attempts an immediate reconciliation.
+     * Stage 1: Inject toolbar (hidden state)
+     * Creates DOM and inserts into page, but keeps it hidden.
      */
     inject(messageElement: HTMLElement, toolbar: HTMLElement): boolean {
-        // If already fully injected and tracked, ignore
-        if (this.injectedElements.has(messageElement)) {
+        const currentState = this.getState(messageElement);
+
+        logger.info(`[toolbar] 🔧 inject() called. currentState=${currentState}`);
+
+        // Skip if already injected or active
+        if (currentState !== ToolbarState.NULL) {
+            logger.info(`[toolbar] ⏭️  inject() skipped: already ${currentState}`);
             return false;
         }
 
-        // Attempt reconciliation (which handles "Pending" logic internally)
-        this.reconcileToolbarPosition(messageElement, toolbar);
+        // Find action bar
+        const selector = this.adapter.getActionBarSelector();
+        const actionBar = messageElement.querySelector(selector);
+
+        if (!actionBar || !actionBar.parentElement) {
+            return false;
+        }
+
+        // Create wrapper and insert (hidden)
+        const isGemini = messageElement.tagName.toLowerCase() === 'model-response';
+        const wrapper = this.createWrapper(toolbar, isGemini);
+
+        // 🔑 Key: Insert hidden
+        wrapper.style.display = 'none';
+
+        actionBar.parentElement.insertBefore(wrapper, actionBar);
+
+        // Update state
+        this.messageStates.set(messageElement, ToolbarState.INJECTED);
+
         return true;
     }
 
     /**
-     * Core Logic: Ensures toolbar is positioned immediately before the action bar.
-     * - If Wrapper exists: Moves it if misplaced.
-     * - If Wrapper missing: Injects it ONLY if Action Bar exists.
-     * - If Action Bar missing: Stores toolbar in pending map and waits (DOES NOT INJECT).
+     * Stage 2: Activate toolbar (visible + initialized)
+     * Makes toolbar visible and returns true to signal word count initialization.
      */
-    public reconcileToolbarPosition(message: HTMLElement, newToolbar?: HTMLElement): void {
+    activate(messageElement: HTMLElement): boolean {
+        const currentState = this.getState(messageElement);
+
+        // Only activate if in INJECTED state
+        if (currentState !== ToolbarState.INJECTED) {
+            return false;
+        }
+
+        // Find wrapper
+        const wrapper = messageElement.querySelector('.aicopy-toolbar-wrapper') as HTMLElement;
+        if (!wrapper) {
+            logger.error(`[toolbar] ❌ activate() failed: Wrapper not found in DOM`);
+            return false;
+        }
+
+        logger.info(`[toolbar] 👁️  Making wrapper visible (display: flex)`);
+
+        // 🔑 Key: Make visible
+        wrapper.style.display = 'flex';
+
+        // Update state
+        this.messageStates.set(messageElement, ToolbarState.ACTIVE);
+
+        return true;
+    }
+
+    /**
+     * Get current state of toolbar for a message
+     */
+    getState(messageElement: HTMLElement): ToolbarState {
+        return this.messageStates.get(messageElement) || ToolbarState.NULL;
+    }
+
+    /**
+     * Reconcile toolbar position (legacy compatibility)
+     * Ensures toolbar is correctly positioned before action bar.
+     */
+    public reconcileToolbarPosition(message: HTMLElement): void {
         const selector = this.adapter.getActionBarSelector();
         const actionBar = message.querySelector(selector);
         const wrapper = message.querySelector('.aicopy-toolbar-wrapper');
 
-        // 1. Wrapper Exists: Enforce Position
-        if (wrapper) {
-            if (actionBar && actionBar.parentElement) {
-                // Performance: Only move if order is wrong [Wrapper] -> [Action Bar]
-                if (wrapper.nextElementSibling !== actionBar) {
-                    // Use requestAnimationFrame to avoid layout thrashing
-                    requestAnimationFrame(() => {
-                        if (wrapper.isConnected && actionBar.isConnected) {
-                            actionBar.parentElement?.insertBefore(wrapper, actionBar);
-                        }
-                    });
-                }
-            }
+        if (!wrapper || !actionBar || !actionBar.parentElement) {
             return;
         }
 
-        // 2. Wrapper Missing: Attempt Injection
-
-        // Store the toolbar if provided (so we can inject it later if Action Bar is missing now)
-        if (newToolbar) {
-            this.pendingToolbars.set(message, newToolbar);
+        // Only move if order is wrong
+        if (wrapper.nextElementSibling !== actionBar) {
+            requestAnimationFrame(() => {
+                if (wrapper.isConnected && actionBar.isConnected) {
+                    actionBar.parentElement?.insertBefore(wrapper, actionBar);
+                    logger.debug('[Injector] Toolbar position reconciled');
+                }
+            });
         }
-
-        // Only inject if Action Bar is present
-        if (actionBar && actionBar.parentElement) {
-            const toolbarToInject = this.pendingToolbars.get(message);
-
-            if (toolbarToInject) {
-                const isGemini = message.tagName.toLowerCase() === 'model-response';
-                const newWrapper = this.createWrapper(toolbarToInject, isGemini);
-
-                actionBar.parentElement.insertBefore(newWrapper, actionBar);
-
-                this.injectedElements.add(message);
-                this.pendingToolbars.delete(message); // No longer pending
-                logger.debug('Toolbar injected (strict mode)');
-            }
-        }
-        // If no Action Bar, we do nothing. The toolbar sits in `pendingToolbars` waiting for a mutation.
     }
 
     private createWrapper(toolbar: HTMLElement, isGemini: boolean): HTMLElement {
@@ -90,7 +126,7 @@ export class ToolbarInjector {
         wrapper.className = 'aicopy-toolbar-wrapper';
 
         if (isGemini) {
-            // Gemini: match official toolbar padding (60px left), no fixed width
+            // Gemini: match official toolbar padding (60px left)
             wrapper.style.cssText = 'margin-bottom: 8px; padding-left: 60px;';
         } else {
             // ChatGPT: no extra padding
@@ -108,27 +144,26 @@ export class ToolbarInjector {
         const wrapper = messageElement.querySelector('.aicopy-toolbar-wrapper');
         if (wrapper) {
             wrapper.remove();
-            this.injectedElements.delete(messageElement);
-            this.pendingToolbars.delete(messageElement);
-            logger.debug('Toolbar removed');
+            this.messageStates.delete(messageElement);
+            logger.debug('[Injector] Toolbar removed');
             return true;
         }
         return false;
     }
 
     /**
-     * Check if toolbar is already injected
+     * Check if toolbar is already injected (INJECTED or ACTIVE state)
      */
     isInjected(messageElement: HTMLElement): boolean {
-        return this.injectedElements.has(messageElement);
+        const state = this.getState(messageElement);
+        return state === ToolbarState.INJECTED || state === ToolbarState.ACTIVE;
     }
 
     /**
      * Cleanup state
      */
     cleanup(): void {
-        this.injectedElements = new WeakSet<HTMLElement>();
-        this.pendingToolbars = new WeakMap<HTMLElement, HTMLElement>();
+        this.messageStates = new WeakMap<HTMLElement, ToolbarState>();
         logger.info('[Injector] Cleaned up state');
     }
 }

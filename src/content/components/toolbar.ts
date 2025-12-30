@@ -139,7 +139,6 @@ export class Toolbar {
      * Initialize word count with retry mechanism
      */
     private async initWordCountWithRetry(): Promise<void> {
-        logger.debug(`[WordCountDebug] initWordCountWithRetry called. pending=${this.pending}, inFlight=${this.wordCountInitInFlight}, initialized=${this.wordCountInitialized}`);
         if (this.pending || this.wordCountInitInFlight || this.wordCountInitialized) return;
         this.wordCountInitInFlight = true;
         const maxRetries = 10;
@@ -152,7 +151,6 @@ export class Toolbar {
         // If pending was set to true during the delay (e.g. by handleNewMessage identifying streaming),
         // we MUST abort this premature initialization.
         if (this.pending) {
-            logger.debug('[WordCountDebug] Aborting initWordCountWithRetry because pending became true during delay');
             this.wordCountInitInFlight = false;
             return;
         }
@@ -161,30 +159,13 @@ export class Toolbar {
             try {
                 const markdown = await this.callbacks.onCopyMarkdown();
 
-                // Check if we got actual content
-                if (markdown && markdown.trim().length > 0) {
-                    logger.debug(`[WordCountDebug] Attempt ${attempt + 1}: Got markdown length ${markdown.length}`);
-                    const stats = this.shadowRoot.querySelector('#word-stats');
-                    if (stats) {
-                        const result = this.wordCounter.count(markdown);
-                        const formatted = this.wordCounter.format(result);
-
-                        // Only update if not "No content"
-                        if (formatted !== 'No content') {
-                            // Split into two lines: "123" and "words"
-                            const parts = formatted.split(' / ');
-                            if (parts.length >= 2) {
-                                stats.innerHTML = `<div>${parts[0]}</div><div>${parts.slice(1).join(' ')}</div>`;
-                            } else {
-                                stats.textContent = formatted;
-                            }
-                            this.wordCountInitialized = true;
-                            this.wordCountInitInFlight = false;
-                            this.setPending(false);
-                            logger.debug(`[WordCount] Initialized on attempt ${attempt + 1}`);
-                            return; // Success!
-                        }
-                    }
+                // Check if we got actual content and update display
+                if (markdown && markdown.trim().length > 0 && this.updateStatsDisplay(markdown)) {
+                    this.wordCountInitialized = true;
+                    this.wordCountInitInFlight = false;
+                    this.setPending(false);
+                    logger.debug(`[WordCount] Initialized on attempt ${attempt + 1}`);
+                    return;
                 }
             } catch (error) {
                 logger.debug('[WordCount] Retry failed:', error);
@@ -203,6 +184,46 @@ export class Toolbar {
         const stats = this.shadowRoot.querySelector('#word-stats');
         if (stats) stats.textContent = 'Click copy';
         this.wordCountInitInFlight = false;
+    }
+
+    /**
+     * Update stats display with formatted word count
+     * Returns true if successful
+     */
+    private updateStatsDisplay(markdown: string): boolean {
+        if (!markdown || markdown.trim().length === 0) return false;
+
+        const stats = this.shadowRoot.querySelector('#word-stats');
+        if (!stats) return false;
+
+        const result = this.wordCounter.count(markdown);
+        const formatted = this.wordCounter.format(result);
+
+        if (formatted !== 'No content') {
+            const parts = formatted.split(' / ');
+            if (parts.length >= 2) {
+                stats.innerHTML = `<div>${parts[0]}</div><div>${parts.slice(1).join(' ')}</div>`;
+            } else {
+                stats.textContent = formatted;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Refresh word count display
+     * Public method for external triggers (e.g. Deep Think content updates, copy action)
+     */
+    async refreshWordCount(): Promise<void> {
+        try {
+            const markdown = await this.callbacks.onCopyMarkdown();
+            if (this.updateStatsDisplay(markdown)) {
+                logger.debug('[WordCount] Refreshed');
+            }
+        } catch (error) {
+            logger.warn('[WordCount] Refresh failed:', error);
+        }
     }
 
     /**
@@ -273,6 +294,9 @@ export class Toolbar {
             const success = await copyToClipboard(markdown);
 
             if (success) {
+                // 🔑 Refresh word count after successful copy
+                await this.refreshWordCount();
+
                 // Change icon to checkmark
                 const originalIcon = btn.innerHTML;
                 btn.innerHTML = Icons.check;
@@ -378,7 +402,6 @@ export class Toolbar {
      * Set pending/disabled state for streaming/thinking messages
      */
     setPending(isPending: boolean): void {
-        logger.debug(`[WordCountDebug] setPending(${isPending}). Current pending=${this.pending}`);
         if (this.pending === isPending) return;
         this.pending = isPending;
 
@@ -400,7 +423,6 @@ export class Toolbar {
         }
 
         if (!isPending && !this.wordCountInitialized) {
-            logger.debug('[WordCountDebug] Pending cleared, triggering word count init');
             this.initWordCountWithRetry();
         }
     }
