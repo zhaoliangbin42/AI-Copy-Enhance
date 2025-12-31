@@ -15,8 +15,6 @@
         "test:ui": "vitest --ui"
     },
     "dependencies": {
-        "katex": "^0.16.9",
-        "markdown-it": "^14.0.0",
         "marked": "^17.0.1",
         "marked-katex-extension": "^5.1.6"
     },

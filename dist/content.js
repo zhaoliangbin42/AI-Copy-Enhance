@@ -3602,6 +3602,79 @@ class GeminiAdapter {
   }
 }
 
+class ParserAdapterRegistry {
+  registrations = [];
+  defaultAdapter = () => new ChatGPTAdapter();
+  constructor() {
+    this.registerBuiltIn();
+  }
+  /**
+   * Register built-in platform adapters
+   */
+  registerBuiltIn() {
+    this.register({
+      patterns: ["gemini.google.com"],
+      create: () => new GeminiAdapter()
+    });
+    this.register({
+      patterns: ["chatgpt.com", "chat.openai.com"],
+      create: () => new ChatGPTAdapter()
+    });
+  }
+  /**
+   * Register a new adapter with URL patterns
+   */
+  register(registration) {
+    this.registrations.push(registration);
+  }
+  /**
+   * Set the default adapter factory (used when no pattern matches)
+   */
+  setDefault(factory) {
+    this.defaultAdapter = factory;
+  }
+  /**
+   * Get adapter for current platform
+   * 
+   * @param hostname - Optional hostname override (for testing)
+   */
+  getAdapter(hostname) {
+    const host = hostname ?? this.getHostname();
+    if (!host) {
+      console.log("[ParserAdapterRegistry] No hostname - using default adapter");
+      return this.defaultAdapter();
+    }
+    const hostLower = host.toLowerCase();
+    for (const reg of this.registrations) {
+      for (const pattern of reg.patterns) {
+        if (hostLower.includes(pattern)) {
+          const adapter = reg.create();
+          console.log(`[ParserAdapterRegistry] Platform detected: ${adapter.name}`);
+          return adapter;
+        }
+      }
+    }
+    console.log("[ParserAdapterRegistry] No matching platform - using default");
+    return this.defaultAdapter();
+  }
+  /**
+   * Get current hostname (browser only)
+   */
+  getHostname() {
+    if (typeof window === "undefined" || !window.location) {
+      return null;
+    }
+    return window.location.hostname;
+  }
+  /**
+   * List all registered patterns (for debugging)
+   */
+  getRegisteredPatterns() {
+    return this.registrations.flatMap((r) => r.patterns);
+  }
+}
+const parserAdapterRegistry = new ParserAdapterRegistry();
+
 function createMathBlockRule() {
   return {
     name: "math-block",
@@ -3996,21 +4069,8 @@ function createLineBreakRule() {
   };
 }
 
-function detectPlatformAdapter() {
-  if (typeof window === "undefined" || !window.location) {
-    console.log("[Parser] No window.location - defaulting to ChatGPT adapter");
-    return new ChatGPTAdapter();
-  }
-  const hostname = window.location.hostname.toLowerCase();
-  if (hostname.includes("gemini.google.com")) {
-    console.log("[Parser] Platform detected: Gemini");
-    return new GeminiAdapter();
-  }
-  console.log("[Parser] Platform detected: ChatGPT");
-  return new ChatGPTAdapter();
-}
 function createMarkdownParser(options = {}) {
-  const adapter = detectPlatformAdapter();
+  const adapter = parserAdapterRegistry.getAdapter();
   const parser = new Parser$1(adapter, {
     maxProcessingTimeMs: 5e3,
     maxNodeCount: 5e4,
