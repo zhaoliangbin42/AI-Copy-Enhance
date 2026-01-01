@@ -1,8 +1,13 @@
-import { marked } from 'marked';
-import markedKatex from 'marked-katex-extension';
+import { MarkdownRenderer } from '@/renderer/core/MarkdownRenderer';
+import { StyleManager } from '@/renderer/styles/StyleManager';
+import { LRUCache } from '@/renderer/utils/LRUCache';
+import { MessageCollector, MessageRef } from '../utils/MessageCollector';
+
+// ✅ Type for getMarkdown function
+type GetMarkdownFn = (element: HTMLElement) => string;
 
 /**
- * Panel overlay styles - Notion-inspired, using design tokens
+ * Panel overlay styles
  */
 const panelStyles = `
 .aicopy-panel-overlay {
@@ -29,8 +34,7 @@ const panelStyles = `
   box-shadow: 
     0 0 0 1px rgba(0, 0, 0, 0.08),
     0 4px 12px rgba(0, 0, 0, 0.12),
-    0 16px 48px rgba(0, 0, 0, 0.18),
-    0 24px 80px rgba(0, 0, 0, 0.12);
+    0 16px 48px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
   z-index: 999999;
@@ -39,14 +43,8 @@ const panelStyles = `
 }
 
 @keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
+  from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 .aicopy-panel-fullscreen {
@@ -80,10 +78,9 @@ const panelStyles = `
   font-weight: 600;
   color: #37352F;
   margin: 0;
-  letter-spacing: -0.01em;
 }
 
-.aicopy-panel-fullscreen-btn {
+.aicopy-panel-fullscreen-btn, .aicopy-panel-close {
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -97,30 +94,9 @@ const panelStyles = `
   transition: all 0.15s ease;
 }
 
-.aicopy-panel-fullscreen-btn:hover {
+.aicopy-panel-fullscreen-btn:hover, .aicopy-panel-close:hover {
   background: #F3F4F6;
   color: #1A1A1A;
-}
-
-.aicopy-panel-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #9B9A97;
-  cursor: pointer;
-  padding: 4px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-}
-
-.aicopy-panel-close:hover {
-  background: #EBEBEB;
-  color: #37352F;
 }
 
 .aicopy-panel-body {
@@ -134,299 +110,143 @@ const panelStyles = `
   max-width: 800px;
   width: 100%;
   margin: 0 auto;
-  box-sizing: border-box;
 }
 
-/* ============================================
-   DARK MODE - Shadow DOM compatible
-   ============================================ */
+/* ✅ 新增: 分页器样式 */
+.aicopy-pagination {
+  padding: 16px 24px;
+  border-top: 1px solid #E9E9E7;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  flex-shrink: 0;
+}
 
+.aicopy-pagination-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #E9E9E7;
+  background: white;
+  color: #37352F;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.15s ease;
+}
+
+.aicopy-pagination-btn:hover:not(:disabled) {
+  background: #F3F4F6;
+  border-color: #D1D5DB;
+}
+
+.aicopy-pagination-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.aicopy-pagination-info {
+  font-size: 14px;
+  color: #6B7280;
+  min-width: 80px;
+  text-align: center;
+}
+
+.aicopy-pagination-select {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #E9E9E7;
+  background: white;
+  color: #37352F;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.aicopy-pagination-select:hover {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+}
+
+/* Dark mode */
 :host([data-theme='dark']) .aicopy-panel-overlay {
   background: rgba(0, 0, 0, 0.8);
 }
 
-:host([data-theme='dark']) .aicopy-panel {
+:host([data-theme='dark']) .aicopy-panel,
+:host([data-theme='dark']) .aicopy-panel-header,
+:host([data-theme='dark']) .aicopy-panel-body,
+:host([data-theme='dark']) .aicopy-pagination {
   background: #1E1E1E;
-  box-shadow: 
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 4px 12px rgba(0, 0, 0, 0.5),
-    0 16px 48px rgba(0, 0, 0, 0.6),
-    0 24px 80px rgba(0, 0, 0, 0.4);
+  border-color: #3F3F46;
 }
 
-:host([data-theme='dark']) .aicopy-panel-header {
-  background: #1E1E1E;
-  border-bottom-color: #3F3F46;
-}
-
-:host([data-theme='dark']) .aicopy-panel-title {
+:host([data-theme='dark']) .aicopy-panel-title,
+:host([data-theme='dark']) .aicopy-pagination-info {
   color: #FFFFFF;
 }
 
-:host([data-theme='dark']) .aicopy-panel-fullscreen-btn {
-  color: #A1A1AA;
-}
-
-:host([data-theme='dark']) .aicopy-panel-fullscreen-btn:hover {
+:host([data-theme='dark']) .aicopy-pagination-btn,
+:host([data-theme='dark']) .aicopy-pagination-select {
   background: #27272A;
+  border-color: #3F3F46;
   color: #FFFFFF;
 }
 
-:host([data-theme='dark']) .aicopy-panel-close {
-  color: #A1A1AA;
-}
-
-:host([data-theme='dark']) .aicopy-panel-close:hover {
-  background: #27272A;
-  color: #FFFFFF;
-}
-
-:host([data-theme='dark']) .aicopy-panel-body {
-  background: #1E1E1E;
+:host([data-theme='dark']) .aicopy-pagination-btn:hover:not(:disabled),
+:host([data-theme='dark']) .aicopy-pagination-select:hover {
+  background: #3F3F46;
 }
 `;
 
-
-
 /**
- * GitHub Markdown styles - Adapted for Extension
- */
-const markdownStyles = `
-.markdown-body {
-  /* Light mode variables */
-  --fgColor-default: #1f2328;
-  --fgColor-muted: #59636e;
-  --fgColor-accent: #0969da;
-  --bgColor-default: #ffffff;
-  --bgColor-muted: #f6f8fa;
-  --bgColor-attention-muted: #fff8c5;
-  --borderColor-default: #d1d9e0;
-  --borderColor-muted: #d1d9e0b3;
-  
-  margin: 0;
-  padding: 12px 16px;
-  color: var(--fgColor-default);
-  /* background-color: var(--bgColor-default); */
-  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-/* Headings */
-.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 {
-  margin-top: 24px;
-  margin-bottom: 16px;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.markdown-body h1 {
-  margin: .67em 0;
-  padding-bottom: .3em;
-  font-size: 2em;
-  border-bottom: 1px solid var(--borderColor-muted);
-}
-
-.markdown-body h2 {
-  padding-bottom: .3em;
-  font-size: 1.5em;
-  border-bottom: 1px solid var(--borderColor-muted);
-}
-
-.markdown-body h3 { font-size: 1.25em; }
-.markdown-body h4 { font-size: 1em; }
-.markdown-body h5 { font-size: .875em; }
-.markdown-body h6 { font-size: .85em; color: var(--fgColor-muted); }
-
-/* Paragraphs */
-.markdown-body p { 
-  margin-top: 0; 
-  margin-bottom: 10px;
-}
-
-/* Links */
-.markdown-body a { color: var(--fgColor-accent); text-decoration: none; }
-.markdown-body a:hover { text-decoration: underline; }
-
-/* Strong and emphasis */
-.markdown-body b, .markdown-body strong { font-weight: 600; }
-.markdown-body em { font-style: italic; }
-
-/* Blockquotes */
-.markdown-body blockquote {
-  margin: 0;
-  padding: 0 1em;
-  color: var(--fgColor-muted);
-  border-left: .25em solid var(--borderColor-default);
-}
-
-/* Code */
-.markdown-body code, .markdown-body kbd, .markdown-body pre {
-  font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
-}
-
-.markdown-body code {
-  padding: .2em .4em;
-  margin: 0;
-  font-size: 85%;
-  white-space: break-spaces;
-  background-color: var(--bgColor-muted);
-  border-radius: 6px;
-  border: 1px solid var(--borderColor-default);
-}
-
-.markdown-body pre {
-  margin-top: 0;
-  margin-bottom: 16px;
-  padding: 16px;
-  overflow: auto;
-  font-size: 85%;
-  line-height: 1.45;
-  background-color: var(--bgColor-muted);
-  border-radius: 6px;
-  border: 1px solid var(--borderColor-default);
-}
-
-.markdown-body pre code {
-  padding: 0;
-  margin: 0;
-  background-color: transparent;
-  border: 0;
-}
-
-/* Lists */
-.markdown-body ul, .markdown-body ol {
-  margin-top: 0;
-  margin-bottom: 16px;
-  padding-left: 2em;
-}
-
-.markdown-body li { margin-top: .25em; }
-.markdown-body li + li { margin-top: .25em; }
-
-/* Tables */
-.markdown-body table {
-  border-spacing: 0;
-  border-collapse: collapse;
-  display: block;
-  width: max-content;
-  max-width: 100%;
-  overflow: auto;
-}
-
-.markdown-body td, .markdown-body th {
-  padding: 6px 13px;
-  border: 1px solid var(--borderColor-default);
-}
-
-.markdown-body th {
-  font-weight: 600;
-  background-color: var(--bgColor-muted);
-}
-
-.markdown-body tr {
-  background-color: var(--bgColor-default);
-  border-top: 1px solid var(--borderColor-muted);
-}
-
-.markdown-body tr:nth-child(2n) {
-  background-color: var(--bgColor-muted);
-}
-
-/* Horizontal rule */
-.markdown-body hr {
-  height: .25em;
-  padding: 0;
-  margin: 24px 0;
-  background-color: var(--borderColor-default);
-  border: 0;
-}
-
-/* Images */
-.markdown-body img {
-  max-width: 100%;
-  border-style: none;
-}
-
-/* Mark */
-.markdown-body mark {
-  background-color: var(--bgColor-attention-muted);
-  color: var(--fgColor-default);
-}
-
-/* Task lists */
-.markdown-body input[type="checkbox"] {
-  margin: 0 .2em .25em -1.6em;
-  vertical-align: middle;
-}
-
-/* KaTeX - Best practice from open-source projects */
-.markdown-body .katex { 
-  font-size: 1.1em;
-  display: inline-block;
-  text-indent: 0;
-  text-rendering: auto;
-  vertical-align: -0.25em;
-}
-
-.markdown-body .katex-display {
-  display: block;
-  margin: 1.5em 0;
-  text-align: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-/* ============================================
-   DARK MODE - GitHub Dark (Shadow DOM compatible)
-   ============================================ */
-
-:host([data-theme='dark']) .markdown-body {
-  --fgColor-default: #f0f6fc;
-  --fgColor-muted: #9198a1;
-  --fgColor-accent: #4493f8;
-  --bgColor-default: #212121;
-  --bgColor-muted: #2d2d2d;
-  --bgColor-attention-muted: #bb800926;
-  --borderColor-default: #3d444d;
-  --borderColor-muted: #3d444db3;
-}
-`;
-
-
-
-
-/**
- * Re-render panel - direct DOM rendering, no iframe
+ * Re-render panel with message pagination
  */
 export class ReRenderPanel {
     private container: HTMLElement | null = null;
     private currentThemeIsDark: boolean = false;
-
-    constructor() {
-        // Configure marked with GitHub Flavored Markdown
-        marked.setOptions({
-            breaks: true,   // Convert \n to <br>
-            gfm: true,      // GitHub Flavored Markdown
-        });
-
-        // Add KaTeX support with non-greedy matching
-        marked.use(markedKatex({
-            throwOnError: false,
-            output: 'html',
-            nonStandard: true  // Allow non-standard syntax
-        }));
-
-    }
+    private messages: MessageRef[] = [];
+    private currentIndex: number = 0;
+    private cache: LRUCache<number, string> = new LRUCache(10);
+    private getMarkdownFn?: GetMarkdownFn; // ✅ 保存getMarkdown方法
 
     /**
-     * Show panel with rendered Markdown
+     * Show panel with message pagination
+     * @param messageElement - 被点击的消息元素
+     * @param getMarkdown - 获取markdown源码的方法 (来自ContentScript)
      */
-    show(markdown: string): void {
+    async show(messageElement: HTMLElement, getMarkdown: GetMarkdownFn): Promise<void> {
+        const showStartTime = performance.now();
+        console.log('[ReRenderPanel] ⏱️  START show');
+
+        this.getMarkdownFn = getMarkdown; // ✅ 保存方法
         this.hide();
-        this.createPanel(markdown);
+
+        // ✅ 懒加载: 只收集article引用,不解析内容
+        const t0 = performance.now();
+        this.messages = MessageCollector.collectMessages();
+        console.log(`[AI-MarkDone][ReRenderPanel]   collectMessages: ${(performance.now() - t0).toFixed(2)}ms, count: ${this.messages.length}`);
+
+        if (this.messages.length === 0) {
+            console.warn('[AI-MarkDone][ReRenderPanel] No messages found');
+            return;
+        }
+
+        // 找到被点击的消息索引
+        this.currentIndex = MessageCollector.findMessageIndex(messageElement, this.messages);
+        if (this.currentIndex === -1) {
+            this.currentIndex = this.messages.length - 1; // Fallback到最后一条
+        }
+        console.log(`[AI-MarkDone][ReRenderPanel]   currentIndex: ${this.currentIndex}/${this.messages.length}`);
+
+        await this.createPanel(); // ✅ createPanel内部会调用renderMessage,不需要再调用
+
+        const showEndTime = performance.now();
+        console.log(`[AI-MarkDone][ReRenderPanel] ✅ END show: ${(showEndTime - showStartTime).toFixed(2)}ms`);
     }
 
     /**
@@ -437,10 +257,11 @@ export class ReRenderPanel {
             this.container.remove();
             this.container = null;
         }
+        this.cache.clear();
     }
 
     /**
-     * Apply theme to the panel host
+     * Set theme
      */
     setTheme(isDark: boolean): void {
         this.currentThemeIsDark = isDark;
@@ -450,40 +271,22 @@ export class ReRenderPanel {
     }
 
     /**
-     * Create panel with Shadow DOM for style isolation
+     * Create panel with shadow DOM
      */
-    private createPanel(markdown: string): void {
-        // Pre-process: Fix consecutive inline math formulas
-        let processedMarkdown = markdown
-            .replace(/\$([^$]+)\$([\u3001\uff0c\u3002\uff1b\uff1a\uff01\uff1f])\$([^$]+)\$/g, '$$$1$$ $2 $$$3$$')
-            .replace(/\$([^$]+)\$(\u2014\u2014)\$([^$]+)\$/g, '$$$1$$ $2 $$$3$$');
-
-        // Render Markdown to HTML
-        const html = marked.parse(processedMarkdown) as string;
-
+    private async createPanel(): Promise<void> {
         // Create container
         this.container = document.createElement('div');
         this.container.dataset.theme = this.currentThemeIsDark ? 'dark' : 'light';
 
-        // Attach Shadow DOM for style isolation
+        // Attach Shadow DOM
         const shadowRoot = this.container.attachShadow({ mode: 'open' });
 
-        // Inject panel styles into Shadow DOM
+        // Inject styles
+        await StyleManager.injectStyles(shadowRoot, this.currentThemeIsDark);
+
         const panelStyleEl = document.createElement('style');
         panelStyleEl.textContent = panelStyles;
         shadowRoot.appendChild(panelStyleEl);
-
-        // Inject markdown styles into Shadow DOM using MarkdownRenderer
-        const mdStyleEl = document.createElement('style');
-        mdStyleEl.textContent = markdownStyles;
-        shadowRoot.appendChild(mdStyleEl);
-
-        // Inject KaTeX CSS into Shadow DOM
-        const katexLink = document.createElement('link');
-        katexLink.rel = 'stylesheet';
-        katexLink.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
-        katexLink.crossOrigin = 'anonymous';
-        shadowRoot.appendChild(katexLink);
 
         // Create overlay
         const overlay = document.createElement('div');
@@ -496,49 +299,29 @@ export class ReRenderPanel {
         panel.addEventListener('click', (e) => e.stopPropagation());
 
         // Header
-        const header = document.createElement('div');
-        header.className = 'aicopy-panel-header';
-        header.innerHTML = `
-      <div class="aicopy-panel-header-left">
-        <h2 class="aicopy-panel-title">Rendered Markdown</h2>
-        <button class="aicopy-panel-fullscreen-btn" aria-label="Toggle fullscreen" title="Toggle fullscreen">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-          </svg>
-        </button>
-      </div>
-      <button class="aicopy-panel-close" aria-label="Close" title="Close">×</button>
-    `;
-
-        // Bind event listeners
-        const closeBtn = header.querySelector('.aicopy-panel-close');
-        closeBtn?.addEventListener('click', () => this.hide());
-
-        const fullscreenBtn = header.querySelector('.aicopy-panel-fullscreen-btn');
-        fullscreenBtn?.addEventListener('click', () => this.toggleFullscreen());
+        const header = this.createHeader();
 
         // Body
         const body = document.createElement('div');
         body.className = 'aicopy-panel-body';
+        body.id = 'panel-body';
 
-        // Create content div
-        const content = document.createElement('div');
-        content.className = 'markdown-body';
-        content.innerHTML = html;
-
-        body.appendChild(content);
+        // ✅ 分页器
+        const pagination = this.createPagination();
 
         panel.appendChild(header);
         panel.appendChild(body);
+        panel.appendChild(pagination);
 
-        // Assemble in Shadow DOM
         shadowRoot.appendChild(overlay);
         shadowRoot.appendChild(panel);
 
-        // Add container to body
         document.body.appendChild(this.container);
 
-        // ESC key to close
+        // 渲染当前消息
+        await this.renderMessage(this.currentIndex);
+
+        // ESC键关闭
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 this.hide();
@@ -549,17 +332,174 @@ export class ReRenderPanel {
     }
 
     /**
-     * Toggle fullscreen mode
+     * Create header
+     */
+    private createHeader(): HTMLElement {
+        const header = document.createElement('div');
+        header.className = 'aicopy-panel-header';
+        header.innerHTML = `
+      <div class="aicopy-panel-header-left">
+        <h2 class="aicopy-panel-title">Rendered Markdown</h2>
+        <button class="aicopy-panel-fullscreen-btn" title="Toggle fullscreen">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+          </svg>
+        </button>
+      </div>
+      <button class="aicopy-panel-close" title="Close">×</button>
+    `;
+
+        header.querySelector('.aicopy-panel-close')?.addEventListener('click', () => this.hide());
+        header.querySelector('.aicopy-panel-fullscreen-btn')?.addEventListener('click', () => this.toggleFullscreen());
+
+        return header;
+    }
+
+    /**
+     * ✅ 创建分页器
+     */
+    private createPagination(): HTMLElement {
+        const pagination = document.createElement('div');
+        pagination.className = 'aicopy-pagination';
+
+        pagination.innerHTML = `
+      <button class="aicopy-pagination-btn" id="prev-btn" title="Previous (←)">←</button>
+      <span class="aicopy-pagination-info" id="page-info">${this.currentIndex + 1} / ${this.messages.length}</span>
+      <button class="aicopy-pagination-btn" id="next-btn" title="Next (→)">→</button>
+      <select class="aicopy-pagination-select" id="page-select" title="Jump to message">
+        ${this.messages.map((_, i) => `<option value="${i}" ${i === this.currentIndex ? 'selected' : ''}>Message ${i + 1}</option>`).join('')}
+      </select>
+    `;
+
+        // 绑定事件
+        pagination.querySelector('#prev-btn')?.addEventListener('click', () => this.navigate(-1));
+        pagination.querySelector('#next-btn')?.addEventListener('click', () => this.navigate(1));
+        pagination.querySelector('#page-select')?.addEventListener('change', (e) => {
+            const select = e.target as HTMLSelectElement;
+            this.navigateTo(parseInt(select.value));
+        });
+
+        this.updatePaginationState(pagination);
+
+        return pagination;
+    }
+
+    /**
+     * Navigate by offset
+     */
+    private async navigate(offset: number): Promise<void> {
+        const newIndex = this.currentIndex + offset;
+        await this.navigateTo(newIndex);
+    }
+
+    /**
+     * Navigate to specific index
+     */
+    private async navigateTo(index: number): Promise<void> {
+        if (index < 0 || index >= this.messages.length || index === this.currentIndex) {
+            return;
+        }
+
+        this.currentIndex = index;
+        await this.renderMessage(index);
+
+        // 更新分页器状态
+        const shadowRoot = this.container?.shadowRoot;
+        if (shadowRoot) {
+            const pagination = shadowRoot.querySelector('.aicopy-pagination');
+            if (pagination) {
+                this.updatePaginationState(pagination as HTMLElement);
+            }
+        }
+    }
+
+    /**
+     * Update pagination button states
+     */
+    private updatePaginationState(pagination: HTMLElement): void {
+        const prevBtn = pagination.querySelector('#prev-btn') as HTMLButtonElement;
+        const nextBtn = pagination.querySelector('#next-btn') as HTMLButtonElement;
+        const pageInfo = pagination.querySelector('#page-info');
+        const pageSelect = pagination.querySelector('#page-select') as HTMLSelectElement;
+
+        if (prevBtn) prevBtn.disabled = this.currentIndex === 0;
+        if (nextBtn) nextBtn.disabled = this.currentIndex === this.messages.length - 1;
+        if (pageInfo) pageInfo.textContent = `${this.currentIndex + 1} / ${this.messages.length}`;
+        if (pageSelect) pageSelect.value = this.currentIndex.toString();
+    }
+
+    /**
+     * ✅ 懒加载渲染消息
+     */
+    private async renderMessage(index: number): Promise<void> {
+        const renderMsgStartTime = performance.now();
+        console.log(`[AI-MarkDone][ReRenderPanel] 📄 START renderMessage ${index}`);
+
+        const messageRef = this.messages[index];
+
+        // 检查缓存
+        let html = this.cache.get(index);
+
+        if (!html) {
+            // ✅ 只有在需要时才解析内容
+            if (!messageRef.parsed && this.getMarkdownFn) {
+                try {
+                    const t0 = performance.now();
+                    // ✅ 正确: 使用ContentScript的getMarkdown (复用复制功能逻辑)
+                    messageRef.parsed = this.getMarkdownFn(messageRef.element);
+                    console.log(`[AI-MarkDone][ReRenderPanel]   getMarkdown: ${(performance.now() - t0).toFixed(2)}ms`);
+                } catch (error) {
+                    console.error('[AI-MarkDone][ReRenderPanel] Parse failed:', error);
+                    messageRef.parsed = 'Failed to parse message';
+                }
+            }
+
+            // 渲染 (messageRef.parsed现在一定有值)
+            const t1 = performance.now();
+            const result = await MarkdownRenderer.render(messageRef.parsed!);
+            console.log(`[AI-MarkDone][ReRenderPanel]   MarkdownRenderer.render: ${(performance.now() - t1).toFixed(2)}ms`);
+            html = result.success ? result.html! : result.fallback!;
+
+            // 缓存
+            this.cache.set(index, html);
+        } else {
+            console.log(`[AI-MarkDone][ReRenderPanel]   ✅ Using cache for message ${index}`);
+        }
+
+        // 更新DOM (带淡入动画)
+        const shadowRoot = this.container?.shadowRoot;
+        if (shadowRoot) {
+            const body = shadowRoot.querySelector('#panel-body');
+            if (body) {
+                // 淡出
+                body.classList.add('fade-out');
+                await new Promise(resolve => setTimeout(resolve, 150));
+
+                // 更新内容
+                // 淡入
+                setTimeout(() => {
+                    if (body) {
+                        body.classList.remove('fade-out');
+                        body.classList.add('fade-in');
+                        body.innerHTML = html!;
+                        StyleManager.injectStyles(shadowRoot!, false)
+                            .then(() => {
+                                this.updatePaginationState(shadowRoot.querySelector('.aicopy-pagination')!);
+                                const renderMsgEndTime = performance.now();
+                                console.log(`[AI-MarkDone][ReRenderPanel] ✅ END renderMessage: ${(renderMsgEndTime - renderMsgStartTime).toFixed(2)}ms`);
+                            });
+                    }
+                }, 150); // Animation duration
+            }
+        }
+    }
+
+    /**
+     * Toggle fullscreen
      */
     private toggleFullscreen(): void {
         if (!this.container) return;
-
-        const shadowRoot = this.container.shadowRoot;
-        if (!shadowRoot) return;
-
-        const panel = shadowRoot.querySelector('.aicopy-panel');
-        if (panel) {
-            panel.classList.toggle('aicopy-panel-fullscreen');
-        }
+        const panel = this.container.shadowRoot?.querySelector('.aicopy-panel');
+        panel?.classList.toggle('aicopy-panel-fullscreen');
     }
 }

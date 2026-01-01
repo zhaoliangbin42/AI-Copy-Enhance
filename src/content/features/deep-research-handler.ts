@@ -199,8 +199,11 @@ export class DeepResearchHandler {
         }
 
         try {
-            const markdown = this.parser.parse(content as HTMLElement);
-            this.reRenderPanel.show(markdown);
+            // ✅ 传入getMarkdown方法 (复用parser逻辑)
+            this.reRenderPanel.show(
+                content as HTMLElement,
+                (el: HTMLElement) => this.parser.parse(el)
+            );
             logger.info('[DeepResearch] Preview panel opened');
         } catch (error) {
             logger.error('[DeepResearch] Error during preview:', error);

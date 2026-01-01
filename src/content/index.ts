@@ -378,8 +378,11 @@ class ContentScript {
      * Show re-render preview panel
      */
     private showReRenderPanel(messageElement: HTMLElement): void {
-        const markdown = this.getMarkdown(messageElement);
-        this.reRenderPanel.show(markdown);
+        // ✅ 传入getMarkdown方法 (复用复制功能的正确逻辑)
+        this.reRenderPanel.show(
+            messageElement,
+            (el: HTMLElement) => this.getMarkdown(el)
+        );
     }
 
     /**
