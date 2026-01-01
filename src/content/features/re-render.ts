@@ -432,9 +432,6 @@ export class ReRenderPanel {
      * ✅ 懒加载渲染消息
      */
     private async renderMessage(index: number): Promise<void> {
-        const renderMsgStartTime = performance.now();
-        console.log(`[AI-MarkDone][ReRenderPanel] 📄 START renderMessage ${index}`);
-
         const messageRef = this.messages[index];
 
         // 检查缓存
@@ -481,12 +478,11 @@ export class ReRenderPanel {
                     if (body) {
                         body.classList.remove('fade-out');
                         body.classList.add('fade-in');
-                        body.innerHTML = html!;
+                        // ✅ 关键修复:包裹在.markdown-body中使CSS生效
+                        body.innerHTML = `<div class="markdown-body">${html!}</div>`;
                         StyleManager.injectStyles(shadowRoot!, false)
                             .then(() => {
                                 this.updatePaginationState(shadowRoot.querySelector('.aicopy-pagination')!);
-                                const renderMsgEndTime = performance.now();
-                                console.log(`[AI-MarkDone][ReRenderPanel] ✅ END renderMessage: ${(renderMsgEndTime - renderMsgStartTime).toFixed(2)}ms`);
                             });
                     }
                 }, 150); // Animation duration

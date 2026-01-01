@@ -8,7 +8,9 @@ import { FolderOperationsManager } from '../managers/FolderOperationsManager';
 import { TreeBuilder } from '../utils/tree-builder';
 import { PathUtils, type FolderNameValidationError } from '../utils/path-utils';
 import { Icons } from '../../assets/icons';
-import { MarkdownRenderer } from '../../utils/markdown-renderer';
+// ✅ Phase 7: 迁移到核心renderer
+import { MarkdownRenderer } from '@/renderer/core/MarkdownRenderer';
+import { StyleManager } from '@/renderer/styles/StyleManager';
 import { ThemeObserver } from '../../utils/theme-observer';
 import { DesignTokens } from '../../utils/design-tokens';  // T2.1.1: Import DesignTokens class
 
@@ -1088,10 +1090,31 @@ export class SimpleBookmarkPanel {
                     return;
                 }
 
-                const url = (item as HTMLElement).dataset.url!;
-                const position = parseInt((item as HTMLElement).dataset.position!);
-                if (url && position) {
-                    this.showDetailModal(url, position);
+                if (target.classList.contains('open-conversation')) {
+                    const url = (item as HTMLElement).querySelector('.bookmark-title')?.getAttribute('href') || '';
+                    window.open(url, '_blank');
+                } else if (target.classList.contains('edit-bookmark')) {
+                    const url = (item as HTMLElement).dataset.url!;
+                    const position = parseInt((item as HTMLElement).dataset.position!);
+                    // ✅ Phase 7: 查找bookmark对象后传递
+                    const bookmark = this.filteredBookmarks.find(
+                        b => b.url === url && b.position === position
+                    );
+                    if (bookmark) {
+                        this.showDetailModal(bookmark);
+                    }
+                } else {
+                    const url = (item as HTMLElement).dataset.url!;
+                    const position = parseInt((item as HTMLElement).dataset.position!);
+                    if (url && position) {
+                        // ✅ Phase 7: 查找bookmark对象后传递
+                        const bookmark = this.filteredBookmarks.find(
+                            b => b.url === url && b.position === position
+                        );
+                        if (bookmark) {
+                            this.showDetailModal(bookmark);
+                        }
+                    }
                 }
             });
         });
@@ -2196,25 +2219,20 @@ export class SimpleBookmarkPanel {
      * Show detail modal
      */
     /**
-     * Show detail modal (CRITICAL: Uses re-render logic for Markdown rendering)
+     * Show detail modal (CRITICAL:    /**
+     * Show detail modal with markdown preview
      */
-    private showDetailModal(url: string, position: number): void {
-        const bookmark = this.filteredBookmarks.find(
-            b => b.url === url && b.position === position
-        );
+    private async showDetailModal(bookmark: Bookmark): Promise<void> {
+        // ✅ Phase 7: 使用StyleManager注入样式
+        const isDark = DesignTokens.isDarkMode();
+        await StyleManager.injectStyles(document, isDark);
 
-        if (!bookmark) return;
+        // ✅ Phase 7: 处理RenderResult
+        const userResult = await MarkdownRenderer.render(bookmark.userMessage);
+        const userMessageHtml = userResult.success ? userResult.html! : userResult.fallback!;
 
-        // CRITICAL: Inject markdown styles into Shadow DOM
-        // Shadow DOM cannot access styles from document.head, so we must inject them directly
-        if (this.shadowRoot) {
-            MarkdownRenderer.injectShadowStyles(this.shadowRoot);
-        }
-
-        // Render markdown using MarkdownRenderer utility
-        const userMessageHtml = MarkdownRenderer.render(bookmark.userMessage);
         const aiResponseHtml = bookmark.aiResponse
-            ? MarkdownRenderer.render(bookmark.aiResponse)
+            ? await MarkdownRenderer.render(bookmark.aiResponse).then(r => r.success ? r.html! : r.fallback!)
             : '';
 
         const modalOverlay = document.createElement('div');

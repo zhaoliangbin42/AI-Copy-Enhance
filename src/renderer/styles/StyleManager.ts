@@ -119,21 +119,6 @@ export class StyleManager {
         word-wrap: break-word;
       }
 
-      /* ✅ CRITICAL FIX: Formula alignment */
-      .markdown-body .katex { 
-        font-size: 1.05em;          /* ✅ 1.1em→1.05em,避免过大 */
-        display: inline-block;       /* ✅ inline-flex→inline-block */
-        vertical-align: -0.25em;     /* ✅ -0.4ex→-0.25em (推荐值) */
-        line-height: 1;              /* ✅ 新增,避免行高问题 */
-        text-rendering: auto;
-      }
-
-      .markdown-body .katex-display {
-        display: block;
-        margin: 1.5em 0;
-        text-align: center;
-      }
-
       /* Code placeholder styles */
       .markdown-body .code-placeholder {
         background: var(--bgColor-muted);

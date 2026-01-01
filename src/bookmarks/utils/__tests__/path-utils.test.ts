@@ -9,7 +9,7 @@
  * - Depth calculations
  */
 
-import { PathUtils, PathValidationError } from '../utils/path-utils';
+import { PathUtils, PathValidationError } from "../path-utils";
 
 describe('PathUtils', () => {
     describe('normalize', () => {

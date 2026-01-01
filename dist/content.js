@@ -24967,21 +24967,6 @@ class StyleManager {
         word-wrap: break-word;
       }
 
-      /* ✅ CRITICAL FIX: Formula alignment */
-      .markdown-body .katex { 
-        font-size: 1.05em;          /* ✅ 1.1em→1.05em,避免过大 */
-        display: inline-block;       /* ✅ inline-flex→inline-block */
-        vertical-align: -0.25em;     /* ✅ -0.4ex→-0.25em (推荐值) */
-        line-height: 1;              /* ✅ 新增,避免行高问题 */
-        text-rendering: auto;
-      }
-
-      .markdown-body .katex-display {
-        display: block;
-        margin: 1.5em 0;
-        text-align: center;
-      }
-
       /* Code placeholder styles */
       .markdown-body .code-placeholder {
         background: var(--bgColor-muted);
@@ -25580,8 +25565,6 @@ class ReRenderPanel {
    * ✅ 懒加载渲染消息
    */
   async renderMessage(index) {
-    const renderMsgStartTime = performance.now();
-    console.log(`[AI-MarkDone][ReRenderPanel] 📄 START renderMessage ${index}`);
     const messageRef = this.messages[index];
     let html = this.cache.get(index);
     if (!html) {
@@ -25613,11 +25596,9 @@ class ReRenderPanel {
           if (body) {
             body.classList.remove("fade-out");
             body.classList.add("fade-in");
-            body.innerHTML = html;
+            body.innerHTML = `<div class="markdown-body">${html}</div>`;
             StyleManager.injectStyles(shadowRoot, false).then(() => {
               this.updatePaginationState(shadowRoot.querySelector(".aicopy-pagination"));
-              const renderMsgEndTime = performance.now();
-              console.log(`[AI-MarkDone][ReRenderPanel] ✅ END renderMessage: ${(renderMsgEndTime - renderMsgStartTime).toFixed(2)}ms`);
             });
           }
         }, 150);
@@ -28279,42 +28260,6 @@ class FolderOperationsManager {
   }
 }
 
-class MarkdownRenderer_Legacy {
-  /**
-   * Render markdown to HTML
-   */
-  static async render(markdown) {
-    const result = await MarkdownRenderer.render(markdown);
-    return result.success ? result.html : result.fallback;
-  }
-  /**
-   * Inject styles into Shadow DOM
-   */
-  static async injectShadowStyles(shadowRoot) {
-    const isDark = this.detectDarkMode();
-    await StyleManager.injectStyles(shadowRoot, isDark);
-  }
-  /**
-   * Inject markdown styles to document head
-   */
-  static async injectStyles() {
-    const isDark = this.detectDarkMode();
-    await StyleManager.injectStyles(document, isDark);
-  }
-  /**
-   * Get markdown styles as string (for backward compatibility)
-   */
-  static getMarkdownStyles() {
-    return StyleManager.getMarkdownStyles(false);
-  }
-  /**
-   * Detect dark mode
-   */
-  static detectDarkMode() {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches || document.documentElement.getAttribute("data-theme") === "dark";
-  }
-}
-
 class ThemeObserver {
   observer = null;
   callbacks = /* @__PURE__ */ new Set();
@@ -29264,10 +29209,29 @@ Please create a new root folder or organize within existing folders.`
         if (target.classList.contains("item-checkbox") || target.classList.contains("bookmark-checkbox") || target.closest(".item-actions") || target.classList.contains("action-btn")) {
           return;
         }
-        const url = item.dataset.url;
-        const position = parseInt(item.dataset.position);
-        if (url && position) {
-          this.showDetailModal(url, position);
+        if (target.classList.contains("open-conversation")) {
+          const url = item.querySelector(".bookmark-title")?.getAttribute("href") || "";
+          window.open(url, "_blank");
+        } else if (target.classList.contains("edit-bookmark")) {
+          const url = item.dataset.url;
+          const position = parseInt(item.dataset.position);
+          const bookmark = this.filteredBookmarks.find(
+            (b) => b.url === url && b.position === position
+          );
+          if (bookmark) {
+            this.showDetailModal(bookmark);
+          }
+        } else {
+          const url = item.dataset.url;
+          const position = parseInt(item.dataset.position);
+          if (url && position) {
+            const bookmark = this.filteredBookmarks.find(
+              (b) => b.url === url && b.position === position
+            );
+            if (bookmark) {
+              this.showDetailModal(bookmark);
+            }
+          }
         }
       });
     });
@@ -30147,18 +30111,15 @@ Please create a new root folder or organize within existing folders.`
    * Show detail modal
    */
   /**
-   * Show detail modal (CRITICAL: Uses re-render logic for Markdown rendering)
+   * Show detail modal (CRITICAL:    /**
+   * Show detail modal with markdown preview
    */
-  showDetailModal(url, position) {
-    const bookmark = this.filteredBookmarks.find(
-      (b) => b.url === url && b.position === position
-    );
-    if (!bookmark) return;
-    if (this.shadowRoot) {
-      MarkdownRenderer_Legacy.injectShadowStyles(this.shadowRoot);
-    }
-    const userMessageHtml = MarkdownRenderer_Legacy.render(bookmark.userMessage);
-    const aiResponseHtml = bookmark.aiResponse ? MarkdownRenderer_Legacy.render(bookmark.aiResponse) : "";
+  async showDetailModal(bookmark) {
+    const isDark = DesignTokens.isDarkMode();
+    await StyleManager.injectStyles(document, isDark);
+    const userResult = await MarkdownRenderer.render(bookmark.userMessage);
+    const userMessageHtml = userResult.success ? userResult.html : userResult.fallback;
+    const aiResponseHtml = bookmark.aiResponse ? await MarkdownRenderer.render(bookmark.aiResponse).then((r) => r.success ? r.html : r.fallback) : "";
     const modalOverlay = document.createElement("div");
     modalOverlay.className = "detail-modal-overlay";
     const modal = document.createElement("div");
