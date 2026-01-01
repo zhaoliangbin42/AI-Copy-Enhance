@@ -55,4 +55,14 @@ export abstract class SiteAdapter {
      * Returns fallback text if extraction fails
      */
     abstract getUserPrompts(): string[];
+
+    /**
+     * Extract the user prompt associated with a specific model response
+     * Uses reverse DOM traversal to find the corresponding user message
+     */
+    abstract extractUserPrompt(responseElement: HTMLElement): string | null;
+    /**
+     * Get platform-specific icon (SVG string)
+     */
+    abstract getIcon(): string;
 }

@@ -323,4 +323,75 @@ export const readerPanelStyles = `
   .aicopy-panel { animation: none; }
   .aicopy-panel-body.loading::after { animation: none; }
 }
+/* Message Consolidation Styles */
+.message-user-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid var(--panel-header-border);
+  border-radius: 12px; /* User requested rounded bottom corners too */
+  margin-bottom: 24px;
+}
+
+.user-icon, .model-icon {
+  width: 32px; /* Increased container size */
+  height: 32px; /* Increased container size */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text-secondary);
+}
+
+.user-icon svg, .model-icon svg {
+  width: 20px; /* Force larger icon size */
+  height: 20px;
+}
+
+.model-icon {
+  background: var(--interactive-primary);
+  color: white;
+  margin-top: 4px;
+}
+
+.user-content {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-weight: 500;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.message-model-container {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.message-divider {
+  display: none; /* Hidden visually, structure handled by margin */
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .message-user-header {
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+  
+  .user-icon {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+  }
+  
+  .user-content {
+    color: var(--text-primary); 
+    opacity: 0.9;
+  }
+}
 `;

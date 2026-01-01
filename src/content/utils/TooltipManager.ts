@@ -227,8 +227,8 @@ export const tooltipStyles = `
 }
 
 .tooltip-index {
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: 800;
+  font-size: 18px; /* Larger size */
   color: #60a5fa; /* Blue-400 */
   letter-spacing: 0.5px;
   text-transform: uppercase;

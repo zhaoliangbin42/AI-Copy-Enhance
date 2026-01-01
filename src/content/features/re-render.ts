@@ -63,8 +63,10 @@ export class ReaderPanel {
         }
         logger.debug(`[ReaderPanel] currentIndex: ${this.currentIndex}/${this.messages.length}`);
 
-        // Extract user prompts for tooltips
-        await this.extractUserPrompts();
+        logger.debug(`[ReaderPanel] currentIndex: ${this.currentIndex}/${this.messages.length}`);
+
+        // Note: User prompts are now collected atomically in MessageCollector
+        // No separate extraction step needed.
 
         // Create panel UI
         await this.createPanel();
@@ -72,31 +74,7 @@ export class ReaderPanel {
         logger.debug(`[ReaderPanel] END show: ${(performance.now() - startTime).toFixed(2)}ms`);
     }
 
-    /**
-     * Extract user prompts using adapter
-     */
-    private async extractUserPrompts(): Promise<void> {
-        try {
-            const adapter = adapterRegistry.getAdapter();
-            if (!adapter) {
-                logger.warn('[ReaderPanel] No adapter found, using fallback prompts');
-                this.messages.forEach((msg, i) => {
-                    msg.userPrompt = `Message ${i + 1}`;
-                });
-                return;
-            }
-
-            const prompts = adapter.getUserPrompts();
-            this.messages.forEach((msg, i) => {
-                msg.userPrompt = prompts[i] || `Message ${i + 1}`;
-            });
-        } catch (err) {
-            logger.error('[ReaderPanel] extractUserPrompts failed:', err);
-            this.messages.forEach((msg, i) => {
-                msg.userPrompt = `Message ${i + 1}`;
-            });
-        }
-    }
+    // extractUserPrompts removed - handled by MessageCollector
 
     /**
      * Hide panel and cleanup all modules
@@ -276,7 +254,7 @@ export class ReaderPanel {
                 this.tooltipManager!.attach(dot, {
                     index,
                     text: this.messages[index].userPrompt || `Message ${index + 1}`,
-                    maxLength: 50
+                    maxLength: 100
                 });
             });
         }
@@ -326,6 +304,12 @@ export class ReaderPanel {
             canGoNext: index < this.messages.length - 1
         });
 
+        // P3 FIX: Reset scroll position to top
+        if (this.shadowRoot) {
+            const body = this.shadowRoot.querySelector('#panel-body');
+            body?.scrollTo(0, 0);
+        }
+
         await this.renderMessage(index);
     }
 
@@ -357,19 +341,54 @@ export class ReaderPanel {
             logger.debug(`[ReaderPanel] MarkdownRenderer.render: ${(performance.now() - t1).toFixed(2)}ms`);
             html = result.success ? result.html! : result.fallback!;
 
+            // Strict cleanup of leading/trailing whitespace/newlines
+            html = html.replace(/^\s+/, '').trim();
+
             // Cache
             this.cache.set(index, html);
         } else {
             logger.debug(`[ReaderPanel] Using cache for message ${index}`);
         }
 
-        // Update DOM
+        // Update DOM with Consolidated View
         if (this.shadowRoot) {
             const body = this.shadowRoot.querySelector('#panel-body');
             if (body) {
-                body.innerHTML = `<div class="markdown-body">${html!}</div>`;
+                // Truncate user prompt to 200 chars and collapse multiple newlines
+                const rawPrompt = messageRef.userPrompt || '';
+                // Collapse 2+ newlines into 1
+                const normalizedPrompt = rawPrompt.replace(/\n{2,}/g, '\n').trim();
+
+                const displayPrompt = normalizedPrompt.length > 200
+                    ? normalizedPrompt.slice(0, 200) + '...'
+                    : normalizedPrompt;
+
+                // Icons
+                const userIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+
+                // Get platform specific icon from adapter
+                const adapter = adapterRegistry.getAdapter();
+                const modelIcon = adapter ? adapter.getIcon() : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 2a10 10 0 0 1 10 10h-10V2z" opacity="0.5"></path><path d="M12 12L2 12"></path></svg>`;
+
+                body.innerHTML = `
+                    <div class="message-user-header">
+                        <div class="user-icon">${userIcon}</div>
+                        <div class="user-content">${this.escapeHtml(displayPrompt)}</div>
+                    </div>
+                    
+                    <div class="message-model-container">
+                        <div class="model-icon">${modelIcon}</div>
+                        <div class="markdown-body">${html!}</div>
+                    </div>
+                `;
             }
         }
+    }
+
+    private escapeHtml(text: string): string {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**

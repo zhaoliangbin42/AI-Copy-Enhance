@@ -1,5 +1,6 @@
 import { SiteAdapter } from './base';
 import { logger } from '../../utils/logger';
+import { Icons } from '../../assets/icons';
 
 /**
  * ChatGPT adapter implementation
@@ -11,11 +12,12 @@ export class ChatGPTAdapter extends SiteAdapter {
     }
 
     getMessageSelector(): string {
-        // Support both regular conversations and DeepResearch
-        // Regular: [data-message-author-role="assistant"] (not inside article)
-        // DeepResearch: article[data-turn="assistant"]
-        // Use :not() to avoid matching the same element twice
-        return 'article[data-turn="assistant"], [data-message-author-role="assistant"]:not(article [data-message-author-role="assistant"])';
+        // STRICT: Only select the specific Model Response container
+        // Avoid broader "turn" containers that might include User messages
+
+        // P4 FIX: Revert to simple union and handle deduplication in Observer (JS)
+        // The previous :not() selector proved brittle and returned 0 results for some users
+        return 'article[data-turn="assistant"], [data-message-author-role="assistant"]';
     }
 
     getMessageContentSelector(): string {
@@ -188,5 +190,53 @@ export class ChatGPTAdapter extends SiteAdapter {
         }
 
         return prompts;
+    }
+    /**
+     * Extract user prompt by traversing DOM backwards from the model response
+     */
+    extractUserPrompt(responseElement: HTMLElement): string | null {
+        try {
+            let current: Element | null = responseElement;
+
+            // Traverse previous siblings
+            while (current) {
+                current = current.previousElementSibling;
+                if (!current) break;
+
+                // Check if this sibling is a user message
+                if (
+                    current.getAttribute('data-message-author-role') === 'user' ||
+                    current.querySelector('[data-message-author-role="user"]')
+                ) {
+                    return this.cleanUserContent(current as HTMLElement);
+                }
+            }
+
+            // Fallback: Check parent's previous sibling (for nested structures)
+            const parent = responseElement.parentElement;
+            if (parent) {
+                const parentPrev = parent.previousElementSibling;
+                if (parentPrev && (
+                    parentPrev.getAttribute('data-message-author-role') === 'user' ||
+                    parentPrev.querySelector('[data-message-author-role="user"]')
+                )) {
+                    return this.cleanUserContent(parentPrev as HTMLElement);
+                }
+            }
+
+            return null;
+        } catch (err) {
+            logger.warn('[ChatGPTAdapter] extractUserPrompt failed:', err);
+            return null;
+        }
+    }
+
+    private cleanUserContent(element: HTMLElement): string {
+        const contentDiv = element.querySelector('.whitespace-pre-wrap') || element;
+        return contentDiv.textContent?.trim() || '';
+    }
+
+    getIcon(): string {
+        return Icons.chatgpt;
     }
 }

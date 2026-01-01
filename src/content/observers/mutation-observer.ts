@@ -298,7 +298,14 @@ export class MessageObserver {
      * Process all existing messages in the DOM
      */
     private processExistingMessages(): void {
-        const messages = document.querySelectorAll(this.adapter.getMessageSelector());
+        const rawMessages = document.querySelectorAll(this.adapter.getMessageSelector());
+
+        // DEDUPLICATION: Filter out messages that are contained within other messages
+        // This handles cases like ChatGPT Deep Research where both 'article' and inner 'div' match
+        // We prefer the outer container (Article)
+        const messages = Array.from(rawMessages).filter(msg => {
+            return !Array.from(rawMessages).some(other => other !== msg && other.contains(msg));
+        });
 
         let newMessages = 0;
         messages.forEach((message) => {

@@ -1,3 +1,5 @@
+import { adapterRegistry } from '../adapters/registry';
+
 /**
  * Message collector for pagination
  * Collects article references WITHOUT parsing content (lazy loading)
@@ -6,7 +8,7 @@ export interface MessageRef {
     index: number;
     element: HTMLElement;
     parsed?: string; // Cached parsed content
-    userPrompt?: string; // User's original query for tooltip display
+    userPrompt?: string; //  <--- ATOMIC PAIRING: Extracted directly from relative DOM position
 }
 
 
@@ -15,27 +17,22 @@ export class MessageCollector {
      * Collect all message articles (lazy - only get DOM refs)
      */
     static collectMessages(): MessageRef[] {
+        const adapter = adapterRegistry.getAdapter();
+        if (!adapter) return [];
+
+        const selector = adapter.getMessageSelector();
+        const elements = document.querySelectorAll<HTMLElement>(selector);
+
         const messages: MessageRef[] = [];
 
-        // ChatGPT: article[data-testid^="conversation-turn-"]
-        const chatgptArticles = document.querySelectorAll<HTMLElement>(
-            'article[data-testid^="conversation-turn-"]'
-        );
+        elements.forEach((element, index) => {
+            // ATOMIC DISCOVERY: Ask adapter to find the user prompt for THIS model element
+            const userPrompt = adapter.extractUserPrompt(element);
 
-        // Gemini: message-content (需要根据实际DOM调整)
-        const geminiArticles = document.querySelectorAll<HTMLElement>(
-            'message-content, .model-response-text'
-        );
-
-        // 优先ChatGPT,fallback到Gemini
-        const articles = chatgptArticles.length > 0
-            ? Array.from(chatgptArticles)
-            : Array.from(geminiArticles);
-
-        articles.forEach((element, index) => {
             messages.push({
                 index,
                 element,
+                userPrompt: userPrompt || `Message ${index + 1}`
             });
         });
 

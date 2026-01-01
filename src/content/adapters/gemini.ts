@@ -1,5 +1,6 @@
 import { SiteAdapter } from './base';
 import { logger } from '../../utils/logger';
+import { Icons } from '../../assets/icons';
 
 /**
  * Gemini adapter implementation
@@ -11,7 +12,8 @@ export class GeminiAdapter extends SiteAdapter {
     }
 
     getMessageSelector(): string {
-        // P2: Simplified - only use stable custom element
+        // STRICT: Only use stable custom element root
+        // Avoid duplications by ensuring we target the container
         return 'model-response';
     }
 
@@ -172,5 +174,57 @@ export class GeminiAdapter extends SiteAdapter {
         }
 
         return prompts;
+    }
+
+    /**
+     * Extract user prompt by traversing DOM backwards from the model response
+     */
+    extractUserPrompt(responseElement: HTMLElement): string | null {
+        try {
+            // Strategy: Walk backwards to find <user-query> or [data-test-id="user-query"]
+
+            let current: Element | null = responseElement;
+
+            // 1. Check Previous Siblings
+            while (current) {
+                current = current.previousElementSibling;
+                if (!current) break;
+
+                // Check for User Query identifiers
+                if (
+                    current.tagName.toLowerCase() === 'user-query' ||
+                    current.getAttribute('data-test-id') === 'user-query' ||
+                    current.querySelector('[data-test-id="user-query"]')
+                ) {
+                    return this.cleanUserContent(current as HTMLElement);
+                }
+            }
+
+            // 2. Fallback: Parent's Previous (if nested in some container)
+            const parent = responseElement.parentElement;
+            if (parent) {
+                const parentPrev = parent.previousElementSibling;
+                if (parentPrev && (
+                    parentPrev.tagName.toLowerCase() === 'user-query' ||
+                    parentPrev.getAttribute('data-test-id') === 'user-query' ||
+                    parentPrev.querySelector('[data-test-id="user-query"]')
+                )) {
+                    return this.cleanUserContent(parentPrev as HTMLElement);
+                }
+            }
+
+            return null;
+        } catch (err) {
+            logger.warn('[GeminiAdapter] extractUserPrompt failed:', err);
+            return null;
+        }
+    }
+
+    private cleanUserContent(element: HTMLElement): string {
+        return element.textContent?.trim() || '';
+    }
+
+    getIcon(): string {
+        return Icons.gemini;
     }
 }
