@@ -7,6 +7,7 @@ import { DotPaginationController } from '../utils/DotPaginationController';
 import { NavigationButtonsController } from '../utils/NavigationButtonsController';
 import { readerPanelStyles } from '../utils/ReaderPanelStyles';
 import { adapterRegistry } from '../adapters/registry';
+import { DesignTokens } from '../../utils/design-tokens';
 import { logger } from '../../utils/logger';
 
 type GetMarkdownFn = (element: HTMLElement) => string;
@@ -125,6 +126,12 @@ export class ReaderPanel {
         // Inject styles
         await StyleManager.injectStyles(this.shadowRoot, this.currentThemeIsDark);
 
+        // 🔑 FIX: Inject DesignTokens for CSS variables (--interactive-primary, etc.)
+        const tokenStyle = document.createElement('style');
+        tokenStyle.id = 'design-tokens';
+        tokenStyle.textContent = `:host { ${DesignTokens.getCompleteTokens(this.currentThemeIsDark)} }`;
+        this.shadowRoot.insertBefore(tokenStyle, this.shadowRoot.firstChild);
+
         const styleEl = document.createElement('style');
         styleEl.textContent = readerPanelStyles + tooltipStyles;
         this.shadowRoot.appendChild(styleEl);
@@ -189,7 +196,7 @@ export class ReaderPanel {
         header.className = 'aicopy-panel-header';
         header.innerHTML = `
             <div class="aicopy-panel-header-left">
-                <h2 class="aicopy-panel-title">Rendered Markdown</h2>
+                <h2 class="aicopy-panel-title">Reader</h2>
                 <button class="aicopy-panel-btn" id="fullscreen-btn" title="Toggle fullscreen">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>

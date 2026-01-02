@@ -98,11 +98,11 @@ export class Toolbar {
             () => this.handleViewSource()
         );
 
-        // Re-render button (eye icon)
+        // Re-render button (book open icon - Reader)
         const reRenderBtn = this.createIconButton(
             're-render-btn',
-            Icons.eye,
-            'Preview Enhance',
+            Icons.bookOpen,
+            'Reader',
             () => this.handleReRender()
         );
 

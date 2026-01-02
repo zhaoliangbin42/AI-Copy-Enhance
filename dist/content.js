@@ -59,6 +59,28 @@ const scriptRel = 'modulepreload';const assetsURL = function(dep) { return "/"+d
 };
 
 class SiteAdapter {
+  /**
+   * Determines if a DOM node is platform-specific metadata noise
+   * that should be filtered out during markdown extraction.
+   * 
+   * Uses ONLY structural markers (classes, tags, positions) - no text patterns.
+   * 
+   * @param node - DOM node to check
+   * @param context - Optional context for position-based detection
+   * @returns true if node should be filtered out
+   * @default false - by default, no filtering (safe for existing implementations)
+   * 
+   * @example
+   * // ChatGPT: Filter screen-reader-only headers
+   * if (node.classList.contains('sr-only')) return true;
+   * 
+   * @example
+   * // Gemini: Filter thought containers
+   * if (node.tagName.toLowerCase() === 'model-thoughts') return true;
+   */
+  isNoiseNode(_node, _context) {
+    return false;
+  }
 }
 
 var LogLevel = /* @__PURE__ */ ((LogLevel2) => {
@@ -200,6 +222,15 @@ const Icons = {
   eye: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
     <circle cx="12" cy="12" r="3"/>
+  </svg>`,
+  /**
+   * Book open icon
+   * Usage: Reader panel button
+   * Source: Lucide Icons (ISC License)
+   */
+  bookOpen: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 7v14"/>
+    <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>
   </svg>`,
   /**
    * Copy icon
@@ -375,11 +406,15 @@ let ChatGPTAdapter$1 = class ChatGPTAdapter extends SiteAdapter {
     return url.includes("chatgpt.com") || url.includes("chat.openai.com");
   }
   getMessageSelector() {
-    return 'article[data-turn="assistant"], [data-message-author-role="assistant"]';
+    return 'article[data-turn="assistant"], [data-message-author-role="assistant"]:not(article [data-message-author-role="assistant"])';
   }
   getMessageContentSelector() {
     return ".markdown.prose, .markdown.prose.dark\\:prose-invert";
   }
+  /**
+   * Multi-selector strategy for action bar detection
+   * Provides fallback selectors if ChatGPT UI changes
+   */
   getActionBarSelector() {
     return "div.z-0.flex.min-h-\\[46px\\].justify-start";
   }
@@ -527,6 +562,22 @@ let ChatGPTAdapter$1 = class ChatGPTAdapter extends SiteAdapter {
     const contentDiv = element.querySelector(".whitespace-pre-wrap") || element;
     return contentDiv.textContent?.trim() || "";
   }
+  /**
+   * ChatGPT noise filtering - uses ONLY structural markers
+   * Source: ChatGPT-Thought.html
+   */
+  isNoiseNode(node, context) {
+    if (!(node instanceof HTMLElement)) return false;
+    if (node.classList.contains("sr-only")) {
+      return true;
+    }
+    if (context?.nextSibling?.hasAttribute("data-message-author-role")) {
+      if (node.classList.contains("min-h-6") && node.querySelector("button span.truncate")) {
+        return true;
+      }
+    }
+    return false;
+  }
   getIcon() {
     return Icons.chatgpt;
   }
@@ -542,6 +593,10 @@ let GeminiAdapter$1 = class GeminiAdapter extends SiteAdapter {
   getMessageContentSelector() {
     return ".model-response-text, #extended-response-markdown-content, .markdown";
   }
+  /**
+   * Multi-selector strategy for action bar detection
+   * Provides fallback selectors if Gemini UI changes
+   */
   getActionBarSelector() {
     return ".response-container-footer, .response-footer";
   }
@@ -679,6 +734,26 @@ let GeminiAdapter$1 = class GeminiAdapter extends SiteAdapter {
   }
   cleanUserContent(element) {
     return element.textContent?.trim() || "";
+  }
+  /**
+   * Gemini noise filtering - uses ONLY structural markers
+   * Source: Gemini-table-code.html + previous audits
+   */
+  isNoiseNode(node, _context) {
+    if (!(node instanceof HTMLElement)) return false;
+    if (node.tagName.toLowerCase() === "model-thoughts") {
+      return true;
+    }
+    if (node.closest(".thoughts-container")) {
+      return true;
+    }
+    if (node.classList.contains("code-block-decoration") && node.classList.contains("header-formatted")) {
+      return true;
+    }
+    if (node.classList.contains("table-footer") && node.hasAttribute("hide-from-message-actions") && node.closest("table-block")) {
+      return true;
+    }
+    return false;
   }
   getIcon() {
     return Icons.gemini;
@@ -834,7 +909,7 @@ class MessageObserver {
       if (currentCount > this.lastCopyButtonCount) {
         logger$1.debug(`Copy button added: ${this.lastCopyButtonCount} → ${currentCount}`);
         this.lastCopyButtonCount = currentCount;
-        this.handleStreamingComplete();
+        this.processLatestMessage();
       }
     }, 300);
     this.copyButtonObserver = new MutationObserver((mutations) => {
@@ -866,50 +941,27 @@ class MessageObserver {
     logger$1.debug("Copy button monitoring active");
   }
   /**
-   * Handle streaming completion (Copy Button appeared)
-   * This is triggered when a new copy button is added to the page.
+   * Process only the latest message (for streaming completion)
    */
-  handleStreamingComplete() {
+  processLatestMessage() {
     const selector = this.adapter.getMessageSelector();
-    const articles = document.querySelectorAll(selector);
-    if (articles.length === 0) return;
-    const lastArticle = articles[articles.length - 1];
-    const messageId = this.adapter.getMessageId(lastArticle);
-    const currentState = this.injector.getState(lastArticle);
-    if (currentState === "null") {
-      if (messageId && !this.processedMessages.has(messageId)) {
-        this.processedMessages.add(messageId);
-      }
-      this.onMessageDetected(lastArticle);
-    } else if (currentState === "injected") {
-      this.onMessageDetected(lastArticle);
-    } else if (currentState === "active") {
-      logger$1.debug("[StreamingComplete] Toolbar already active, refreshing word count");
-      this.refreshWordCount(lastArticle);
+    const messages = document.querySelectorAll(selector);
+    if (messages.length === 0) return;
+    const lastMessage = messages[messages.length - 1];
+    this.injector.reconcileToolbarPosition(lastMessage);
+    const messageId = this.adapter.getMessageId(lastMessage);
+    if (!messageId) {
+      logger$1.debug("Latest message has no ID, processing anyway");
+      this.onMessageDetected(lastMessage);
+      return;
     }
-    setTimeout(() => {
-      const allMessages = document.querySelectorAll(selector);
-      allMessages.forEach((msg) => {
-        if (!(msg instanceof HTMLElement)) return;
-        const state = this.injector.getState(msg);
-        if (state === "injected") {
-          this.onMessageDetected(msg);
-        }
-      });
-    }, 5e3);
-  }
-  /**
-   * Refresh word count for an already active toolbar
-   * Used for Deep Think scenarios where content loads progressively
-   */
-  refreshWordCount(messageElement) {
-    const toolbarContainer = messageElement.querySelector(".aicopy-toolbar-container");
-    if (!toolbarContainer) return;
-    const toolbar = toolbarContainer.__toolbar;
-    if (toolbar && typeof toolbar.refreshWordCount === "function") {
-      toolbar.refreshWordCount();
-      logger$1.debug("[StreamingComplete] Word count refreshed");
+    if (this.processedMessages.has(messageId)) {
+      logger$1.debug("[WordCountDebug] Streaming completion detected for known message (Copy button), forcing update:", messageId);
+    } else {
+      logger$1.debug("[WordCountDebug] New streaming message completed:", messageId);
+      this.processedMessages.add(messageId);
     }
+    this.onMessageDetected(lastMessage);
   }
   /**
    * Setup IntersectionObserver to detect messages entering viewport
@@ -919,6 +971,7 @@ class MessageObserver {
       entries.forEach((entry) => {
         if (entry.isIntersecting && entry.target instanceof HTMLElement) {
           const messageId = this.adapter.getMessageId(entry.target);
+          this.injector.reconcileToolbarPosition(entry.target);
           if (messageId && !this.processedMessages.has(messageId)) {
             logger$1.debug("Message entered viewport:", messageId);
             this.processedMessages.add(messageId);
@@ -968,17 +1021,20 @@ class MessageObserver {
    * Process all existing messages in the DOM
    */
   processExistingMessages() {
-    const rawMessages = document.querySelectorAll(this.adapter.getMessageSelector());
-    const messages = Array.from(rawMessages).filter((msg) => {
-      return !Array.from(rawMessages).some((other) => other !== msg && other.contains(msg));
-    });
+    const messages = document.querySelectorAll(this.adapter.getMessageSelector());
+    logger$1.debug(`Found ${messages.length} messages (${this.processedMessages.size} already processed)`);
     let newMessages = 0;
     messages.forEach((message) => {
       if (!(message instanceof HTMLElement)) return;
       const messageId = this.adapter.getMessageId(message);
       if (!messageId) {
         const fallbackId = `msg-${Array.from(messages).indexOf(message)}`;
+        logger$1.debug("Message has no ID, using fallback:", fallbackId);
         if (this.processedMessages.has(fallbackId)) {
+          const wrapper2 = message.querySelector(".aicopy-toolbar-wrapper");
+          if (wrapper2) {
+            this.injector.reconcileToolbarPosition(message);
+          }
           return;
         }
         this.processedMessages.add(fallbackId);
@@ -986,11 +1042,19 @@ class MessageObserver {
         this.onMessageDetected(message);
         return;
       }
+      const wrapper = message.querySelector(".aicopy-toolbar-wrapper");
+      if (wrapper) {
+        this.injector.reconcileToolbarPosition(message);
+      }
       if (this.processedMessages.has(messageId)) {
         return;
       }
       this.processedMessages.add(messageId);
       newMessages++;
+      logger$1.debug("New message detected:", messageId);
+      this.onMessageDetected(message);
+      newMessages++;
+      logger$1.debug("New message detected:", messageId);
       this.onMessageDetected(message);
       if (this.intersectionObserver) {
         this.intersectionObserver.observe(message);
@@ -1031,6 +1095,12 @@ class MessageObserver {
   }
 }
 
+var ToolbarState = /* @__PURE__ */ ((ToolbarState2) => {
+  ToolbarState2["NULL"] = "null";
+  ToolbarState2["INJECTED"] = "injected";
+  ToolbarState2["ACTIVE"] = "active";
+  return ToolbarState2;
+})(ToolbarState || {});
 class ToolbarInjector {
   adapter;
   messageStates = /* @__PURE__ */ new WeakMap();
@@ -2262,8 +2332,8 @@ class Toolbar {
     );
     const reRenderBtn = this.createIconButton(
       "re-render-btn",
-      Icons.eye,
-      "Preview Enhance",
+      Icons.bookOpen,
+      "Reader",
       () => this.handleReRender()
     );
     const stats = document.createElement("span");
@@ -4279,13 +4349,58 @@ class MarkdownParser {
   parser = createMarkdownParser({
     enablePerformanceLogging: true
   });
+  /**
+   * Parse HTML element to Markdown with noise filtering
+   * 
+   * Pre-processes DOM to remove platform-specific noise before markdown conversion
+   * @param element - HTML element to parse
+   * @returns Markdown string
+   */
   parse(element) {
-    logger$1.debug("[MarkdownParser] Using v3 parser");
+    logger$1.debug("[MarkdownParser] Using v3 parser with noise filtering");
     const startTime = performance.now();
-    const markdown = this.parser.parse(element);
+    const clone = element.cloneNode(true);
+    this.removeNoiseNodes(clone);
+    const markdown = this.parser.parse(clone);
     const elapsed = performance.now() - startTime;
-    logger$1.debug(`[MarkdownParser] Parsed in ${elapsed.toFixed(2)}ms`);
+    logger$1.debug(`[Markdown Parser] Parsed in ${elapsed.toFixed(2)}ms`);
     return markdown;
+  }
+  /**
+   * Remove platform-specific noise nodes from DOM tree
+   * Uses adapter's isNoiseNode() method with structural markers
+   * 
+   * @param root - Root element to clean (will be mutated)
+   */
+  removeNoiseNodes(root) {
+    const adapter = adapterRegistry.getAdapter();
+    if (!adapter) {
+      logger$1.warn("[MarkdownParser] No adapter found, skipping noise filtering");
+      return;
+    }
+    const walker = document.createTreeWalker(
+      root,
+      NodeFilter.SHOW_ELEMENT
+    );
+    const nodesToRemove = [];
+    let node;
+    while (node = walker.nextNode()) {
+      try {
+        const nextSibling = node.nextElementSibling;
+        if (adapter.isNoiseNode(node, { nextSibling })) {
+          nodesToRemove.push(node);
+        }
+      } catch (error) {
+        logger$1.warn("[MarkdownParser] Noise detection error, skipping node:", error);
+      }
+    }
+    nodesToRemove.reverse().forEach((n) => {
+      logger$1.debug("[MarkdownParser] Removing noise node:", n);
+      n.parentNode?.removeChild(n);
+    });
+    if (nodesToRemove.length > 0) {
+      logger$1.debug(`[MarkdownParser] Removed ${nodesToRemove.length} noise nodes`);
+    }
   }
 }
 
@@ -25347,6 +25462,35 @@ class LRUCache {
   }
 }
 
+class MessageDeduplicator {
+  /**
+   * Remove nested duplicates from message list
+   * Keeps outer containers, removes inner ones
+   * 
+   * @example
+   * // ChatGPT: Both match but inner is duplicate
+   * <article data-turn="assistant">     <!-- Keep ✅ -->
+   *   <div data-message-author-role="assistant"> <!-- Remove ❌ -->
+   *     <p>Response</p>
+   *   </div>
+   * </article>
+   */
+  static deduplicate(messages) {
+    if (messages.length === 0) return [];
+    const messageSet = new Set(messages);
+    return messages.filter((msg) => {
+      let parent = msg.parentElement;
+      while (parent) {
+        if (messageSet.has(parent)) {
+          return false;
+        }
+        parent = parent.parentElement;
+      }
+      return true;
+    });
+  }
+}
+
 class MessageCollector {
   /**
    * Collect all message articles (lazy - only get DOM refs)
@@ -25355,7 +25499,8 @@ class MessageCollector {
     const adapter = adapterRegistry.getAdapter();
     if (!adapter) return [];
     const selector = adapter.getMessageSelector();
-    const elements = document.querySelectorAll(selector);
+    const rawElements = document.querySelectorAll(selector);
+    const elements = MessageDeduplicator.deduplicate(Array.from(rawElements));
     const messages = [];
     elements.forEach((element, index) => {
       const userPrompt = adapter.extractUserPrompt(element);
@@ -25805,10 +25950,9 @@ const readerPanelStyles = `
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.6);
   z-index: 999998;
-  backdrop-filter: blur(24px) saturate(180%) contrast(120%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%) contrast(120%);
+  backdrop-filter: blur(3px);
 }
 
 /* Panel Container - Pure Glassmorphism */
@@ -25875,15 +26019,12 @@ const readerPanelStyles = `
 }
 
 .aicopy-panel-title {
-  font-size: var(--text-base);
+  font-size: var(--text-3xl);
   font-weight: var(--font-medium);
   color: var(--text-primary);
   letter-spacing: -0.01em;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  
-  /* Text shadow for better readability on blur */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Header Buttons */
@@ -25898,6 +26039,8 @@ const readerPanelStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: var(--text-3xl);
+  font-weight: var(--font-medium);
   transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 
@@ -25922,7 +26065,6 @@ const readerPanelStyles = `
 .aicopy-panel-body .markdown-body {
   max-width: 800px;
   width: 100%;
-  margin: 24px auto;
   overflow-x: auto;
   word-wrap: break-word;
 }
@@ -26123,8 +26265,11 @@ const readerPanelStyles = `
   background: rgba(0, 0, 0, 0.02);
   border-bottom: 1px solid var(--panel-header-border);
   border-radius: 12px; /* User requested rounded bottom corners too */
-  margin-bottom: 24px;
+  margin: 0 auto 24px;  /* Center + bottom margin */
+  max-width: 800px;     /* Match .markdown-body width */
+  width: 100%;
 }
+
 
 .user-icon, .model-icon {
   width: 32px; /* Increased container size */
@@ -26162,6 +26307,9 @@ const readerPanelStyles = `
   display: flex;
   gap: 16px;
   align-items: flex-start;
+  max-width: 800px;     /* Match .markdown-body and .message-user-header width */
+  margin: 0 auto;       /* Center horizontally */
+  width: 100%;
 }
 
 .message-divider {
@@ -26180,11 +26328,19 @@ const readerPanelStyles = `
     color: var(--text-primary);
   }
   
+  .model-icon {
+    background: var(--interactive-primary);
+    color: white;
+    /* Slight brightness boost for dark mode visibility */
+    filter: brightness(1.1);
+  }
+  
   .user-content {
     color: var(--text-primary); 
     opacity: 0.9;
   }
 }
+
 `;
 
 class ReaderPanel {
@@ -26261,6 +26417,10 @@ class ReaderPanel {
     this.container.dataset.theme = this.currentThemeIsDark ? "dark" : "light";
     this.shadowRoot = this.container.attachShadow({ mode: "open" });
     await StyleManager.injectStyles(this.shadowRoot, this.currentThemeIsDark);
+    const tokenStyle = document.createElement("style");
+    tokenStyle.id = "design-tokens";
+    tokenStyle.textContent = `:host { ${DesignTokens.getCompleteTokens(this.currentThemeIsDark)} }`;
+    this.shadowRoot.insertBefore(tokenStyle, this.shadowRoot.firstChild);
     const styleEl = document.createElement("style");
     styleEl.textContent = readerPanelStyles + tooltipStyles;
     this.shadowRoot.appendChild(styleEl);
@@ -26306,7 +26466,7 @@ class ReaderPanel {
     header.className = "aicopy-panel-header";
     header.innerHTML = `
             <div class="aicopy-panel-header-left">
-                <h2 class="aicopy-panel-title">Rendered Markdown</h2>
+                <h2 class="aicopy-panel-title">Reader</h2>
                 <button class="aicopy-panel-btn" id="fullscreen-btn" title="Toggle fullscreen">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
@@ -35145,17 +35305,24 @@ class ContentScript {
   }
   /**
    * Handle new message detected
-   * State machine: NULL → inject (hidden) → activate (visible + init)
    */
   handleNewMessage(messageElement) {
     logger$1.debug("Handling new message");
     const adapter = adapterRegistry.getAdapter();
     if (!adapter) return;
+    const isArticle = messageElement.tagName.toLowerCase() === "article";
+    const isModelResponse = messageElement.tagName.toLowerCase() === "model-response";
+    const hasActionBar = isArticle || isModelResponse ? messageElement.querySelector(adapter.getActionBarSelector()) !== null : true;
     const messageId = adapter.getMessageId(messageElement);
     if (!messageId) {
       logger$1.warn("Message has no ID, cannot track processing state");
       if (this.processingElements.has(messageElement)) {
         logger$1.debug("Element is already being processed (no ID), skipping");
+        return;
+      }
+      const hasToolbar = messageElement.querySelector(".aicopy-toolbar-container");
+      if (hasToolbar) {
+        logger$1.debug("Toolbar already exists (no ID), skipping");
         return;
       }
       this.processingElements.add(messageElement);
@@ -35171,61 +35338,78 @@ class ContentScript {
       logger$1.info("[ContentScript] First message detected, checking bookmark navigation");
       this.checkBookmarkNavigation();
     }
-    const currentState = this.injector?.getState(messageElement);
-    if (currentState === "null") {
-      const callbacks = {
-        onCopyMarkdown: async () => {
-          return this.getMarkdown(messageElement);
-        },
-        onViewSource: () => {
-          this.showSourceModal(messageElement);
-        },
-        onReRender: () => {
-          this.showReRenderPanel(messageElement);
-        },
-        onBookmark: async () => {
-          await this.handleBookmark(messageElement);
-        }
-      };
-      const toolbar = new Toolbar(callbacks);
-      toolbar.setTheme(this.currentThemeIsDark);
+    const existingToolbarContainer = messageElement.querySelector(".aicopy-toolbar-container");
+    if (existingToolbarContainer) {
+      logger$1.debug("Toolbar already exists, checking state");
       if (this.injector) {
-        const injected = this.injector.inject(messageElement, toolbar.getElement());
-        if (injected) {
-          const toolbarContainer = toolbar.getElement();
-          toolbarContainer.__toolbar = toolbar;
-          const position = this.getMessagePosition(messageElement);
-          this.toolbars.set(position, toolbar);
-          const isBookmarked = this.bookmarkedPositions.has(position);
-          toolbar.setBookmarkState(isBookmarked);
-          this.mathClickHandler.enable(messageElement);
-          const isStreaming = adapter.isStreamingMessage && adapter.isStreamingMessage(messageElement);
-          if (!isStreaming) {
-            const activated = this.injector.activate(messageElement);
-            if (activated) {
-              toolbar.setPending(false);
+        const currentState = this.injector.getState(messageElement);
+        if (currentState === ToolbarState.INJECTED) {
+          logger$1.debug("[toolbar] Existing toolbar in INJECTED state, activating now");
+          const activated = this.injector.activate(messageElement);
+          if (activated) {
+            const existingToolbar2 = existingToolbarContainer.__toolbar;
+            if (existingToolbar2 && typeof existingToolbar2.setPending === "function") {
+              existingToolbar2.setPending(false);
             }
           }
         }
       }
-    } else if (currentState === "injected") {
-      if (this.injector) {
-        const activated = this.injector.activate(messageElement);
-        if (activated) {
-          const toolbarContainer = messageElement.querySelector(".aicopy-toolbar-container");
-          if (toolbarContainer) {
-            const toolbar = toolbarContainer.__toolbar;
-            if (toolbar && typeof toolbar.setPending === "function") {
-              toolbar.setPending(false);
-            }
+      const existingToolbar = existingToolbarContainer.__toolbar;
+      if (hasActionBar && existingToolbar && typeof existingToolbar.setPending === "function") {
+        logger$1.debug(`[WordCountDebug] Existing toolbar found. Updating pending state to false (ActionBar exists)`);
+        existingToolbar.setPending(false);
+      }
+      if (messageId) {
+        this.processingMessages.delete(messageId);
+      }
+      return;
+    }
+    const callbacks = {
+      onCopyMarkdown: async () => {
+        return this.getMarkdown(messageElement);
+      },
+      onViewSource: () => {
+        this.showSourceModal(messageElement);
+      },
+      onReRender: () => {
+        this.showReRenderPanel(messageElement);
+      },
+      onBookmark: async () => {
+        await this.handleBookmark(messageElement);
+      }
+    };
+    const toolbar = new Toolbar(callbacks);
+    toolbar.setTheme(this.currentThemeIsDark);
+    if (!hasActionBar || adapter.isStreamingMessage(messageElement)) {
+      logger$1.debug(`[WordCountDebug] Setting new toolbar to pending. NoActionBar=${!hasActionBar}, IsStreaming=${adapter.isStreamingMessage(messageElement)}`);
+      toolbar.setPending(true);
+    }
+    if (this.injector) {
+      const injected = this.injector.inject(messageElement, toolbar.getElement());
+      if (injected) {
+        const isStreaming = adapter.isStreamingMessage && adapter.isStreamingMessage(messageElement);
+        if (!isStreaming && hasActionBar) {
+          const activated = this.injector.activate(messageElement);
+          if (activated) {
+            logger$1.debug("[toolbar] Non-streaming message: activated immediately");
+            toolbar.setPending(false);
           }
         }
       }
-    } else ;
+    }
+    const toolbarContainer = messageElement.querySelector(".aicopy-toolbar-container");
+    if (toolbarContainer) {
+      toolbarContainer.__toolbar = toolbar;
+    }
+    const position = this.getMessagePosition(messageElement);
+    this.toolbars.set(position, toolbar);
+    const isBookmarked = this.bookmarkedPositions.has(position);
+    toolbar.setBookmarkState(isBookmarked);
+    this.mathClickHandler.enable(messageElement);
     if (messageId) {
       setTimeout(() => {
         this.processingMessages.delete(messageId);
-        logger$1.debug(`[handleNewMessage] Removed ${messageId} from processing set`);
+        logger$1.info(`[DEBUG] ⏰ Timeout: Removed ${messageId}. Size: ${this.processingMessages.size}`);
       }, 1e3);
     }
     logger$1.info("=== handleNewMessage END ===");
@@ -35514,6 +35698,10 @@ function handleNavigation(contentScript) {
       return;
     }
     logger$1.info("[Navigation] Reinitializing extension");
+    if (contentScript && contentScript.observer) {
+      contentScript.observer.reset();
+      logger$1.debug("[Navigation] Observer reset completed");
+    }
     contentScript?.stop();
     const newContentScript = new ContentScript();
     await newContentScript.start();

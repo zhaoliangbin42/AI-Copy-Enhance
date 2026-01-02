@@ -3,6 +3,7 @@ import { debounce } from '../../utils/dom-utils';
 import { logger } from '../../utils/logger';
 import { ToolbarInjector } from '../injectors/toolbar-injector';
 
+
 /**
  * Debounce delays for different operations
  */
@@ -102,6 +103,7 @@ export class MessageObserver {
         logger.debug('Setup complete: MutationObserver + Copy Button Monitor + IntersectionObserver');
     }
 
+
     /**
      * Setup copy button monitoring for streaming completion detection
      * This is more reliable than waiting for action bars
@@ -123,7 +125,7 @@ export class MessageObserver {
 
                 // New copy button = streaming message completed
                 // Handle streaming completion (inject or activate)
-                this.handleStreamingComplete();
+                this.processLatestMessage();
             }
         }, 300); // 300ms debounce to prevent multiple triggers
 
@@ -166,65 +168,35 @@ export class MessageObserver {
     }
 
     /**
-     * Handle streaming completion (Copy Button appeared)
-     * This is triggered when a new copy button is added to the page.
+     * Process only the latest message (for streaming completion)
      */
-    private handleStreamingComplete(): void {
-        // P0: Use adapter to get message selector
+    private processLatestMessage(): void {
         const selector = this.adapter.getMessageSelector();
-        const articles = document.querySelectorAll(selector);
-        if (articles.length === 0) return;
+        const messages = document.querySelectorAll(selector);
+        if (messages.length === 0) return;
 
-        const lastArticle = articles[articles.length - 1] as HTMLElement;
-        const messageId = this.adapter.getMessageId(lastArticle);
+        const lastMessage = messages[messages.length - 1] as HTMLElement;
+        // Re-inject toolbar after stream complete
+        this.injector.reconcileToolbarPosition(lastMessage);
 
-        // Get current toolbar state
-        const currentState = this.injector.getState(lastArticle);
+        const messageId = this.adapter.getMessageId(lastMessage);
 
-        if (currentState === 'null') {
-            // No toolbar yet → trigger creation and injection
-            if (messageId && !this.processedMessages.has(messageId)) {
-                this.processedMessages.add(messageId);
-            }
-            this.onMessageDetected(lastArticle);
-        } else if (currentState === 'injected') {
-            // Toolbar injected but not activated → activate it
-            this.onMessageDetected(lastArticle);
-        } else if (currentState === 'active') {
-            // 🔑 FIX: Toolbar already active (e.g. Deep Think scenario)
-            // Native Action Bar just appeared → refresh word count
-            logger.debug('[StreamingComplete] Toolbar already active, refreshing word count');
-            this.refreshWordCount(lastArticle);
+        if (!messageId) {
+            logger.debug('Latest message has no ID, processing anyway');
+            this.onMessageDetected(lastMessage);
+            return;
         }
 
-        // 🔑 Fallback: Scan for missed toolbars after 5 seconds
-        // This ensures 100% injection even if something goes wrong
-        setTimeout(() => {
-            const allMessages = document.querySelectorAll(selector);
-            allMessages.forEach(msg => {
-                if (!(msg instanceof HTMLElement)) return;
-                const state = this.injector.getState(msg);
-                if (state === 'injected') {
-                    // Found hidden toolbar → activate it
-                    this.onMessageDetected(msg);
-                }
-            });
-        }, 5000);
-    }
-
-    /**
-     * Refresh word count for an already active toolbar
-     * Used for Deep Think scenarios where content loads progressively
-     */
-    private refreshWordCount(messageElement: HTMLElement): void {
-        const toolbarContainer = messageElement.querySelector('.aicopy-toolbar-container');
-        if (!toolbarContainer) return;
-
-        const toolbar = (toolbarContainer as any).__toolbar;
-        if (toolbar && typeof toolbar.refreshWordCount === 'function') {
-            toolbar.refreshWordCount();
-            logger.debug('[StreamingComplete] Word count refreshed');
+        // FORCE update when copy buttons change (Streaming -> Done)
+        // index.ts will handle idempotency and setPending(false)
+        if (this.processedMessages.has(messageId)) {
+            logger.debug('[WordCountDebug] Streaming completion detected for known message (Copy button), forcing update:', messageId);
+        } else {
+            logger.debug('[WordCountDebug] New streaming message completed:', messageId);
+            this.processedMessages.add(messageId);
         }
+
+        this.onMessageDetected(lastMessage);
     }
 
     /**
@@ -235,6 +207,8 @@ export class MessageObserver {
             entries.forEach((entry) => {
                 if (entry.isIntersecting && entry.target instanceof HTMLElement) {
                     const messageId = this.adapter.getMessageId(entry.target);
+                    // Reconcile on visibility
+                    this.injector.reconcileToolbarPosition(entry.target);
 
                     if (messageId && !this.processedMessages.has(messageId)) {
                         logger.debug('Message entered viewport:', messageId);
@@ -298,34 +272,40 @@ export class MessageObserver {
      * Process all existing messages in the DOM
      */
     private processExistingMessages(): void {
-        const rawMessages = document.querySelectorAll(this.adapter.getMessageSelector());
+        const messages = document.querySelectorAll(this.adapter.getMessageSelector());
+        logger.debug(`Found ${messages.length} messages (${this.processedMessages.size} already processed)`);
 
-        // DEDUPLICATION: Filter out messages that are contained within other messages
-        // This handles cases like ChatGPT Deep Research where both 'article' and inner 'div' match
-        // We prefer the outer container (Article)
-        const messages = Array.from(rawMessages).filter(msg => {
-            return !Array.from(rawMessages).some(other => other !== msg && other.contains(msg));
-        });
 
         let newMessages = 0;
         messages.forEach((message) => {
             if (!(message instanceof HTMLElement)) return;
 
             const messageId = this.adapter.getMessageId(message);
-
             if (!messageId) {
                 // Generate a fallback ID based on position if no ID attribute
                 const fallbackId = `msg-${Array.from(messages).indexOf(message)}`;
+                logger.debug('Message has no ID, using fallback:', fallbackId);
 
                 if (this.processedMessages.has(fallbackId)) {
+                    // Only reconcile if wrapper already exists (position correction)
+                    const wrapper = message.querySelector('.aicopy-toolbar-wrapper');
+                    if (wrapper) {
+                        this.injector.reconcileToolbarPosition(message);
+                    }
                     return;
                 }
 
-                // Mark as processed and trigger creation
+                // New message: let handleNewMessage inject it
                 this.processedMessages.add(fallbackId);
                 newMessages++;
                 this.onMessageDetected(message);
                 return;
+            }
+
+            // Only reconcile if wrapper already exists (position correction)
+            const wrapper = message.querySelector('.aicopy-toolbar-wrapper');
+            if (wrapper) {
+                this.injector.reconcileToolbarPosition(message);
             }
 
             // Skip if already processed
@@ -338,6 +318,12 @@ export class MessageObserver {
             newMessages++;
 
             // Trigger callback
+            logger.debug('New message detected:', messageId);
+            this.onMessageDetected(message);
+            newMessages++;
+
+            // Trigger callback
+            logger.debug('New message detected:', messageId);
             this.onMessageDetected(message);
 
             // Also observe with IntersectionObserver for future viewport checks

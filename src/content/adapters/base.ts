@@ -61,6 +61,30 @@ export abstract class SiteAdapter {
      * Uses reverse DOM traversal to find the corresponding user message
      */
     abstract extractUserPrompt(responseElement: HTMLElement): string | null;
+
+    /**
+     * Determines if a DOM node is platform-specific metadata noise
+     * that should be filtered out during markdown extraction.
+     * 
+     * Uses ONLY structural markers (classes, tags, positions) - no text patterns.
+     * 
+     * @param node - DOM node to check
+     * @param context - Optional context for position-based detection
+     * @returns true if node should be filtered out
+     * @default false - by default, no filtering (safe for existing implementations)
+     * 
+     * @example
+     * // ChatGPT: Filter screen-reader-only headers
+     * if (node.classList.contains('sr-only')) return true;
+     * 
+     * @example
+     * // Gemini: Filter thought containers
+     * if (node.tagName.toLowerCase() === 'model-thoughts') return true;
+     */
+    isNoiseNode(_node: Node, _context?: { nextSibling?: Element | null }): boolean {
+        return false;  // Default: no filtering
+    }
+
     /**
      * Get platform-specific icon (SVG string)
      */

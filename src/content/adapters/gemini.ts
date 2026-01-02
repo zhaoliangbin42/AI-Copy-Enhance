@@ -22,11 +22,16 @@ export class GeminiAdapter extends SiteAdapter {
         return '.model-response-text, #extended-response-markdown-content, .markdown';
     }
 
+    /**
+     * Multi-selector strategy for action bar detection
+     * Provides fallback selectors if Gemini UI changes
+     */
     getActionBarSelector(): string {
         // Action buttons are in the footer
         // IMPORTANT: This is INSIDE the model-response element
         return '.response-container-footer, .response-footer';
     }
+
 
     getCopyButtonSelector(): string {
         // P0: Gemini uses broader matching for copy buttons
@@ -222,6 +227,43 @@ export class GeminiAdapter extends SiteAdapter {
 
     private cleanUserContent(element: HTMLElement): string {
         return element.textContent?.trim() || '';
+    }
+
+    /**
+     * Gemini noise filtering - uses ONLY structural markers
+     * Source: Gemini-table-code.html + previous audits
+     */
+    isNoiseNode(node: Node, _context?: { nextSibling?: Element | null }): boolean {
+        if (!(node instanceof HTMLElement)) return false;
+
+        // Filter 1: Thought/reasoning container
+        // Source: Previous audit (model-thoughts custom element)
+        // Marker: Custom element (100% unique)
+        if (node.tagName.toLowerCase() === 'model-thoughts') {
+            return true;
+        }
+        if (node.closest('.thoughts-container')) {
+            return true;
+        }
+
+        // Filter 2: Code block language label header
+        // Source: Gemini-table-code.html:4404-4426
+        // Marker: .code-block-decoration.header-formatted (exact class combo)
+        if (node.classList.contains('code-block-decoration') &&
+            node.classList.contains('header-formatted')) {
+            return true;
+        }
+
+        // Filter 3: Table footer action buttons
+        // Source: Gemini-table-code.html:2969-3014
+        // Marker: .table-footer[hide-from-message-actions] inside table-block
+        if (node.classList.contains('table-footer') &&
+            node.hasAttribute('hide-from-message-actions') &&
+            node.closest('table-block')) {  // ← Prevent false positives
+            return true;
+        }
+
+        return false;
     }
 
     getIcon(): string {

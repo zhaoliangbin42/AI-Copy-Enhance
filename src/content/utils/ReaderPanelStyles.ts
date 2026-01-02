@@ -14,10 +14,9 @@ export const readerPanelStyles = `
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.6);
   z-index: 999998;
-  backdrop-filter: blur(24px) saturate(180%) contrast(120%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%) contrast(120%);
+  backdrop-filter: blur(3px);
 }
 
 /* Panel Container - Pure Glassmorphism */
@@ -84,15 +83,12 @@ export const readerPanelStyles = `
 }
 
 .aicopy-panel-title {
-  font-size: var(--text-base);
+  font-size: var(--text-3xl);
   font-weight: var(--font-medium);
   color: var(--text-primary);
   letter-spacing: -0.01em;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  
-  /* Text shadow for better readability on blur */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Header Buttons */
@@ -107,6 +103,8 @@ export const readerPanelStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: var(--text-3xl);
+  font-weight: var(--font-medium);
   transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 
@@ -131,7 +129,6 @@ export const readerPanelStyles = `
 .aicopy-panel-body .markdown-body {
   max-width: 800px;
   width: 100%;
-  margin: 24px auto;
   overflow-x: auto;
   word-wrap: break-word;
 }
@@ -332,8 +329,11 @@ export const readerPanelStyles = `
   background: rgba(0, 0, 0, 0.02);
   border-bottom: 1px solid var(--panel-header-border);
   border-radius: 12px; /* User requested rounded bottom corners too */
-  margin-bottom: 24px;
+  margin: 0 auto 24px;  /* Center + bottom margin */
+  max-width: 800px;     /* Match .markdown-body width */
+  width: 100%;
 }
+
 
 .user-icon, .model-icon {
   width: 32px; /* Increased container size */
@@ -371,6 +371,9 @@ export const readerPanelStyles = `
   display: flex;
   gap: 16px;
   align-items: flex-start;
+  max-width: 800px;     /* Match .markdown-body and .message-user-header width */
+  margin: 0 auto;       /* Center horizontally */
+  width: 100%;
 }
 
 .message-divider {
@@ -389,9 +392,17 @@ export const readerPanelStyles = `
     color: var(--text-primary);
   }
   
+  .model-icon {
+    background: var(--interactive-primary);
+    color: white;
+    /* Slight brightness boost for dark mode visibility */
+    filter: brightness(1.1);
+  }
+  
   .user-content {
     color: var(--text-primary); 
     opacity: 0.9;
   }
 }
+
 `;

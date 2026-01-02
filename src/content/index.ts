@@ -1,6 +1,6 @@
 import { adapterRegistry } from './adapters/registry';
 import { MessageObserver } from './observers/mutation-observer';
-import { ToolbarInjector } from './injectors/toolbar-injector';
+import { ToolbarInjector, ToolbarState } from './injectors/toolbar-injector';
 import { Toolbar, ToolbarCallbacks } from './components/toolbar';
 import { Modal } from './components/modal';
 import { MarkdownParser } from './parsers/markdown-parser';
@@ -89,6 +89,7 @@ class ContentScript {
         this.injector = new ToolbarInjector(adapter);
 
         // Create observer with injector dependency
+
         this.observer = new MessageObserver(
             adapter,
             this.injector,
@@ -211,7 +212,6 @@ class ContentScript {
 
     /**
      * Handle new message detected
-     * State machine: NULL → inject (hidden) → activate (visible + init)
      */
     private handleNewMessage(messageElement: HTMLElement): void {
         logger.debug('Handling new message');
@@ -219,6 +219,15 @@ class ContentScript {
         // Get adapter
         const adapter = adapterRegistry.getAdapter();
         if (!adapter) return;
+
+        const isArticle = messageElement.tagName.toLowerCase() === 'article';
+        const isModelResponse = messageElement.tagName.toLowerCase() === 'model-response';
+
+        // Helper to check action bar with multi-selector support
+        const hasActionBar = (isArticle || isModelResponse)
+            ? messageElement.querySelector(adapter.getActionBarSelector()) !== null
+            : true;
+
 
         // Get message ID for tracking
         const messageId = adapter.getMessageId(messageElement);
@@ -228,6 +237,13 @@ class ContentScript {
             // Check if this element is already being processed
             if (this.processingElements.has(messageElement)) {
                 logger.debug('Element is already being processed (no ID), skipping');
+                return;
+            }
+
+            // Fallback to DOM check
+            const hasToolbar = messageElement.querySelector('.aicopy-toolbar-container');
+            if (hasToolbar) {
+                logger.debug('Toolbar already exists (no ID), skipping');
                 return;
             }
 
@@ -251,90 +267,108 @@ class ContentScript {
             this.checkBookmarkNavigation();
         }
 
-        // Get current toolbar state from injector
-        const currentState = this.injector?.getState(messageElement);
+        // CRITICAL: Check if toolbar already exists BEFORE creating new one
+        // This prevents creating orphaned toolbar objects with wrong messageElement bindings
+        const existingToolbarContainer = messageElement.querySelector('.aicopy-toolbar-container');
+        if (existingToolbarContainer) {
+            logger.debug('Toolbar already exists, checking state');
 
-        if (currentState === 'null') {
-
-            // Create toolbar with callbacks
-            const callbacks: ToolbarCallbacks = {
-                onCopyMarkdown: async () => {
-                    return this.getMarkdown(messageElement);
-                },
-                onViewSource: () => {
-                    this.showSourceModal(messageElement);
-                },
-                onReRender: () => {
-                    this.showReRenderPanel(messageElement);
-                },
-                onBookmark: async () => {
-                    await this.handleBookmark(messageElement);
-                }
-            };
-
-            const toolbar = new Toolbar(callbacks);
-            toolbar.setTheme(this.currentThemeIsDark);
-
-            // Inject toolbar (hidden state)
+            // 🔑 FIX: Activate toolbar if it was injected but not yet visible
+            // This happens when streaming completes (Copy button triggers re-detection)
             if (this.injector) {
-                const injected = this.injector.inject(messageElement, toolbar.getElement());
-                if (injected) {
-
-                    // Store toolbar reference for later activation
-                    const toolbarContainer = toolbar.getElement();
-                    (toolbarContainer as any).__toolbar = toolbar;
-
-                    // Save toolbar reference for direct state updates
-                    const position = this.getMessagePosition(messageElement);
-                    this.toolbars.set(position, toolbar);
-
-                    // Set initial bookmark state
-                    const isBookmarked = this.bookmarkedPositions.has(position);
-                    toolbar.setBookmarkState(isBookmarked);
-
-                    // Enable click-to-copy for math elements
-                    this.mathClickHandler.enable(messageElement);
-
-                    // 🔑 FIX: For existing messages (page refresh), activate immediately
-                    // Only keep hidden for streaming messages
-                    const isStreaming = adapter.isStreamingMessage && adapter.isStreamingMessage(messageElement);
-                    if (!isStreaming) {
-                        const activated = this.injector.activate(messageElement);
-                        if (activated) {
-                            toolbar.setPending(false);
+                const currentState = this.injector.getState(messageElement);
+                if (currentState === ToolbarState.INJECTED) {
+                    logger.debug('[toolbar] Existing toolbar in INJECTED state, activating now');
+                    const activated = this.injector.activate(messageElement);
+                    if (activated) {
+                        const existingToolbar = (existingToolbarContainer as any).__toolbar;
+                        if (existingToolbar && typeof existingToolbar.setPending === 'function') {
+                            existingToolbar.setPending(false);
                         }
                     }
                 }
             }
 
-        } else if (currentState === 'injected') {
-
-            // Activate toolbar (make visible)
-            if (this.injector) {
-                const activated = this.injector.activate(messageElement);
-                if (activated) {
-
-                    // Find existing toolbar and initialize word count
-                    const toolbarContainer = messageElement.querySelector('.aicopy-toolbar-container');
-                    if (toolbarContainer) {
-                        const toolbar = (toolbarContainer as any).__toolbar;
-                        if (toolbar && typeof toolbar.setPending === 'function') {
-                            // Trigger word count initialization
-                            toolbar.setPending(false);
-                        }
-                    }
-                }
+            const existingToolbar = (existingToolbarContainer as any).__toolbar;
+            if (hasActionBar && existingToolbar && typeof existingToolbar.setPending === 'function') {
+                logger.debug(`[WordCountDebug] Existing toolbar found. Updating pending state to false (ActionBar exists)`);
+                existingToolbar.setPending(false);
             }
-
-        } else if (currentState === 'active') {
+            // Remove from processing set since we're done
+            if (messageId) {
+                this.processingMessages.delete(messageId);
+            }
+            return;
         }
 
+
+        // Create toolbar with callbacks
+        const callbacks: ToolbarCallbacks = {
+            onCopyMarkdown: async () => {
+                return this.getMarkdown(messageElement);
+            },
+            onViewSource: () => {
+                this.showSourceModal(messageElement);
+            },
+            onReRender: () => {
+                this.showReRenderPanel(messageElement);
+            },
+            onBookmark: async () => {
+                await this.handleBookmark(messageElement);
+            }
+        };
+
+        const toolbar = new Toolbar(callbacks);
+        toolbar.setTheme(this.currentThemeIsDark);
+        if (!hasActionBar || adapter.isStreamingMessage(messageElement)) {
+            logger.debug(`[WordCountDebug] Setting new toolbar to pending. NoActionBar=${!hasActionBar}, IsStreaming=${adapter.isStreamingMessage(messageElement)}`);
+            toolbar.setPending(true);
+        }
+
+        // Inject toolbar
+        if (this.injector) {
+            const injected = this.injector.inject(messageElement, toolbar.getElement());
+
+            // 🔑 FIX: Activate immediately for non-streaming messages
+            // Streaming messages will be activated when Copy button appears
+            if (injected) {
+                const isStreaming = adapter.isStreamingMessage && adapter.isStreamingMessage(messageElement);
+                if (!isStreaming && hasActionBar) {
+                    const activated = this.injector.activate(messageElement);
+                    if (activated) {
+                        logger.debug('[toolbar] Non-streaming message: activated immediately');
+                        toolbar.setPending(false);
+                    }
+                }
+            }
+        }
+
+        // Store toolbar reference on container for later access
+        const toolbarContainer = messageElement.querySelector('.aicopy-toolbar-container');
+        if (toolbarContainer) {
+            (toolbarContainer as any).__toolbar = toolbar;
+        }
+
+        // Set initial bookmark state - AITimeline pattern
+        const position = this.getMessagePosition(messageElement);
+
+        // Save toolbar reference for direct state updates
+        this.toolbars.set(position, toolbar);
+
+        const isBookmarked = this.bookmarkedPositions.has(position);
+        toolbar.setBookmarkState(isBookmarked);
+
+        // Enable click-to-copy for math elements
+        this.mathClickHandler.enable(messageElement);
+
+
         // Remove from processing set after a short delay
+        // This ensures the toolbar has time to be injected into DOM
         if (messageId) {
             setTimeout(() => {
                 this.processingMessages.delete(messageId);
-                logger.debug(`[handleNewMessage] Removed ${messageId} from processing set`);
-            }, 1000);
+                logger.info(`[DEBUG] ⏰ Timeout: Removed ${messageId}. Size: ${this.processingMessages.size}`);
+            }, 1000); // 1 second should be enough for toolbar injection
         }
 
         logger.info('=== handleNewMessage END ===');
@@ -750,9 +784,17 @@ function handleNavigation(contentScript: ContentScript | null): ContentScript | 
 
         // Safe to reinitialize
         logger.info('[Navigation] Reinitializing extension');
+
+        // 🔑 FIX: Reset observer to clear processedMessages Set (prevent memory growth)
+        if (contentScript && (contentScript as any).observer) {
+            (contentScript as any).observer.reset();
+            logger.debug('[Navigation] Observer reset completed');
+        }
+
         contentScript?.stop();
         const newContentScript = new ContentScript();
         await newContentScript.start();
+
 
         // Update closure reference
         contentScript = newContentScript;

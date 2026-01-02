@@ -1,4 +1,5 @@
 import { adapterRegistry } from '../adapters/registry';
+import { MessageDeduplicator } from './message-deduplicator';
 
 /**
  * Message collector for pagination
@@ -21,17 +22,20 @@ export class MessageCollector {
         if (!adapter) return [];
 
         const selector = adapter.getMessageSelector();
-        const elements = document.querySelectorAll<HTMLElement>(selector);
+        const rawElements = document.querySelectorAll<HTMLElement>(selector);
+
+        // Apply deduplication to remove nested duplicates
+        const elements = MessageDeduplicator.deduplicate(Array.from(rawElements));
 
         const messages: MessageRef[] = [];
 
         elements.forEach((element, index) => {
             // ATOMIC DISCOVERY: Ask adapter to find the user prompt for THIS model element
-            const userPrompt = adapter.extractUserPrompt(element);
+            const userPrompt = adapter.extractUserPrompt(element as HTMLElement);
 
             messages.push({
                 index,
-                element,
+                element: element as HTMLElement,
                 userPrompt: userPrompt || `Message ${index + 1}`
             });
         });

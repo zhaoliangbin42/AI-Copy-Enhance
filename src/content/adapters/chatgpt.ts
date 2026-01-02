@@ -12,24 +12,29 @@ export class ChatGPTAdapter extends SiteAdapter {
     }
 
     getMessageSelector(): string {
-        // STRICT: Only select the specific Model Response container
-        // Avoid broader "turn" containers that might include User messages
-
-        // P4 FIX: Revert to simple union and handle deduplication in Observer (JS)
-        // The previous :not() selector proved brittle and returned 0 results for some users
-        return 'article[data-turn="assistant"], [data-message-author-role="assistant"]';
+        // Support both regular conversations and DeepResearch
+        // Regular: [data-message-author-role="assistant"] (not inside article)
+        // DeepResearch: article[data-turn="assistant"]
+        // Use :not() to avoid matching the same element twice
+        return 'article[data-turn="assistant"], [data-message-author-role="assistant"]:not(article [data-message-author-role="assistant"])';
     }
+
 
     getMessageContentSelector(): string {
         // Main markdown content area
         return '.markdown.prose, .markdown.prose.dark\\:prose-invert';
     }
 
+    /**
+     * Multi-selector strategy for action bar detection
+     * Provides fallback selectors if ChatGPT UI changes
+     */
     getActionBarSelector(): string {
         // The action bar is a sibling of the message's parent container
         // It contains the Copy, Good/Bad response buttons
         return 'div.z-0.flex.min-h-\\[46px\\].justify-start';
     }
+
 
     getCopyButtonSelector(): string {
         // ChatGPT uses exact "Copy" aria-label
@@ -234,6 +239,34 @@ export class ChatGPTAdapter extends SiteAdapter {
     private cleanUserContent(element: HTMLElement): string {
         const contentDiv = element.querySelector('.whitespace-pre-wrap') || element;
         return contentDiv.textContent?.trim() || '';
+    }
+
+    /**
+     * ChatGPT noise filtering - uses ONLY structural markers
+     * Source: ChatGPT-Thought.html
+     */
+    isNoiseNode(node: Node, context?: { nextSibling?: Element | null }): boolean {
+        if (!(node instanceof HTMLElement)) return false;
+
+        // Filter 1: Screen-reader-only headers (e.g., "ChatGPT 说:")
+        // Source: ChatGPT-Thought.html:5
+        // Marker: .sr-only class (100% reliable)
+        if (node.classList.contains('sr-only')) {
+            return true;
+        }
+
+        // Filter 2: "Thought for Xm Ys" container
+        // Source: ChatGPT-Thought.html:15-33
+        // Strategy: Position-based - appears BEFORE data-message-author-role
+        if (context?.nextSibling?.hasAttribute('data-message-author-role')) {
+            // This node precedes actual message, check for thought indicator
+            if (node.classList.contains('min-h-6') &&
+                node.querySelector('button span.truncate')) {
+                return true;  // Thought container
+            }
+        }
+
+        return false;
     }
 
     getIcon(): string {
