@@ -220,13 +220,13 @@ export class DeepResearchHandler {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${isError ? 'var(--aimd-interactive-danger, #ef4444)' : 'var(--aimd-color-purple-500, #8b5cf6)'};
-            color: var(--aimd-text-on-primary);
+            background: ${isError ? 'var(--aimd-feedback-danger-bg)' : 'var(--aimd-feedback-info-bg)'};
+            color: ${isError ? 'var(--aimd-feedback-danger-text)' : 'var(--aimd-feedback-info-text)'};
             padding: 12px 24px;
             border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
-            z-index: 999999;
+            z-index: var(--aimd-z-tooltip, 1070);
             animation: fadeInOut 2s forwards;
         `;
 

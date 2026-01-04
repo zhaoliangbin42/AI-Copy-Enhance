@@ -43,8 +43,7 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "styles/*.css",
-                "styles/tokens/*.css"
+                "icons/*.png"
             ],
             "matches": [
                 "<all_urls>"

@@ -99,13 +99,13 @@ export class SimpleBookmarkPanel {
         this.overlay.style.left = '0';
         this.overlay.style.right = '0';
         this.overlay.style.bottom = '0';
-        this.overlay.style.zIndex = '2147483647'; // Maximum z-index
+        this.overlay.style.zIndex = 'var(--aimd-z-max)'; // Maximum z-index
         this.overlay.style.display = 'flex';
         this.overlay.style.alignItems = 'center';
         this.overlay.style.justifyContent = 'center';
         // ✅ 根据用户反馈,恢复轻微背景模糊
-        this.overlay.style.background = 'rgba(0, 0, 0, 0.6)';
-        this.overlay.style.backdropFilter = 'blur(3px)';
+        this.overlay.style.background = 'var(--aimd-bg-overlay-heavy)';
+        this.overlay.style.backdropFilter = 'var(--aimd-overlay-backdrop)';
         this.overlay.dataset.theme = ThemeManager.getInstance().isDarkMode() ? 'dark' : 'light';
 
         this.shadowRoot = this.overlay.attachShadow({ mode: 'open' });
@@ -2253,8 +2253,8 @@ export class SimpleBookmarkPanel {
      */
     private async showDetailModal(bookmark: Bookmark): Promise<void> {
         // ✅ Phase 7: 使用StyleManager注入样式
-        const isDark = ThemeManager.getInstance().isDarkMode();
-        await StyleManager.injectStyles(document, isDark);
+        // ✅ Phase 7: 使用StyleManager注入样式
+        await StyleManager.injectStyles(document);
 
         // ✅ Phase 7: 处理RenderResult
         const userResult = await MarkdownRenderer.render(bookmark.userMessage);
@@ -2736,26 +2736,26 @@ export class SimpleBookmarkPanel {
             const configs = {
                 success: {
                     icon: Icons.checkCircle,
-                    iconColor: 'var(--aimd-color-green-600)',
-                    titleColor: 'var(--aimd-color-green-700)',
+                    iconColor: 'var(--aimd-feedback-success-text)',
+                    titleColor: 'var(--aimd-feedback-success-text)',
                     defaultTitle: 'Success'
                 },
                 error: {
                     icon: Icons.xCircle,
-                    iconColor: 'var(--aimd-interactive-danger)',
-                    titleColor: 'var(--aimd-color-red-700)',
+                    iconColor: 'var(--aimd-feedback-danger-text)',
+                    titleColor: 'var(--aimd-feedback-danger-text)',
                     defaultTitle: 'Error'
                 },
                 warning: {
                     icon: Icons.alertTriangle,
-                    iconColor: 'var(--aimd-color-amber-600)',
-                    titleColor: 'var(--aimd-color-amber-600)',
+                    iconColor: 'var(--aimd-feedback-warning-text)',
+                    titleColor: 'var(--aimd-feedback-warning-text)',
                     defaultTitle: 'Warning'
                 },
                 info: {
                     icon: Icons.info,
-                    iconColor: 'var(--aimd-color-blue-600)',
-                    titleColor: 'var(--aimd-color-blue-700)',
+                    iconColor: 'var(--aimd-feedback-info-text)',
+                    titleColor: 'var(--aimd-feedback-info-text)',
                     defaultTitle: 'Information'
                 }
             };
@@ -2770,8 +2770,8 @@ export class SimpleBookmarkPanel {
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: var(--aimd-bg-overlay) !important;
-                z-index: 2147483647;
+                background: var(--aimd-bg-overlay-heavy) !important;
+                z-index: var(--aimd-z-max);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2995,9 +2995,8 @@ ${options.message}
      * Task 3.4.5
      */
     private showErrorSummary(errors: string[]): void {
-        // Dark mode detection
-        const isDark = document.documentElement.classList.contains('dark');
-        const bgColor = isDark ? 'var(--aimd-color-gray-800)' : 'white';
+        // Dark mode detection handled by CSS variables
+        const bgColor = 'var(--aimd-bg-primary)';
 
 
         const overlay = document.createElement('div');
@@ -3007,8 +3006,8 @@ ${options.message}
             left: 0;
             right: 0;
             bottom: 0;
-            background: var(--aimd-bg-overlay);
-            z-index: 2147483647;
+            background: var(--aimd-bg-overlay-heavy);
+            z-index: var(--aimd-z-max);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -3059,10 +3058,10 @@ ${options.message}
 
         const okBtn = modal.querySelector('.ok-btn') as HTMLElement;
         okBtn.addEventListener('mouseenter', () => {
-            okBtn.style.background = 'var(--aimd-color-blue-100)';
+            okBtn.style.background = 'var(--aimd-feedback-info-bg)';
         });
         okBtn.addEventListener('mouseleave', () => {
-            okBtn.style.background = 'var(--aimd-color-blue-200)';
+            okBtn.style.background = 'var(--aimd-interactive-selected)';
         });
 
         okBtn.addEventListener('click', () => {
@@ -3669,8 +3668,8 @@ ${options.message}
                     left: 0;
                     right: 0;
                     bottom: 0;
-                    background: var(--aimd-bg-overlay);
-                    z-index: 2147483647;
+                    background: var(--aimd-bg-overlay-heavy);
+                    z-index: var(--aimd-z-max);
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -3690,7 +3689,7 @@ ${options.message}
 
                 .duplicate-dialog-content { padding: 20px; }
                 .duplicate-dialog-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-                .duplicate-dialog-icon { color: var(--aimd-color-amber-600); font-size: 24px; line-height: 1; flex-shrink: 0; }
+                .duplicate-dialog-icon { color: var(--aimd-feedback-warning-text); font-size: 24px; line-height: 1; flex-shrink: 0; }
                 .duplicate-dialog-title { margin: 0; font-size: 20px; font-weight: var(--aimd-font-medium); color: var(--aimd-text-primary); line-height: 1.2; }
                 .duplicate-dialog-body { color: var(--aimd-text-primary); font-size: 14px; line-height: 1.5; }
                 .duplicate-dialog-text { margin: 0 0 10px 0; }
@@ -3712,7 +3711,7 @@ ${options.message}
                 .merge-badge { font-size: 12px; padding: 2px 6px; border-radius: 999px; font-weight: var(--aimd-font-medium); white-space: nowrap; }
                 .merge-badge-normal { background: var(--aimd-feedback-success-bg); color: var(--aimd-feedback-success-text); }
                 .merge-badge-rename { background: var(--aimd-feedback-warning-bg); color: var(--aimd-feedback-warning-text); }
-                .merge-badge-import { background: var(--aimd-feedback-info-bg); color: var(--aimd-color-blue-700); }
+                .merge-badge-import { background: var(--aimd-feedback-info-bg); color: var(--aimd-interactive-primary-hover); }
                 
                 .duplicate-dialog-hint { margin: 6px 0 0 0; color: var(--aimd-text-secondary); font-size: 13px; font-style: italic; opacity: 0.9; }
                 
@@ -4368,8 +4367,8 @@ ${options.message}
 
             .new-folder-btn {
                 font-weight: 500;
-                color: var(--aimd-color-blue-600);
-                border-color: var(--aimd-color-blue-600);
+                color: var(--aimd-text-link);
+                border-color: var(--aimd-text-link);
             }
 
             .new-folder-btn:hover {
@@ -4418,7 +4417,7 @@ ${options.message}
                 color: var(--aimd-text-primary);
                 font-weight: var(--aimd-font-semibold);  /* 600 */
                 /* Use box-shadow for accent instead of border */
-                box-shadow: inset 3px 0 0 var(--aimd-color-blue-500),
+                box-shadow: inset 3px 0 0 var(--aimd-interactive-primary),
                             var(--aimd-shadow-sm);  /* Subtle elevation */
             }
 
@@ -4587,7 +4586,7 @@ ${options.message}
 
             input.search-input:focus {
                 outline: none;
-                border-color: var(--aimd-color-blue-500);
+                border-color: var(--aimd-interactive-primary);
                 /* Blue focus ring per design system */
                 box-shadow: var(--aimd-shadow-focus);
                 background: var(--aimd-bg-primary);  /* Theme-aware */
@@ -4616,7 +4615,7 @@ ${options.message}
 
             button.platform-filter:focus {
                 outline: none;
-                border-color: var(--aimd-color-blue-600);
+                border-color: var(--aimd-text-link);
                 box-shadow: var(--aimd-shadow-focus);
             }
 
@@ -4731,7 +4730,7 @@ ${options.message}
                 border: 1px solid var(--aimd-border-default);
                 border-radius: var(--aimd-radius-lg);
                 box-shadow: var(--aimd-shadow-md);
-                z-index: 1000;
+                z-index: var(--aimd-z-dropdown);
                 overflow: hidden;
             }
 
@@ -4806,7 +4805,7 @@ ${options.message}
                 min-height: 28px;
                 
                 /* ✅ Use standard tree item border (inherited from .tree-item) */
-                /* border-bottom: 1px solid var(--aimd-color-gray-200); REMOVED */
+                /* border-bottom: 1px solid var(--aimd-border-default); REMOVED */
                 /* box-shadow: var(--aimd-shadow-xs); REMOVED */
                 
                 display: flex;
@@ -4833,13 +4832,13 @@ ${options.message}
             }
 
             .platform-badge.chatgpt {
-                background: var(--aimd-color-green-50);
-                color: var(--aimd-color-green-800);
+                background: var(--aimd-feedback-success-bg);
+                color: var(--aimd-feedback-success-text);
             }
 
             .platform-badge.gemini {
-                background: var(--aimd-color-blue-100);
-                color: var(--aimd-color-blue-800);
+                background: var(--aimd-feedback-info-bg);
+                color: var(--aimd-feedback-info-text);
             }
 
             /* Delete Confirmation Modal Styles */
@@ -4858,8 +4857,8 @@ ${options.message}
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: var(--aimd-bg-overlay);
-                z-index: 10000;
+                background: var(--aimd-bg-overlay-heavy);
+                z-index: var(--aimd-z-max);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -4929,7 +4928,7 @@ ${options.message}
             .notes {
                 flex: 1;
                 font-size: 13px;
-                color: var(--aimd-color-gray-400);
+                color: var(--aimd-text-tertiary);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -4938,7 +4937,7 @@ ${options.message}
             .time {
                 flex-shrink: 0;
                 font-size: 12px;
-                color: var(--aimd-color-gray-400);
+                color: var(--aimd-text-tertiary);
                 min-width: 40px;
             }
 
@@ -4968,7 +4967,7 @@ ${options.message}
             }
 
             .delete-btn:hover {
-                background: var(--aimd-color-red-50);
+                background: var(--aimd-feedback-danger-bg);
             }
 
             /* Settings content */
@@ -5016,11 +5015,11 @@ ${options.message}
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: var(--aimd-bg-overlay);
+                background: var(--aimd-bg-overlay-heavy);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 2147483647;
+                z-index: var(--aimd-z-max);
             }
 
             .conflict-dialog {
@@ -5037,15 +5036,15 @@ ${options.message}
 
             .conflict-header {
                 padding: var(--aimd-space-5) var(--aimd-space-6);  /* 20px 24px */
-                border-bottom: 1px solid var(--aimd-color-gray-200);
-                background: var(--aimd-color-amber-50);
+                border-bottom: 1px solid var(--aimd-border-default);
+                background: var(--aimd-feedback-warning-bg);
             }
 
             .conflict-header h3 {
                 margin: 0;
                 font-size: 18px;
                 font-weight: 600;
-                color: var(--aimd-color-amber-600);
+                color: var(--aimd-feedback-warning-text);
             }
 
             .conflict-body {
@@ -5062,14 +5061,14 @@ ${options.message}
 
             .conflict-list {
                 margin-top: 16px;
-                border: 1px solid var(--aimd-color-gray-200);
+                border: 1px solid var(--aimd-border-default);
                 border-radius: var(--aimd-radius-lg);
                 overflow: hidden;
             }
 
             .conflict-item {
                 padding: var(--aimd-space-3);  /* 12px */
-                border-bottom: 1px solid var(--aimd-color-gray-200);
+                border-bottom: 1px solid var(--aimd-border-default);
                 display: flex;
                 align-items: center;
                 gap: var(--aimd-space-3);  /* 12px */
@@ -5098,7 +5097,7 @@ ${options.message}
 
             .conflict-footer {
                 padding: var(--aimd-space-4) var(--aimd-space-6);  /* 16px 24px */
-                border-top: 1px solid var(--aimd-color-gray-200);
+                border-top: 1px solid var(--aimd-border-default);
                 display: flex;
                 gap: var(--aimd-space-3);  /* 12px */
                 justify-content: flex-end;
@@ -5215,8 +5214,8 @@ ${options.message}
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: var(--aimd-bg-overlay);
-                z-index: 2147483647;
+                background: var(--aimd-bg-overlay-heavy);
+                z-index: var(--aimd-z-max);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -5257,7 +5256,7 @@ ${options.message}
 
             .import-summary-warning {
                 background: var(--aimd-feedback-warning-bg);
-                border-left: 3px solid var(--aimd-color-amber-200);
+                border-left: 3px solid var(--aimd-feedback-warning-text);
                 padding: 12px;
                 border-radius: var(--aimd-radius-lg);
                 margin-bottom: 16px;
@@ -5311,7 +5310,7 @@ ${options.message}
             }
 
             .duplicate-dialog-icon {
-                color: var(--aimd-color-amber-600);
+                color: var(--aimd-feedback-warning-text);
                 font-size: 24px;
                 line-height: 1;
                 flex-shrink: 0;
@@ -5401,8 +5400,8 @@ ${options.message}
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: var(--aimd-bg-overlay);
-                z-index: 2147483647;
+                background: var(--aimd-bg-overlay-heavy);
+                z-index: var(--aimd-z-max);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -5516,7 +5515,7 @@ ${options.message}
 
             .merge-badge-import {
                 background: var(--aimd-feedback-info-bg);
-                color: var(--aimd-color-blue-700);
+                color: var(--aimd-interactive-primary-hover);
             }
 
             .import-summary-footer {
@@ -5612,7 +5611,7 @@ ${options.message}
             }
 
             .delete-dialog-icon {
-                color: var(--aimd-color-amber-600);
+                color: var(--aimd-feedback-warning-text);
                 font-size: 24px;
                 line-height: 1;
                 flex-shrink: 0;
@@ -5656,7 +5655,7 @@ ${options.message}
             .delete-dialog-warning {
                 margin: 12px 0 0 0;
                 font-weight: var(--aimd-font-medium);
-                color: var(--aimd-color-red-500);
+                color: var(--aimd-feedback-danger-text);
             }
 
             .delete-dialog-footer {
@@ -5727,8 +5726,8 @@ ${options.message}
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: var(--aimd-bg-overlay);
-                z-index: 2147483647;
+                background: var(--aimd-bg-overlay-heavy);
+                z-index: var(--aimd-z-max);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -5823,7 +5822,7 @@ ${options.message}
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 2147483648;
+                z-index: var(--aimd-z-max);
                 animation: overlayFadeIn 0.2s ease;
             }
 
@@ -5842,7 +5841,7 @@ ${options.message}
                 flex-direction: column;
                 box-shadow: var(--aimd-modal-shadow);
                 position: relative;
-                z-index: 2147483649;
+                z-index: var(--aimd-z-max);
                 animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             }
 
@@ -5985,12 +5984,12 @@ ${options.message}
 
             .user-section {
                 background: var(--aimd-feedback-info-bg);
-                border-left: 3px solid var(--aimd-color-blue-500);
+                border-left: 3px solid var(--aimd-interactive-primary);
             }
 
             .ai-section {
                 background: var(--aimd-feedback-success-bg);
-                border-left: 3px solid var(--aimd-color-green-500);
+                border-left: 3px solid var(--aimd-feedback-success-text);
             }
 
             .section-header {
@@ -6131,8 +6130,8 @@ ${options.message}
             }
 
             .batch-actions-bar button.danger:hover {
-                background: var(--aimd-color-red-50);
-                border-color: var(--aimd-color-red-50);
+                background: var(--aimd-feedback-danger-bg);
+                border-color: var(--aimd-feedback-danger-bg);
             }
             
             .bookmarks-tab .content {
@@ -6169,12 +6168,12 @@ ${options.message}
             }
 
             .tree-view::-webkit-scrollbar-thumb {
-                background: var(--aimd-color-gray-300);
+                background: var(--aimd-scrollbar-thumb);
                 border-radius: var(--aimd-radius-sm);
             }
 
             .tree-view::-webkit-scrollbar-thumb:hover {
-                background: var(--aimd-color-gray-400);
+                background: var(--aimd-scrollbar-thumb-hover);
             }
 
             /* Tree Item Base styles - MERGED into Line 4059 to avoid cascade conflicts */
@@ -6204,7 +6203,7 @@ ${options.message}
             }
 
             .tree-item:focus {
-                outline: 2px solid var(--aimd-color-blue-600);
+                outline: 2px solid var(--aimd-border-focus);
                 outline-offset: -2px;
                 z-index: 1;
             }
@@ -6330,7 +6329,7 @@ ${options.message}
             }
 
             .inline-edit-input:focus {
-                border-color: var(--aimd-color-blue-600);
+                border-color: var(--aimd-text-link);
                 box-shadow: var(--aimd-shadow-focus);
             }
 
@@ -6366,21 +6365,21 @@ ${options.message}
             }
 
             .inline-edit-confirm {
-                border-color: var(--aimd-color-green-50);
-                color: var(--aimd-color-green-600);
+                border-color: var(--aimd-feedback-success-text);
+                color: var(--aimd-feedback-success-text);
             }
 
             .inline-edit-confirm:hover {
-                background: var(--aimd-color-green-50);
+                background: var(--aimd-feedback-success-bg);
             }
 
             .inline-edit-cancel {
-                border-color: var(--aimd-color-red-50);
+                border-color: var(--aimd-feedback-danger-bg);
                 color: var(--aimd-interactive-danger);
             }
 
             .inline-edit-cancel:hover {
-                background: var(--aimd-color-red-50);
+                background: var(--aimd-feedback-danger-bg);
             }
 
             .inline-edit-btn:disabled {
@@ -6415,16 +6414,16 @@ ${options.message}
             .inline-edit-auto-rename {
                 padding: 2px 8px;
                 border-radius: var(--aimd-radius-md);
-                border: 1px solid var(--aimd-color-blue-200);
+                border: 1px solid var(--aimd-interactive-selected);
                 background: var(--aimd-interactive-selected);
-                color: var(--aimd-color-blue-700);
+                color: var(--aimd-interactive-primary-hover);
                 font-size: 12px;
                 cursor: pointer;
                 transition: all var(--aimd-duration-fast);
             }
 
             .inline-edit-auto-rename:hover {
-                background: var(--aimd-color-blue-100);
+                background: var(--aimd-feedback-info-bg);
                 transform: translateY(-1px);
             }
 
@@ -6472,7 +6471,7 @@ ${options.message}
                 position: absolute;
                 right: 120px; /* Space for action buttons */
                 font-size: 11px;
-                color: var(--aimd-color-gray-400);
+                color: var(--aimd-text-tertiary);
                 pointer-events: none;
                 white-space: nowrap;
             }
@@ -6484,11 +6483,11 @@ ${options.message}
                 width: 16px;
                 height: 16px;
                 flex-shrink: 0;
-                accent-color: var(--aimd-color-blue-600);  /* 深蓝色 */
+                accent-color: var(--aimd-text-link);  /* 深蓝色 */
             }
 
             .item-checkbox:focus {
-                outline: 2px solid var(--aimd-color-blue-600);
+                outline: 2px solid var(--aimd-border-focus);
                 outline-offset: 2px;
             }
 
@@ -6531,13 +6530,13 @@ ${options.message}
             }
 
             .action-btn:focus {
-                outline: 2px solid var(--aimd-color-blue-600);
+                outline: 2px solid var(--aimd-border-focus);
                 outline-offset: -2px;
             }
 
             .action-btn.delete-folder:hover,
             .action-btn.delete-bookmark:hover {
-                background: var(--aimd-color-red-50);
+                background: var(--aimd-feedback-danger-bg);
                 color: var(--aimd-interactive-danger);
             }
 
@@ -6573,7 +6572,7 @@ ${options.message}
             .btn-primary,
             .create-first-folder {
                 padding: var(--aimd-space-2) var(--aimd-space-5);
-                background: var(--aimd-color-blue-600);
+                background: var(--aimd-interactive-primary);
                 color: var(--aimd-text-on-primary);
                 border: none;
                 border-radius: var(--aimd-radius-lg);  /* Material Design 8px */
@@ -6589,7 +6588,7 @@ ${options.message}
 
             .btn-primary:hover,
             .create-first-folder:hover {
-                background: var(--aimd-color-blue-700);
+                background: var(--aimd-interactive-primary-hover);
                 box-shadow: var(--aimd-shadow-md);  /* Material Design hover elevation */
                 transform: translateY(-1px);
             }

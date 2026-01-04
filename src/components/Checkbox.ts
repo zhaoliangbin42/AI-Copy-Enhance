@@ -239,7 +239,7 @@ export class Checkbox {
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        border: 2px solid var(--aimd-color-gray-300);
+        border: 2px solid var(--aimd-border-default);
         border-radius: var(--aimd-radius-sm);
         background: var(--aimd-bg-primary);
         transition: all var(--aimd-duration-fast) var(--aimd-ease-in-out);
@@ -264,12 +264,12 @@ export class Checkbox {
 
       /* Hover state */
       .checkbox-container:hover:not(.checkbox-disabled) .checkbox-checkmark {
-        border-color: var(--aimd-color-blue-500);
+        border-color: var(--aimd-interactive-primary);
       }
 
       /* Focus state */
       .checkbox-input:focus + .checkbox-checkmark {
-        outline: 2px solid var(--aimd-color-blue-500);
+        outline: 2px solid var(--aimd-interactive-primary);
         outline-offset: 2px;
       }
 

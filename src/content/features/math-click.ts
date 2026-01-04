@@ -260,14 +260,14 @@ export class MathClickHandler {
         tooltip.textContent = 'Copied!';
         tooltip.style.cssText = `
       position: absolute;
-      background: var(--aimd-color-blue-600, #2563EB);
+      background: var(--aimd-interactive-primary, #2563EB);
       color: var(--aimd-text-on-primary);
       padding: 4px 8px;
       border-radius: 4px;
       font-size: 12px;
       font-weight: 500;
       pointer-events: none;
-      z-index: 999999;
+      z-index: var(--aimd-z-tooltip, 1070);
       animation: fadeOut 1.5s forwards;
     `;
 

@@ -186,7 +186,7 @@ export class Button {
       }
 
       .btn:focus {
-        outline: 2px solid var(--aimd-color-blue-500);
+        outline: 2px solid var(--aimd-border-focus);
         outline-offset: 2px;
       }
 
@@ -245,31 +245,31 @@ export class Button {
       }
 
       .btn-secondary {
-        background: var(--aimd-color-gray-100);
-        color: var(--aimd-color-gray-700);
+        background: var(--aimd-bg-secondary);
+        color: var(--aimd-text-secondary);
       }
 
       .btn-secondary:hover:not(:disabled) {
-        background: var(--aimd-color-gray-200);
-        color: var(--aimd-color-gray-900);
+        background: var(--aimd-bg-secondary-hover);
+        color: var(--aimd-text-primary);
       }
 
       .btn-secondary:active:not(:disabled) {
-        background: var(--aimd-color-gray-300);
+        background: var(--aimd-bg-secondary-active);
       }
 
       .btn-ghost {
         background: transparent;
-        color: var(--aimd-color-gray-700);
+        color: var(--aimd-text-secondary);
       }
 
       .btn-ghost:hover:not(:disabled) {
-        background: var(--aimd-color-gray-100);
-        color: var(--aimd-color-gray-900);
+        background: var(--aimd-bg-secondary);
+        color: var(--aimd-text-primary);
       }
 
       .btn-ghost:active:not(:disabled) {
-        background: var(--aimd-color-gray-200);
+        background: var(--aimd-bg-secondary-hover);
       }
 
       .btn-danger {
@@ -282,7 +282,7 @@ export class Button {
       }
 
       .btn-danger:active:not(:disabled) {
-        background: var(--aimd-color-red-800);
+        background: var(--aimd-interactive-danger-active);
       }
 
       /* Full width */

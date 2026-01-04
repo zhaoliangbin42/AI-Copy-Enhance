@@ -124,7 +124,7 @@ export class ReaderPanel {
         this.shadowRoot = this.container.attachShadow({ mode: 'open' });
 
         // Inject styles
-        await StyleManager.injectStyles(this.shadowRoot, this.currentThemeIsDark);
+        await StyleManager.injectStyles(this.shadowRoot);
 
         // 🔑 FIX: Inject DesignTokens for CSS variables (--interactive-primary, etc.)
         const tokenStyle = document.createElement('style');

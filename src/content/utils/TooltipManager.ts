@@ -197,7 +197,7 @@ export const tooltipStyles = `
   max-width: 260px;
   text-align: center;
   pointer-events: none;
-  z-index: 2000;
+  z-index: var(--aimd-z-tooltip);
   
   /* Hidden by default */
   opacity: 0;
@@ -229,7 +229,7 @@ export const tooltipStyles = `
 .tooltip-index {
   font-weight: 800;
   font-size: 18px;
-  color: var(--aimd-color-blue-400);
+  color: var(--aimd-interactive-primary);
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }

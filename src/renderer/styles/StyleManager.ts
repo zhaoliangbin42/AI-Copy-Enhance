@@ -19,8 +19,7 @@ export class StyleManager {
      * Inject styles (with CDN fallback)
      */
     static async injectStyles(
-        target: Document | ShadowRoot,
-        isDark: boolean = false
+        target: Document | ShadowRoot
     ): Promise<StyleResult> {
         const styleStartTime = performance.now();
         console.log('[StyleManager] ⏱️  START injectStyles');
@@ -44,7 +43,7 @@ export class StyleManager {
         const t1 = performance.now();
         const mdStyle = document.createElement('style');
         mdStyle.id = 'aicopy-markdown-styles';
-        mdStyle.textContent = this.getMarkdownStyles(isDark);
+        mdStyle.textContent = this.getMarkdownStyles();
         target.appendChild(mdStyle);
         console.log(`[AI-MarkDone][StyleManager]   injectBaseStyles: ${(performance.now() - t1).toFixed(2)}ms`);
 
@@ -100,15 +99,15 @@ export class StyleManager {
     /**
      * Get markdown styles (with formula alignment fix)
      */
-    static getMarkdownStyles(isDark: boolean): string {
+    static getMarkdownStyles(): string {
         return `
       .markdown-body {
-        --fgColor-default: ${isDark ? '#f0f6fc' : '#1f2328'};
-        --fgColor-muted: ${isDark ? '#9198a1' : '#59636e'};
-        --fgColor-accent: ${isDark ? '#4493f8' : '#0969da'};
-        --bgColor-default: ${isDark ? '#212121' : '#ffffff'};
-        --bgColor-muted: ${isDark ? '#2d2d2d' : '#f6f8fa'};
-        --borderColor-default: ${isDark ? '#3d444d' : '#d1d9e0'};
+        --fgColor-default: var(--aimd-text-primary);
+        --fgColor-muted: var(--aimd-text-secondary);
+        --fgColor-accent: var(--aimd-text-link);
+        --bgColor-default: var(--aimd-bg-primary);
+        --bgColor-muted: var(--aimd-bg-secondary);
+        --borderColor-default: var(--aimd-border-default);
         
         margin: 0;
         padding: 12px 16px;

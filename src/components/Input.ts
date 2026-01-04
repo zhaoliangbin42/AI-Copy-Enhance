@@ -262,7 +262,7 @@ export class Input {
         font-size: var(--aimd-text-base);
         color: var(--aimd-text-primary);
         background: var(--aimd-bg-primary);
-        border: 2px solid var(--aimd-color-gray-300);
+        border: 2px solid var(--aimd-border-default);
         border-radius: var(--aimd-radius-sm);
         outline: none;
         transition: all var(--aimd-duration-fast) var(--aimd-ease-in-out);
@@ -270,22 +270,22 @@ export class Input {
       }
 
       .input::placeholder {
-        color: var(--aimd-color-gray-400);
+        color: var(--aimd-text-tertiary);
       }
 
       .input:focus {
-        border-color: var(--aimd-color-blue-500);
+        border-color: var(--aimd-border-focus);
         box-shadow: var(--aimd-shadow-focus);
       }
 
       .input:disabled {
-        background: var(--aimd-color-gray-50);
+        background: var(--aimd-bg-secondary);
         color: var(--aimd-text-tertiary);
         cursor: not-allowed;
       }
 
       .input:read-only {
-        background: var(--aimd-color-gray-50);
+        background: var(--aimd-bg-secondary);
       }
 
       /* Sizes */
@@ -322,7 +322,7 @@ export class Input {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--aimd-color-gray-400);
+        color: var(--aimd-text-tertiary);
         pointer-events: none;
       }
 
@@ -340,7 +340,7 @@ export class Input {
       }
 
       .input:focus ~ .input-icon {
-        color: var(--aimd-color-blue-500);
+        color: var(--aimd-interactive-primary);
       }
 
       /* Error state */

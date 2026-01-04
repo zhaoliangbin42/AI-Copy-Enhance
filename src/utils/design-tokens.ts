@@ -981,7 +981,7 @@ export class DesignTokens {
                 /* --- Modal (Dark Mode) --- */
                 --aimd-modal-overlay: rgba(0, 0, 0, 0.7);
                 --aimd-modal-surface: #27272A;
-                --aimd-modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                --aimd-modal-shadow: var(--aimd-shadow-2xl);
                 --aimd-modal-primary-bg: #60A5FA;
                 --aimd-modal-primary-text: #111827;
                 --aimd-modal-primary-hover-bg: #3B82F6;
@@ -989,6 +989,10 @@ export class DesignTokens {
                 --aimd-modal-secondary-bg: rgba(255, 255, 255, 0.1);
                 --aimd-modal-secondary-text: #E5E7EB;
                 --aimd-modal-secondary-hover-bg: rgba(255, 255, 255, 0.15);
+                --aimd-modal-tree-bg: #27272A;
+                --aimd-modal-tree-item-hover: var(--aimd-interactive-hover);
+                --aimd-modal-tree-item-text: var(--aimd-text-primary);
+                --aimd-modal-tree-item-icon: var(--aimd-text-secondary);
                 
                 /* --- Extended Spacing --- */
                 --aimd-space-10: 40px;
@@ -1012,6 +1016,7 @@ export class DesignTokens {
                 --aimd-button-icon-text: #A1A1AA;  /* Slightly lighter for better contrast */
                 --aimd-button-icon-hover: rgba(255, 255, 255, 0.10);  /* Subtle highlight on hover */
                 --aimd-button-icon-text-hover: #FFFFFF;
+                --aimd-button-icon-active: rgba(255, 255, 255, 0.15);
                 
                 /* --- Feedback Colors (Dark Mode) --- */
                 --aimd-feedback-success-bg: rgba(16, 185, 129, 0.15);
@@ -1034,6 +1039,16 @@ export class DesignTokens {
                 --aimd-bg-overlay-heavy: rgba(0, 0, 0, 0.8);
                 --aimd-glass-tint: rgba(255, 255, 255, 0.03);
                 --aimd-bg-hint: rgba(255, 255, 255, 0.05);
+                --aimd-overlay-backdrop: blur(3px);
+                --aimd-z-base: 1;
+                --aimd-z-dropdown: 1000;
+                --aimd-z-sticky: 1020;
+                --aimd-z-fixed: 1030;
+                --aimd-z-modal-backdrop: 1040;
+                --aimd-z-modal: 1050;
+                --aimd-z-popover: 1060;
+                --aimd-z-tooltip: 1070;
+                --aimd-z-max: 2147483647;
                 
                 /* --- Shadow Tokens (Dark Mode) --- */
                 --aimd-shadow-focus: 0 0 0 3px rgba(96, 165, 250, 0.25);
@@ -1211,7 +1226,7 @@ export class DesignTokens {
                 /* --- Modal (Light Mode) --- */
                 --aimd-modal-overlay: rgba(0, 0, 0, 0.5);
                 --aimd-modal-surface: #FFFFFF;
-                --aimd-modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                --aimd-modal-shadow: var(--aimd-shadow-2xl);
                 --aimd-modal-primary-bg: #3B82F6;
                 --aimd-modal-primary-text: #FFFFFF;
                 --aimd-modal-primary-hover-bg: #2563EB;
@@ -1219,6 +1234,10 @@ export class DesignTokens {
                 --aimd-modal-secondary-bg: #F3F4F6;
                 --aimd-modal-secondary-text: #374151;
                 --aimd-modal-secondary-hover-bg: #E5E7EB;
+                --aimd-modal-tree-bg: #F9FAFB;
+                --aimd-modal-tree-item-hover: var(--aimd-interactive-hover);
+                --aimd-modal-tree-item-text: var(--aimd-text-primary);
+                --aimd-modal-tree-item-icon: var(--aimd-text-secondary);
                 
                 /* --- Extended Spacing --- */
                 --aimd-space-10: 40px;
@@ -1242,6 +1261,7 @@ export class DesignTokens {
                 --aimd-button-icon-text: #6B7280;
                 --aimd-button-icon-hover: #E5E7EB;
                 --aimd-button-icon-text-hover: #374151;
+                --aimd-button-icon-active: rgba(0, 0, 0, 0.08);
                 
                 /* --- Feedback Colors (Light Mode) --- */
                 --aimd-feedback-success-bg: #D1FAE5;
@@ -1263,6 +1283,16 @@ export class DesignTokens {
                 --aimd-bg-overlay-heavy: rgba(0, 0, 0, 0.6);
                 --aimd-glass-tint: rgba(0, 0, 0, 0.03);
                 --aimd-bg-hint: rgba(0, 0, 0, 0.05);
+                --aimd-overlay-backdrop: blur(3px);
+                --aimd-z-base: 1;
+                --aimd-z-dropdown: 1000;
+                --aimd-z-sticky: 1020;
+                --aimd-z-fixed: 1030;
+                --aimd-z-modal-backdrop: 1040;
+                --aimd-z-modal: 1050;
+                --aimd-z-popover: 1060;
+                --aimd-z-tooltip: 1070;
+                --aimd-z-max: 2147483647;
                 
                 /* --- Shadow Tokens (Light Mode) --- */
                 --aimd-shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.15);
