@@ -1,35 +1,38 @@
 import { MarkdownRenderer } from '@/renderer/core/MarkdownRenderer';
 import { StyleManager } from '@/renderer/styles/StyleManager';
 import { LRUCache } from '@/renderer/utils/LRUCache';
-import { MessageCollector, MessageRef } from '../utils/MessageCollector';
+import { MessageCollector } from '../utils/MessageCollector';
 import { TooltipManager, tooltipStyles } from '../utils/TooltipManager';
 import { DotPaginationController } from '../utils/DotPaginationController';
 import { NavigationButtonsController } from '../utils/NavigationButtonsController';
 import { readerPanelStyles } from '../utils/ReaderPanelStyles';
-import { adapterRegistry } from '../adapters/registry';
 import { DesignTokens } from '../../utils/design-tokens';
 import { logger } from '../../utils/logger';
+import { ReaderItem, resolveContent } from '../types/ReaderTypes';
+import { collectFromLivePage, getMessageRefs } from '../datasource/LivePageDataSource';
 
 type GetMarkdownFn = (element: HTMLElement) => string;
 
 /**
- * Reader Panel - Modular Markdown Reader
+ * Reader Panel - 通用 Markdown 阅读器
  * 
- * Coordinates independent modules:
- * - DotPaginationController: Pagination UI
- * - TooltipManager: Tooltip display
- * - MarkdownRenderer: Content rendering
+ * 设计原则（重构后）：
+ * - 数据驱动：通过 ReaderItem[] 接收数据
+ * - 与数据源解耦：不关心数据来自 DOM 还是存储
+ * - 支持懒加载：ContentProvider 可以是函数
  * 
- * Zero tight coupling - all modules are replaceable.
+ * 协调模块：
+ * - DotPaginationController: 分页 UI
+ * - TooltipManager: 提示框
+ * - MarkdownRenderer: 内容渲染
  */
 export class ReaderPanel {
     private container: HTMLElement | null = null;
     private shadowRoot: ShadowRoot | null = null;
     private currentThemeIsDark: boolean = false;
-    private messages: MessageRef[] = [];
+    private items: ReaderItem[] = [];
     private currentIndex: number = 0;
     private cache: LRUCache<number, string> = new LRUCache(10);
-    private getMarkdownFn?: GetMarkdownFn;
 
     // Modular components
     private tooltipManager: TooltipManager | null = null;
@@ -38,47 +41,65 @@ export class ReaderPanel {
     private keyHandler: ((e: KeyboardEvent) => void) | null = null;
 
     /**
-     * Show reader panel
+     * 【新方法】通用入口：接受标准化的 ReaderItem[]
+     * 
+     * @param items - 阅读器数据项数组
+     * @param startIndex - 初始显示的索引
+     */
+    async showWithData(items: ReaderItem[], startIndex: number = 0): Promise<void> {
+        const startTime = performance.now();
+        logger.debug('[ReaderPanel] START showWithData');
+
+        this.hide();
+        this.items = items;
+
+        if (this.items.length === 0) {
+            logger.warn('[ReaderPanel] No items to display');
+            return;
+        }
+
+        // 验证并设置起始索引
+        this.currentIndex = Math.max(0, Math.min(startIndex, this.items.length - 1));
+        logger.debug(`[ReaderPanel] currentIndex: ${this.currentIndex}/${this.items.length}`);
+
+        // 创建面板 UI
+        await this.createPanel();
+
+        logger.debug(`[ReaderPanel] END showWithData: ${(performance.now() - startTime).toFixed(2)}ms`);
+    }
+
+    /**
+     * 【兼容层】保留旧签名，供现有调用方使用
+     * 
+     * @deprecated 建议使用 showWithData()
      */
     async show(messageElement: HTMLElement, getMarkdown: GetMarkdownFn): Promise<void> {
         const startTime = performance.now();
-        logger.debug('[ReaderPanel] START show');
+        logger.debug('[ReaderPanel] START show (compat layer)');
 
-        this.getMarkdownFn = getMarkdown;
-        this.hide();
+        // 使用新的数据源适配器收集数据
+        const items = collectFromLivePage(getMarkdown);
 
-        // Collect messages (lazy - no parsing)
-        const t0 = performance.now();
-        this.messages = MessageCollector.collectMessages();
-        logger.debug(`[ReaderPanel] collectMessages: ${(performance.now() - t0).toFixed(2)} ms, count: ${this.messages.length} `);
-
-        if (this.messages.length === 0) {
+        if (items.length === 0) {
             logger.warn('[ReaderPanel] No messages found');
             return;
         }
 
-        // Find current message index
-        this.currentIndex = MessageCollector.findMessageIndex(messageElement, this.messages);
-        if (this.currentIndex === -1) {
-            this.currentIndex = this.messages.length - 1;
+        // 查找当前消息索引
+        const messageRefs = getMessageRefs();
+        let startIndex = MessageCollector.findMessageIndex(messageElement, messageRefs);
+        if (startIndex === -1) {
+            startIndex = items.length - 1;
         }
-        logger.debug(`[ReaderPanel] currentIndex: ${this.currentIndex}/${this.messages.length}`);
 
-        logger.debug(`[ReaderPanel] currentIndex: ${this.currentIndex}/${this.messages.length}`);
+        logger.debug(`[ReaderPanel] Compat layer prepared ${items.length} items in ${(performance.now() - startTime).toFixed(2)}ms`);
 
-        // Note: User prompts are now collected atomically in MessageCollector
-        // No separate extraction step needed.
-
-        // Create panel UI
-        await this.createPanel();
-
-        logger.debug(`[ReaderPanel] END show: ${(performance.now() - startTime).toFixed(2)}ms`);
+        // 委托给新方法
+        return this.showWithData(items, startIndex);
     }
 
-    // extractUserPrompts removed - handled by MessageCollector
-
     /**
-     * Hide panel and cleanup all modules
+     * 隐藏面板并清理
      */
     hide(): void {
         this.container?.remove();
@@ -86,7 +107,7 @@ export class ReaderPanel {
         this.shadowRoot = null;
         this.cache.clear();
 
-        // Cleanup modular components
+        // 清理子组件
         this.tooltipManager?.destroy();
         this.tooltipManager = null;
 
@@ -103,7 +124,7 @@ export class ReaderPanel {
     }
 
     /**
-     * Set theme
+     * 设置主题
      */
     setTheme(isDark: boolean): void {
         this.currentThemeIsDark = isDark;
@@ -113,20 +134,20 @@ export class ReaderPanel {
     }
 
     /**
-     * Create panel with shadow DOM
+     * 创建面板 (Shadow DOM)
      */
     private async createPanel(): Promise<void> {
-        // Create container
+        // 创建容器
         this.container = document.createElement('div');
         this.container.dataset.theme = this.currentThemeIsDark ? 'dark' : 'light';
 
-        // Attach Shadow DOM
+        // 挂载 Shadow DOM
         this.shadowRoot = this.container.attachShadow({ mode: 'open' });
 
-        // Inject styles
+        // 注入样式
         await StyleManager.injectStyles(this.shadowRoot);
 
-        // 🔑 FIX: Inject DesignTokens for CSS variables (--interactive-primary, etc.)
+        // 注入 Design Tokens
         const tokenStyle = document.createElement('style');
         tokenStyle.id = 'design-tokens';
         tokenStyle.textContent = `:host { ${DesignTokens.getCompleteTokens(this.currentThemeIsDark)} }`;
@@ -136,7 +157,7 @@ export class ReaderPanel {
         styleEl.textContent = readerPanelStyles + tooltipStyles;
         this.shadowRoot.appendChild(styleEl);
 
-        // Create UI structure
+        // 创建 UI 结构
         const overlay = this.createOverlay();
         const panel = this.createPanelElement();
 
@@ -144,18 +165,18 @@ export class ReaderPanel {
         this.shadowRoot.appendChild(panel);
         document.body.appendChild(this.container);
 
-        // Render current message
+        // 渲染当前消息
         await this.renderMessage(this.currentIndex);
 
-        // Setup keyboard navigation
+        // 设置键盘导航
         this.setupKeyboardNavigation(panel);
 
-        // Focus panel
+        // 聚焦面板
         panel.focus();
     }
 
     /**
-     * Create overlay element
+     * 创建遮罩层
      */
     private createOverlay(): HTMLElement {
         const overlay = document.createElement('div');
@@ -165,7 +186,7 @@ export class ReaderPanel {
     }
 
     /**
-     * Create main panel element
+     * 创建主面板
      */
     private createPanelElement(): HTMLElement {
         const panel = document.createElement('div');
@@ -189,7 +210,7 @@ export class ReaderPanel {
     }
 
     /**
-     * Create header
+     * 创建头部
      */
     private createHeader(): HTMLElement {
         const header = document.createElement('div');
@@ -213,17 +234,17 @@ export class ReaderPanel {
     }
 
     /**
-     * Create pagination using DotPaginationController
+     * 创建分页控件
      */
     private createPagination(): HTMLElement {
         const paginationContainer = document.createElement('div');
         paginationContainer.className = 'aicopy-pagination';
 
-        logger.debug(`[ReaderPanel] Creating pagination for ${this.messages.length} messages`);
+        logger.debug(`[ReaderPanel] Creating pagination for ${this.items.length} items`);
 
-        // Initialize pagination controller
+        // 初始化分页控制器
         this.paginationController = new DotPaginationController(paginationContainer, {
-            totalItems: this.messages.length,
+            totalItems: this.items.length,
             currentIndex: this.currentIndex,
             onNavigate: (index) => this.navigateTo(index)
         });
@@ -232,7 +253,7 @@ export class ReaderPanel {
 
         logger.debug(`[ReaderPanel] Pagination rendered, container has ${this.paginationController.getDots().length} dots`);
 
-        // Create navigation buttons controller
+        // 创建导航按钮控制器
         this.navButtonsController = new NavigationButtonsController(
             paginationContainer,
             {
@@ -242,17 +263,17 @@ export class ReaderPanel {
                     }
                 },
                 onNext: () => {
-                    if (this.currentIndex < this.messages.length - 1) {
+                    if (this.currentIndex < this.items.length - 1) {
                         this.navigateTo(this.currentIndex + 1);
                     }
                 },
                 canGoPrevious: this.currentIndex > 0,
-                canGoNext: this.currentIndex < this.messages.length - 1
+                canGoNext: this.currentIndex < this.items.length - 1
             }
         );
         this.navButtonsController.render();
 
-        // Initialize tooltip manager and attach to dots
+        // 初始化提示管理器
         if (this.shadowRoot) {
             this.tooltipManager = new TooltipManager(this.shadowRoot);
             const dots = this.paginationController.getDots();
@@ -260,13 +281,13 @@ export class ReaderPanel {
             dots.forEach((dot, index) => {
                 this.tooltipManager!.attach(dot, {
                     index,
-                    text: this.messages[index].userPrompt || `Message ${index + 1}`,
+                    text: this.items[index].userPrompt || `Message ${index + 1}`,
                     maxLength: 100
                 });
             });
         }
 
-        // Add keyboard hint
+        // 添加键盘提示
         const hint = document.createElement('span');
         hint.className = 'aicopy-keyboard-hint';
         hint.textContent = '"← →" to navigate';
@@ -276,10 +297,10 @@ export class ReaderPanel {
     }
 
     /**
-     * Setup keyboard navigation
+     * 设置键盘导航
      */
     private setupKeyboardNavigation(panel: HTMLElement): void {
-        // ESC to close
+        // ESC 关闭
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 this.hide();
@@ -288,7 +309,7 @@ export class ReaderPanel {
         };
         document.addEventListener('keydown', handleEscape);
 
-        // Arrow key navigation (scoped to panel)
+        // 方向键导航
         this.keyHandler = (e: KeyboardEvent) => {
             if (e.key === 'ArrowLeft') {
                 e.preventDefault();
@@ -303,21 +324,21 @@ export class ReaderPanel {
     }
 
     /**
-     * Navigate to specific message index
+     * 导航到指定索引
      */
     private async navigateTo(index: number): Promise<void> {
-        if (index < 0 || index >= this.messages.length) return;
+        if (index < 0 || index >= this.items.length) return;
 
         this.currentIndex = index;
         this.paginationController?.setActiveIndex(index);
 
-        // Update navigation buttons states
+        // 更新导航按钮状态
         this.navButtonsController?.updateConfig({
             canGoPrevious: index > 0,
-            canGoNext: index < this.messages.length - 1
+            canGoNext: index < this.items.length - 1
         });
 
-        // P3 FIX: Reset scroll position to top
+        // 重置滚动位置
         if (this.shadowRoot) {
             const body = this.shadowRoot.querySelector('#panel-body');
             body?.scrollTo(0, 0);
@@ -327,61 +348,56 @@ export class ReaderPanel {
     }
 
     /**
-     * Lazy-load and render message content
+     * 懒加载并渲染消息内容
      */
     private async renderMessage(index: number): Promise<void> {
-        const messageRef = this.messages[index];
+        const item = this.items[index];
 
-        // Check cache
+        // 检查缓存
         let html = this.cache.get(index);
 
         if (!html) {
-            // Parse content only when needed
-            if (!messageRef.parsed && this.getMarkdownFn) {
-                try {
-                    const t0 = performance.now();
-                    messageRef.parsed = this.getMarkdownFn(messageRef.element);
-                    logger.debug(`[ReaderPanel] getMarkdown: ${(performance.now() - t0).toFixed(2)}ms`);
-                } catch (error) {
-                    logger.error('[ReaderPanel] Parse failed:', error);
-                    messageRef.parsed = 'Failed to parse message';
-                }
+            try {
+                // 解析内容（支持懒加载）
+                const t0 = performance.now();
+                const markdown = await resolveContent(item.content);
+                logger.debug(`[ReaderPanel] resolveContent: ${(performance.now() - t0).toFixed(2)}ms`);
+
+                // 渲染 Markdown
+                const t1 = performance.now();
+                const result = await MarkdownRenderer.render(markdown);
+                logger.debug(`[ReaderPanel] MarkdownRenderer.render: ${(performance.now() - t1).toFixed(2)}ms`);
+                html = result.success ? result.html! : result.fallback!;
+
+                // 清理空白
+                html = html.replace(/^\s+/, '').trim();
+
+                // 缓存
+                this.cache.set(index, html);
+            } catch (error) {
+                logger.error('[ReaderPanel] Render failed:', error);
+                html = '<div class="markdown-fallback">Failed to render content</div>';
             }
-
-            // Render
-            const t1 = performance.now();
-            const result = await MarkdownRenderer.render(messageRef.parsed!);
-            logger.debug(`[ReaderPanel] MarkdownRenderer.render: ${(performance.now() - t1).toFixed(2)}ms`);
-            html = result.success ? result.html! : result.fallback!;
-
-            // Strict cleanup of leading/trailing whitespace/newlines
-            html = html.replace(/^\s+/, '').trim();
-
-            // Cache
-            this.cache.set(index, html);
         } else {
-            logger.debug(`[ReaderPanel] Using cache for message ${index}`);
+            logger.debug(`[ReaderPanel] Using cache for item ${index}`);
         }
 
-        // Update DOM with Consolidated View
+        // 更新 DOM
         if (this.shadowRoot) {
             const body = this.shadowRoot.querySelector('#panel-body');
             if (body) {
-                // Truncate user prompt to 200 chars and collapse multiple newlines
-                const rawPrompt = messageRef.userPrompt || '';
-                // Collapse 2+ newlines into 1
+                // 截断用户提示
+                const rawPrompt = item.userPrompt || '';
                 const normalizedPrompt = rawPrompt.replace(/\n{2,}/g, '\n').trim();
-
                 const displayPrompt = normalizedPrompt.length > 200
                     ? normalizedPrompt.slice(0, 200) + '...'
                     : normalizedPrompt;
 
-                // Icons
+                // 图标
                 const userIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
 
-                // Get platform specific icon from adapter
-                const adapter = adapterRegistry.getAdapter();
-                const modelIcon = adapter ? adapter.getIcon() : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 2a10 10 0 0 1 10 10h-10V2z" opacity="0.5"></path><path d="M12 12L2 12"></path></svg>`;
+                // 从 meta 获取平台图标，或使用默认值
+                const modelIcon = item.meta?.platformIcon || `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>`;
 
                 body.innerHTML = `
                     <div class="message-user-header">
@@ -391,7 +407,7 @@ export class ReaderPanel {
                     
                     <div class="message-model-container">
                         <div class="model-icon">${modelIcon}</div>
-                        <div class="markdown-body">${html!}</div>
+                        <div class="markdown-body">${html}</div>
                     </div>
                 `;
             }
@@ -405,7 +421,7 @@ export class ReaderPanel {
     }
 
     /**
-     * Toggle fullscreen mode
+     * 切换全屏模式
      */
     private toggleFullscreen(): void {
         if (!this.shadowRoot) return;

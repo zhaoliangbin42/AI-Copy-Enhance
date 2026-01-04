@@ -9,10 +9,11 @@ import { TreeBuilder } from '../utils/tree-builder';
 import { PathUtils, type FolderNameValidationError } from '../utils/path-utils';
 import { Icons } from '../../assets/icons';
 // ✅ Phase 7: 迁移到核心renderer
-import { MarkdownRenderer } from '@/renderer/core/MarkdownRenderer';
-import { StyleManager } from '@/renderer/styles/StyleManager';
+
 import { ThemeManager } from '../../utils/ThemeManager';
 import { DesignTokens } from '../../utils/design-tokens';  // T2.1.1: Import DesignTokens class
+import { ReaderPanel } from '../../content/features/re-render';
+import { fromBookmarks, findBookmarkIndex } from '../datasource/BookmarkDataSource';
 
 type ImportMergeStatus = 'normal' | 'rename' | 'import';
 
@@ -59,6 +60,9 @@ export class SimpleBookmarkPanel {
 
     // Theme manager subscription for dynamic theme switching
     private themeUnsubscribe: (() => void) | null = null;
+
+    // ReaderPanel 实例（用于书签预览）
+    private readerPanel: ReaderPanel = new ReaderPanel();
 
     /**
      * Show the bookmark panel
@@ -581,19 +585,7 @@ export class SimpleBookmarkPanel {
         return text.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    /**
-     * Get platform icon
-     */
-    private getPlatformIcon(platform: string): string {
-        switch (platform.toLowerCase()) {
-            case 'chatgpt':
-                return Icons.chatgpt;
-            case 'gemini':
-                return Icons.gemini;
-            default:
-                return Icons.chatgpt;
-        }
-    }
+
 
     /**
      * Format timestamp to relative time
@@ -1125,23 +1117,23 @@ export class SimpleBookmarkPanel {
                 } else if (target.classList.contains('edit-bookmark')) {
                     const url = (item as HTMLElement).dataset.url!;
                     const position = parseInt((item as HTMLElement).dataset.position!);
-                    // ✅ Phase 7: 查找bookmark对象后传递
+                    // ✅ Phase 8: 使用 ReaderPanel 打开预览
                     const bookmark = this.filteredBookmarks.find(
                         b => b.url === url && b.position === position
                     );
                     if (bookmark) {
-                        this.showDetailModal(bookmark);
+                        this.openPreview(bookmark);
                     }
                 } else {
                     const url = (item as HTMLElement).dataset.url!;
                     const position = parseInt((item as HTMLElement).dataset.position!);
                     if (url && position) {
-                        // ✅ Phase 7: 查找bookmark对象后传递
+                        // ✅ Phase 8: 使用 ReaderPanel 打开预览
                         const bookmark = this.filteredBookmarks.find(
                             b => b.url === url && b.position === position
                         );
                         if (bookmark) {
-                            this.showDetailModal(bookmark);
+                            this.openPreview(bookmark);
                         }
                     }
                 }
@@ -2245,141 +2237,51 @@ export class SimpleBookmarkPanel {
     }
 
     /**
-     * Show detail modal
+     * 使用 ReaderPanel 打开书签预览
+     * Phase 8: 复用通用阅读器组件
      */
-    /**
-     * Show detail modal (CRITICAL:    /**
-     * Show detail modal with markdown preview
-     */
-    private async showDetailModal(bookmark: Bookmark): Promise<void> {
-        // ✅ Phase 7: 使用StyleManager注入样式
-        // ✅ Phase 7: 使用StyleManager注入样式
-        await StyleManager.injectStyles(document);
+    private openPreview(bookmark: Bookmark): void {
+        // 设置主题
+        this.readerPanel.setTheme(ThemeManager.getInstance().isDarkMode());
 
-        // ✅ Phase 7: 处理RenderResult
-        const userResult = await MarkdownRenderer.render(bookmark.userMessage);
-        const userMessageHtml = userResult.success ? userResult.html! : userResult.fallback!;
+        let targetList: Bookmark[] = [];
 
-        const aiResponseHtml = bookmark.aiResponse
-            ? await MarkdownRenderer.render(bookmark.aiResponse).then(r => r.success ? r.html! : r.fallback!)
-            : '';
+        // 构建 UI 树以获取正确的视觉顺序（排序由 TreeBuilder 统一控制）
+        // 这样可以确保 Reader 的翻页顺序与用户在列表中看到的顺序完全一致
+        const tree = TreeBuilder.buildTree(
+            this.folders,
+            this.filteredBookmarks // 包含搜索过滤
+        );
 
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'detail-modal-overlay';
-
-        const modal = document.createElement('div');
-        modal.className = 'detail-modal';
-
-        // CRITICAL: Stop propagation on modal to prevent closing main panel
-        modal.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-
-        // Format absolute date
-        const date = new Date(bookmark.timestamp);
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-        const formattedDate = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-
-        modal.innerHTML = `
-            <div class="detail-header">
-                <h3>${this.escapeHtml(bookmark.title || bookmark.userMessage.substring(0, 50))}</h3>
-                <div class="detail-header-actions">
-                    <button class="fullscreen-btn" title="Toggle fullscreen">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                        </svg>
-                    </button>
-                    <button class="close-btn" title="Close">×</button>
-                </div>
-            </div>
-
-            <div class="detail-meta">
-                <div class="detail-meta-left">
-                    <span class="platform-badge ${bookmark.platform?.toLowerCase() || 'chatgpt'}">
-                        ${this.getPlatformIcon(bookmark.platform)} ${bookmark.platform || 'ChatGPT'}
-                    </span>
-                </div>
-                <div class="detail-meta-right">
-                    Saved date: ${formattedDate}
-                </div>
-            </div>
-
-            <div class="detail-content">
-                <div class="detail-section user-section">
-                    <div class="section-header">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                        <h4>User Prompt</h4>
-                    </div>
-                    <div class="detail-text markdown-content">${userMessageHtml}</div>
-                </div>
-
-                ${bookmark.aiResponse ? `
-                    <div class="detail-section ai-section">
-                        <div class="section-header">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
-                            </svg>
-                            <h4>AI Response</h4>
-                        </div>
-                        <div class="detail-text markdown-content">${aiResponseHtml}</div>
-                    </div>
-                ` : ''}
-            </div>
-
-            <div class="detail-footer">
-                <button class="open-conversation-btn" data-url="${this.escapeHtml(bookmark.url)}">
-                    Open in Conversation
-                </button>
-            </div>
-        `;
-
-
-        modalOverlay.appendChild(modal);
-
-        // Add to shadow root
-        this.shadowRoot?.appendChild(modalOverlay);
-
-        // Bind events
-        modal.querySelector('.close-btn')?.addEventListener('click', () => {
-            modalOverlay.remove();
-        });
-
-        modal.querySelector('.fullscreen-btn')?.addEventListener('click', () => {
-            modal.classList.toggle('detail-modal-fullscreen');
-        });
-
-        modal.querySelector('.open-conversation-btn')?.addEventListener('click', async () => {
-            modalOverlay.remove();
-            await this.handleGoTo(bookmark.url, bookmark.position);
-        });
-
-        // Click on overlay background (not modal) closes only the detail modal
-        // CRITICAL: Stop propagation to prevent closing main panel
-        modalOverlay.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent bubbling to main panel overlay
-            if (e.target === modalOverlay) {
-                modalOverlay.remove();
+        if (this.searchQuery) {
+            // 搜索模式：使用当前视图中展示的所有书签（按视觉顺序）
+            // TreeBuilder.getAllBookmarks 会按深度优先遍历返回排序后的书签
+            targetList = TreeBuilder.getAllBookmarks(tree);
+        } else {
+            // 文件夹模式：只获取当前文件夹下的书签（按视觉顺序）
+            const folderNode = TreeBuilder.findNode(tree, bookmark.folderPath);
+            // 如果找到文件夹节点，直接使用其已排序的 bookmarks 列表
+            if (folderNode) {
+                targetList = folderNode.bookmarks;
+            } else {
+                // 回退逻辑（理论上不应触发）
+                targetList = this.bookmarks.filter(b => b.folderPath === bookmark.folderPath);
             }
-        });
+        }
 
-        // Add ESC key handler for detail modal
-        const detailEscHandler = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                // Check if modal still exists (not already removed)
-                if (modalOverlay.parentNode) {
-                    e.stopPropagation(); // Prevent main panel from closing
-                    modalOverlay.remove();
-                }
-                // Always remove the handler
-                document.removeEventListener('keydown', detailEscHandler);
-            }
-        };
-        document.addEventListener('keydown', detailEscHandler);
+        // 将目标列表转换为 ReaderItem[]
+        const items = fromBookmarks(targetList);
+
+        // 查找当前书签在目标列表中的索引
+        const startIndex = findBookmarkIndex(bookmark, targetList);
+
+        // 显示 ReaderPanel
+        this.readerPanel.showWithData(items, startIndex);
+
+        logger.info(`[SimpleBookmarkPanel] Opened preview for bookmark at index ${startIndex} (Scope: ${this.searchQuery ? 'Search' : 'Folder'})`);
     }
+
+
 
     /**
      * Handle edit
@@ -3948,27 +3850,24 @@ ${options.message}
      * Handle bookmark navigation - Go To
      */
     private async handleGoTo(url: string, position: number): Promise<void> {
-        console.log(`[handleGoTo] Starting navigation to ${url} position ${position}`);
+        logger.debug(`[SimpleBookmarkPanel] Starting navigation to ${url} position ${position}`);
 
         const currentUrl = window.location.href;
         const targetUrl = url;
 
         // 判断是否为当前页面
         const isCurrentPage = this.isSamePage(currentUrl, targetUrl);
-        console.log(`[handleGoTo] isCurrentPage: ${isCurrentPage}`);
 
         if (isCurrentPage) {
             // 当前页面，直接滚动
-            console.log('[handleGoTo] Same page - closing panel and scrolling');
             this.hide(); // 关闭书签面板
             await this.smoothScrollToPosition(position);
-            console.log(`[handleGoTo] Scrolled to position ${position} on current page`);
+            logger.debug(`[SimpleBookmarkPanel] Scrolled to position ${position} on current page`);
         } else {
             // 跨页面跳转
-            console.log('[handleGoTo] Cross-page - navigating with window.location.href');
             await this.setNavigateData('targetPosition', position);
             window.location.href = targetUrl;
-            console.log(`[handleGoTo] Navigating to ${targetUrl} with target position ${position}`);
+            logger.debug(`[SimpleBookmarkPanel] Navigating to ${targetUrl} with target position ${position}`);
         }
     }
 
@@ -3990,8 +3889,6 @@ ${options.message}
      * Smooth scroll to bookmark position
      */
     private async smoothScrollToPosition(position: number): Promise<void> {
-        console.log(`[smoothScrollToPosition] Starting scroll to position ${position}`);
-
         // Platform detection - check current URL
         const isGemini = window.location.href.includes('gemini.google.com');
         const isChatGPT = window.location.href.includes('chatgpt.com');
@@ -4000,27 +3897,21 @@ ${options.message}
         let messageSelector: string;
         if (isGemini) {
             messageSelector = 'model-response';  // Gemini adapter selector
-            console.log('[smoothScrollToPosition] Platform: Gemini');
         } else if (isChatGPT) {
             messageSelector = 'article[data-turn="assistant"], [data-message-author-role="assistant"]:not(article [data-message-author-role="assistant"])';
-            console.log('[smoothScrollToPosition] Platform: ChatGPT');
         } else {
-            console.error('[smoothScrollToPosition] Unknown platform');
+            logger.warn('[SimpleBookmarkPanel] Unknown platform for scrolling');
             return;
         }
 
-        console.log(`[smoothScrollToPosition] Using selector: ${messageSelector}`);
-
         const messages = document.querySelectorAll(messageSelector);
-        console.log(`[smoothScrollToPosition] Found ${messages.length} messages`);
 
         const targetIndex = position - 1;
         if (targetIndex >= 0 && targetIndex < messages.length) {
             const targetElement = messages[targetIndex] as HTMLElement;
-            console.log('[smoothScrollToPosition] Target element found, starting smooth scroll');
             this.smoothScrollTo(targetElement);
         } else {
-            console.error(`[smoothScrollToPosition] Invalid position: ${position} (messages: ${messages.length})`);
+            logger.warn(`[SimpleBookmarkPanel] Invalid position for scrolling: ${position} (messages: ${messages.length})`);
         }
     }
 
@@ -4032,9 +3923,8 @@ ${options.message}
         try {
             const storageKey = `bookmarkNavigate:${key}`;
             await chrome.storage.local.set({ [storageKey]: value });
-            console.log(`[setNavigateData] Set ${storageKey} = ${value}`);
         } catch (error) {
-            console.error('[setNavigateData] Error:', error);
+            logger.error('[SimpleBookmarkPanel] setNavigateData Error:', error);
         }
     }
 

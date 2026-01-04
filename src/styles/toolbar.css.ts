@@ -22,7 +22,7 @@ export const toolbarStyles = `
 .aicopy-toolbar-wrapper {
   display: block;
   position: relative;
-  z-index: 5; /* Ensure it sits above standard content */
+  z-index: var(--aimd-z-base); /* Ensure it sits above standard content */
 }
 
 /* Notion-style floating toolbar */
@@ -55,7 +55,7 @@ export const toolbarStyles = `
   right: 0;
   
   /* Ensure clickability */
-  z-index: 5;
+  z-index: var(--aimd-z-base);
   pointer-events: auto;
   
   /* ✅ Best Practice: 只transition变化的属性 */
@@ -122,7 +122,7 @@ export const toolbarStyles = `
   transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
   pointer-events: auto;
-  z-index: 1;
+  z-index: var(--aimd-z-base);
   overflow: visible; /* CRITICAL: Allow tooltip to overflow button bounds */
 }
 
@@ -173,7 +173,7 @@ export const toolbarStyles = `
   border-radius: 6px;
   opacity: 0;
   pointer-events: none;
-  z-index: 1001;
+  z-index: var(--aimd-z-dropdown);
   animation: fadeInOut 1.5s ease;
 }
 

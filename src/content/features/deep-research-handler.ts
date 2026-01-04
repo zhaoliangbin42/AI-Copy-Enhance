@@ -226,7 +226,7 @@ export class DeepResearchHandler {
             border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
-            z-index: var(--aimd-z-tooltip, 1070);
+            z-index: var(--aimd-z-tooltip);
             animation: fadeInOut 2s forwards;
         `;
 

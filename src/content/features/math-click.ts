@@ -267,7 +267,7 @@ export class MathClickHandler {
       font-size: 12px;
       font-weight: 500;
       pointer-events: none;
-      z-index: var(--aimd-z-tooltip, 1070);
+      z-index: var(--aimd-z-tooltip);
       animation: fadeOut 1.5s forwards;
     `;
 

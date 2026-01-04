@@ -1232,7 +1232,7 @@ const toolbarStyles = `
 .aicopy-toolbar-wrapper {
   display: block;
   position: relative;
-  z-index: 5; /* Ensure it sits above standard content */
+  z-index: var(--aimd-z-base); /* Ensure it sits above standard content */
 }
 
 /* Notion-style floating toolbar */
@@ -1265,7 +1265,7 @@ const toolbarStyles = `
   right: 0;
   
   /* Ensure clickability */
-  z-index: 5;
+  z-index: var(--aimd-z-base);
   pointer-events: auto;
   
   /* ✅ Best Practice: 只transition变化的属性 */
@@ -1332,7 +1332,7 @@ const toolbarStyles = `
   transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
   pointer-events: auto;
-  z-index: 1;
+  z-index: var(--aimd-z-base);
   overflow: visible; /* CRITICAL: Allow tooltip to overflow button bounds */
 }
 
@@ -1383,7 +1383,7 @@ const toolbarStyles = `
   border-radius: 6px;
   opacity: 0;
   pointer-events: none;
-  z-index: 1001;
+  z-index: var(--aimd-z-dropdown);
   animation: fadeInOut 1.5s ease;
 }
 
@@ -3332,7 +3332,7 @@ const modalStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999999;
+  z-index: var(--aimd-z-modal);
   animation: overlayFadeIn 0.2s ease;
 }
 
@@ -5230,7 +5230,7 @@ class MathClickHandler {
       font-size: 12px;
       font-weight: 500;
       pointer-events: none;
-      z-index: var(--aimd-z-tooltip, 1070);
+      z-index: var(--aimd-z-tooltip);
       animation: fadeOut 1.5s forwards;
     `;
     const rect = element.getBoundingClientRect();
@@ -26237,7 +26237,7 @@ const tooltipStyles = `
   max-width: 260px;
   text-align: center;
   pointer-events: none;
-  z-index: 2000;
+  z-index: var(--aimd-z-tooltip);
   
   /* Hidden by default */
   opacity: 0;
@@ -26269,7 +26269,7 @@ const tooltipStyles = `
 .tooltip-index {
   font-weight: 800;
   font-size: 18px;
-  color: var(--aimd-color-blue-400);
+  color: var(--aimd-interactive-primary);
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
@@ -26526,7 +26526,7 @@ const readerPanelStyles = `
   right: 0;
   bottom: 0;
   background: var(--aimd-bg-overlay-heavy);
-  z-index: 999998;
+  z-index: var(--aimd-z-max);
   backdrop-filter: blur(3px);
 }
 
@@ -26549,7 +26549,7 @@ const readerPanelStyles = `
   
   display: flex;
   flex-direction: column;
-  z-index: 999999;
+  z-index: var(--aimd-z-max);
   overflow: hidden;
   animation: modalFadeIn 0.2s ease;
   
@@ -26863,46 +26863,104 @@ const readerPanelStyles = `
 
 `;
 
+async function resolveContent(provider) {
+  if (typeof provider === "string") {
+    return provider;
+  }
+  const result = provider();
+  if (result instanceof Promise) {
+    return await result;
+  }
+  return result;
+}
+
+function collectFromLivePage(getMarkdown) {
+  const messageRefs = MessageCollector.collectMessages();
+  const adapter = adapterRegistry.getAdapter();
+  const platformIcon = adapter?.getIcon() || getDefaultIcon();
+  const platform = window.location.hostname.includes("gemini") ? "Gemini" : window.location.hostname.includes("chatgpt") ? "ChatGPT" : "AI";
+  return messageRefs.map((ref, index) => ({
+    id: index,
+    userPrompt: ref.userPrompt || `Message ${index + 1}`,
+    // 懒加载：只有访问时才解析 DOM
+    content: () => {
+      if (ref.parsed) {
+        return ref.parsed;
+      }
+      ref.parsed = getMarkdown(ref.element);
+      return ref.parsed;
+    },
+    meta: {
+      platform,
+      platformIcon
+    }
+  }));
+}
+function getMessageRefs() {
+  return MessageCollector.collectMessages();
+}
+function getDefaultIcon() {
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 16v-4M12 8h.01"></path>
+    </svg>`;
+}
+
 class ReaderPanel {
   container = null;
   shadowRoot = null;
   currentThemeIsDark = false;
-  messages = [];
+  items = [];
   currentIndex = 0;
   cache = new LRUCache(10);
-  getMarkdownFn;
   // Modular components
   tooltipManager = null;
   paginationController = null;
   navButtonsController = null;
   keyHandler = null;
   /**
-   * Show reader panel
+   * 【新方法】通用入口：接受标准化的 ReaderItem[]
+   * 
+   * @param items - 阅读器数据项数组
+   * @param startIndex - 初始显示的索引
+   */
+  async showWithData(items, startIndex = 0) {
+    const startTime = performance.now();
+    logger$1.debug("[ReaderPanel] START showWithData");
+    this.hide();
+    this.items = items;
+    if (this.items.length === 0) {
+      logger$1.warn("[ReaderPanel] No items to display");
+      return;
+    }
+    this.currentIndex = Math.max(0, Math.min(startIndex, this.items.length - 1));
+    logger$1.debug(`[ReaderPanel] currentIndex: ${this.currentIndex}/${this.items.length}`);
+    await this.createPanel();
+    logger$1.debug(`[ReaderPanel] END showWithData: ${(performance.now() - startTime).toFixed(2)}ms`);
+  }
+  /**
+   * 【兼容层】保留旧签名，供现有调用方使用
+   * 
+   * @deprecated 建议使用 showWithData()
    */
   async show(messageElement, getMarkdown) {
     const startTime = performance.now();
-    logger$1.debug("[ReaderPanel] START show");
-    this.getMarkdownFn = getMarkdown;
-    this.hide();
-    const t0 = performance.now();
-    this.messages = MessageCollector.collectMessages();
-    logger$1.debug(`[ReaderPanel] collectMessages: ${(performance.now() - t0).toFixed(2)} ms, count: ${this.messages.length} `);
-    if (this.messages.length === 0) {
+    logger$1.debug("[ReaderPanel] START show (compat layer)");
+    const items = collectFromLivePage(getMarkdown);
+    if (items.length === 0) {
       logger$1.warn("[ReaderPanel] No messages found");
       return;
     }
-    this.currentIndex = MessageCollector.findMessageIndex(messageElement, this.messages);
-    if (this.currentIndex === -1) {
-      this.currentIndex = this.messages.length - 1;
+    const messageRefs = getMessageRefs();
+    let startIndex = MessageCollector.findMessageIndex(messageElement, messageRefs);
+    if (startIndex === -1) {
+      startIndex = items.length - 1;
     }
-    logger$1.debug(`[ReaderPanel] currentIndex: ${this.currentIndex}/${this.messages.length}`);
-    logger$1.debug(`[ReaderPanel] currentIndex: ${this.currentIndex}/${this.messages.length}`);
-    await this.createPanel();
-    logger$1.debug(`[ReaderPanel] END show: ${(performance.now() - startTime).toFixed(2)}ms`);
+    logger$1.debug(`[ReaderPanel] Compat layer prepared ${items.length} items in ${(performance.now() - startTime).toFixed(2)}ms`);
+    return this.showWithData(items, startIndex);
   }
-  // extractUserPrompts removed - handled by MessageCollector
   /**
-   * Hide panel and cleanup all modules
+   * 隐藏面板并清理
    */
   hide() {
     this.container?.remove();
@@ -26921,7 +26979,7 @@ class ReaderPanel {
     }
   }
   /**
-   * Set theme
+   * 设置主题
    */
   setTheme(isDark) {
     this.currentThemeIsDark = isDark;
@@ -26930,7 +26988,7 @@ class ReaderPanel {
     }
   }
   /**
-   * Create panel with shadow DOM
+   * 创建面板 (Shadow DOM)
    */
   async createPanel() {
     this.container = document.createElement("div");
@@ -26954,7 +27012,7 @@ class ReaderPanel {
     panel.focus();
   }
   /**
-   * Create overlay element
+   * 创建遮罩层
    */
   createOverlay() {
     const overlay = document.createElement("div");
@@ -26963,7 +27021,7 @@ class ReaderPanel {
     return overlay;
   }
   /**
-   * Create main panel element
+   * 创建主面板
    */
   createPanelElement() {
     const panel = document.createElement("div");
@@ -26979,7 +27037,7 @@ class ReaderPanel {
     return panel;
   }
   /**
-   * Create header
+   * 创建头部
    */
   createHeader() {
     const header = document.createElement("div");
@@ -27000,14 +27058,14 @@ class ReaderPanel {
     return header;
   }
   /**
-   * Create pagination using DotPaginationController
+   * 创建分页控件
    */
   createPagination() {
     const paginationContainer = document.createElement("div");
     paginationContainer.className = "aicopy-pagination";
-    logger$1.debug(`[ReaderPanel] Creating pagination for ${this.messages.length} messages`);
+    logger$1.debug(`[ReaderPanel] Creating pagination for ${this.items.length} items`);
     this.paginationController = new DotPaginationController(paginationContainer, {
-      totalItems: this.messages.length,
+      totalItems: this.items.length,
       currentIndex: this.currentIndex,
       onNavigate: (index) => this.navigateTo(index)
     });
@@ -27022,12 +27080,12 @@ class ReaderPanel {
           }
         },
         onNext: () => {
-          if (this.currentIndex < this.messages.length - 1) {
+          if (this.currentIndex < this.items.length - 1) {
             this.navigateTo(this.currentIndex + 1);
           }
         },
         canGoPrevious: this.currentIndex > 0,
-        canGoNext: this.currentIndex < this.messages.length - 1
+        canGoNext: this.currentIndex < this.items.length - 1
       }
     );
     this.navButtonsController.render();
@@ -27037,7 +27095,7 @@ class ReaderPanel {
       dots.forEach((dot, index) => {
         this.tooltipManager.attach(dot, {
           index,
-          text: this.messages[index].userPrompt || `Message ${index + 1}`,
+          text: this.items[index].userPrompt || `Message ${index + 1}`,
           maxLength: 100
         });
       });
@@ -27049,7 +27107,7 @@ class ReaderPanel {
     return paginationContainer;
   }
   /**
-   * Setup keyboard navigation
+   * 设置键盘导航
    */
   setupKeyboardNavigation(panel) {
     const handleEscape = (e) => {
@@ -27071,15 +27129,15 @@ class ReaderPanel {
     panel.addEventListener("keydown", this.keyHandler);
   }
   /**
-   * Navigate to specific message index
+   * 导航到指定索引
    */
   async navigateTo(index) {
-    if (index < 0 || index >= this.messages.length) return;
+    if (index < 0 || index >= this.items.length) return;
     this.currentIndex = index;
     this.paginationController?.setActiveIndex(index);
     this.navButtonsController?.updateConfig({
       canGoPrevious: index > 0,
-      canGoNext: index < this.messages.length - 1
+      canGoNext: index < this.items.length - 1
     });
     if (this.shadowRoot) {
       const body = this.shadowRoot.querySelector("#panel-body");
@@ -27088,40 +27146,37 @@ class ReaderPanel {
     await this.renderMessage(index);
   }
   /**
-   * Lazy-load and render message content
+   * 懒加载并渲染消息内容
    */
   async renderMessage(index) {
-    const messageRef = this.messages[index];
+    const item = this.items[index];
     let html = this.cache.get(index);
     if (!html) {
-      if (!messageRef.parsed && this.getMarkdownFn) {
-        try {
-          const t0 = performance.now();
-          messageRef.parsed = this.getMarkdownFn(messageRef.element);
-          logger$1.debug(`[ReaderPanel] getMarkdown: ${(performance.now() - t0).toFixed(2)}ms`);
-        } catch (error) {
-          logger$1.error("[ReaderPanel] Parse failed:", error);
-          messageRef.parsed = "Failed to parse message";
-        }
+      try {
+        const t0 = performance.now();
+        const markdown = await resolveContent(item.content);
+        logger$1.debug(`[ReaderPanel] resolveContent: ${(performance.now() - t0).toFixed(2)}ms`);
+        const t1 = performance.now();
+        const result = await MarkdownRenderer.render(markdown);
+        logger$1.debug(`[ReaderPanel] MarkdownRenderer.render: ${(performance.now() - t1).toFixed(2)}ms`);
+        html = result.success ? result.html : result.fallback;
+        html = html.replace(/^\s+/, "").trim();
+        this.cache.set(index, html);
+      } catch (error) {
+        logger$1.error("[ReaderPanel] Render failed:", error);
+        html = '<div class="markdown-fallback">Failed to render content</div>';
       }
-      const t1 = performance.now();
-      const result = await MarkdownRenderer.render(messageRef.parsed);
-      logger$1.debug(`[ReaderPanel] MarkdownRenderer.render: ${(performance.now() - t1).toFixed(2)}ms`);
-      html = result.success ? result.html : result.fallback;
-      html = html.replace(/^\s+/, "").trim();
-      this.cache.set(index, html);
     } else {
-      logger$1.debug(`[ReaderPanel] Using cache for message ${index}`);
+      logger$1.debug(`[ReaderPanel] Using cache for item ${index}`);
     }
     if (this.shadowRoot) {
       const body = this.shadowRoot.querySelector("#panel-body");
       if (body) {
-        const rawPrompt = messageRef.userPrompt || "";
+        const rawPrompt = item.userPrompt || "";
         const normalizedPrompt = rawPrompt.replace(/\n{2,}/g, "\n").trim();
         const displayPrompt = normalizedPrompt.length > 200 ? normalizedPrompt.slice(0, 200) + "..." : normalizedPrompt;
         const userIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-        const adapter = adapterRegistry.getAdapter();
-        const modelIcon = adapter ? adapter.getIcon() : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 2a10 10 0 0 1 10 10h-10V2z" opacity="0.5"></path><path d="M12 12L2 12"></path></svg>`;
+        const modelIcon = item.meta?.platformIcon || `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>`;
         body.innerHTML = `
                     <div class="message-user-header">
                         <div class="user-icon">${userIcon}</div>
@@ -27142,7 +27197,7 @@ class ReaderPanel {
     return div.innerHTML;
   }
   /**
-   * Toggle fullscreen mode
+   * 切换全屏模式
    */
   toggleFullscreen() {
     if (!this.shadowRoot) return;
@@ -27164,7 +27219,7 @@ class TooltipHelper {
     this.tooltipContainer.className = "aicopy-tooltip-container";
     this.tooltipContainer.style.cssText = `
       position: fixed;
-      z-index: var(--aimd-z-tooltip, 1070);
+      z-index: var(--aimd-z-tooltip);
       pointer-events: none;
     `;
     document.body.appendChild(this.tooltipContainer);
@@ -27423,7 +27478,7 @@ class DeepResearchHandler {
             border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
-            z-index: var(--aimd-z-tooltip, 1070);
+            z-index: var(--aimd-z-tooltip);
             animation: fadeInOut 2s forwards;
         `;
     const style = document.createElement("style");
@@ -29827,6 +29882,34 @@ class FolderOperationsManager {
   }
 }
 
+function getPlatformIcon(platform) {
+  const p = platform?.toLowerCase() || "chatgpt";
+  if (p === "gemini") {
+    return Icons.gemini;
+  }
+  return Icons.chatgpt;
+}
+function fromBookmarks(bookmarks) {
+  return bookmarks.map((bookmark) => ({
+    id: `${bookmark.url}:${bookmark.position}`,
+    userPrompt: bookmark.userMessage,
+    // 书签已保存内容，直接提供字符串（无需懒加载）
+    content: bookmark.aiResponse || "(No AI response saved)",
+    meta: {
+      platform: bookmark.platform,
+      // 'ChatGPT' | 'Gemini'
+      platformIcon: getPlatformIcon(bookmark.platform),
+      timestamp: bookmark.timestamp
+    }
+  }));
+}
+function findBookmarkIndex(bookmark, bookmarks) {
+  const index = bookmarks.findIndex(
+    (b) => b.url === bookmark.url && b.position === bookmark.position
+  );
+  return index >= 0 ? index : 0;
+}
+
 class SimpleBookmarkPanel {
   overlay = null;
   shadowRoot = null;
@@ -29854,6 +29937,8 @@ class SimpleBookmarkPanel {
   folderOpsManager = new FolderOperationsManager();
   // Theme manager subscription for dynamic theme switching
   themeUnsubscribe = null;
+  // ReaderPanel 实例（用于书签预览）
+  readerPanel = new ReaderPanel();
   /**
    * Show the bookmark panel
    */
@@ -30268,19 +30353,6 @@ class SimpleBookmarkPanel {
     return text.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
   /**
-   * Get platform icon
-   */
-  getPlatformIcon(platform) {
-    switch (platform.toLowerCase()) {
-      case "chatgpt":
-        return Icons.chatgpt;
-      case "gemini":
-        return Icons.gemini;
-      default:
-        return Icons.chatgpt;
-    }
-  }
-  /**
    * Format timestamp to relative time
    */
   formatTimestamp(timestamp) {
@@ -30662,7 +30734,7 @@ Please create a new root folder or organize within existing folders.`
             (b) => b.url === url && b.position === position
           );
           if (bookmark) {
-            this.showDetailModal(bookmark);
+            this.openPreview(bookmark);
           }
         } else {
           const url = item.dataset.url;
@@ -30672,7 +30744,7 @@ Please create a new root folder or organize within existing folders.`
               (b) => b.url === url && b.position === position
             );
             if (bookmark) {
-              this.showDetailModal(bookmark);
+              this.openPreview(bookmark);
             }
           }
         }
@@ -31551,111 +31623,31 @@ Please create a new root folder or organize within existing folders.`
     }
   }
   /**
-   * Show detail modal
+   * 使用 ReaderPanel 打开书签预览
+   * Phase 8: 复用通用阅读器组件
    */
-  /**
-   * Show detail modal (CRITICAL:    /**
-   * Show detail modal with markdown preview
-   */
-  async showDetailModal(bookmark) {
-    await StyleManager.injectStyles(document);
-    const userResult = await MarkdownRenderer.render(bookmark.userMessage);
-    const userMessageHtml = userResult.success ? userResult.html : userResult.fallback;
-    const aiResponseHtml = bookmark.aiResponse ? await MarkdownRenderer.render(bookmark.aiResponse).then((r) => r.success ? r.html : r.fallback) : "";
-    const modalOverlay = document.createElement("div");
-    modalOverlay.className = "detail-modal-overlay";
-    const modal = document.createElement("div");
-    modal.className = "detail-modal";
-    modal.addEventListener("click", (e) => {
-      e.stopPropagation();
-    });
-    const date = new Date(bookmark.timestamp);
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
-    const formattedDate = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-    modal.innerHTML = `
-            <div class="detail-header">
-                <h3>${this.escapeHtml(bookmark.title || bookmark.userMessage.substring(0, 50))}</h3>
-                <div class="detail-header-actions">
-                    <button class="fullscreen-btn" title="Toggle fullscreen">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                        </svg>
-                    </button>
-                    <button class="close-btn" title="Close">×</button>
-                </div>
-            </div>
-
-            <div class="detail-meta">
-                <div class="detail-meta-left">
-                    <span class="platform-badge ${bookmark.platform?.toLowerCase() || "chatgpt"}">
-                        ${this.getPlatformIcon(bookmark.platform)} ${bookmark.platform || "ChatGPT"}
-                    </span>
-                </div>
-                <div class="detail-meta-right">
-                    Saved date: ${formattedDate}
-                </div>
-            </div>
-
-            <div class="detail-content">
-                <div class="detail-section user-section">
-                    <div class="section-header">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                        <h4>User Prompt</h4>
-                    </div>
-                    <div class="detail-text markdown-content">${userMessageHtml}</div>
-                </div>
-
-                ${bookmark.aiResponse ? `
-                    <div class="detail-section ai-section">
-                        <div class="section-header">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
-                            </svg>
-                            <h4>AI Response</h4>
-                        </div>
-                        <div class="detail-text markdown-content">${aiResponseHtml}</div>
-                    </div>
-                ` : ""}
-            </div>
-
-            <div class="detail-footer">
-                <button class="open-conversation-btn" data-url="${this.escapeHtml(bookmark.url)}">
-                    Open in Conversation
-                </button>
-            </div>
-        `;
-    modalOverlay.appendChild(modal);
-    this.shadowRoot?.appendChild(modalOverlay);
-    modal.querySelector(".close-btn")?.addEventListener("click", () => {
-      modalOverlay.remove();
-    });
-    modal.querySelector(".fullscreen-btn")?.addEventListener("click", () => {
-      modal.classList.toggle("detail-modal-fullscreen");
-    });
-    modal.querySelector(".open-conversation-btn")?.addEventListener("click", async () => {
-      modalOverlay.remove();
-      await this.handleGoTo(bookmark.url, bookmark.position);
-    });
-    modalOverlay.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (e.target === modalOverlay) {
-        modalOverlay.remove();
+  openPreview(bookmark) {
+    this.readerPanel.setTheme(ThemeManager.getInstance().isDarkMode());
+    let targetList = [];
+    const tree = TreeBuilder.buildTree(
+      this.folders,
+      this.filteredBookmarks
+      // 包含搜索过滤
+    );
+    if (this.searchQuery) {
+      targetList = TreeBuilder.getAllBookmarks(tree);
+    } else {
+      const folderNode = TreeBuilder.findNode(tree, bookmark.folderPath);
+      if (folderNode) {
+        targetList = folderNode.bookmarks;
+      } else {
+        targetList = this.bookmarks.filter((b) => b.folderPath === bookmark.folderPath);
       }
-    });
-    const detailEscHandler = (e) => {
-      if (e.key === "Escape") {
-        if (modalOverlay.parentNode) {
-          e.stopPropagation();
-          modalOverlay.remove();
-        }
-        document.removeEventListener("keydown", detailEscHandler);
-      }
-    };
-    document.addEventListener("keydown", detailEscHandler);
+    }
+    const items = fromBookmarks(targetList);
+    const startIndex = findBookmarkIndex(bookmark, targetList);
+    this.readerPanel.showWithData(items, startIndex);
+    logger$1.info(`[SimpleBookmarkPanel] Opened preview for bookmark at index ${startIndex} (Scope: ${this.searchQuery ? "Search" : "Folder"})`);
   }
   /**
    * Handle edit

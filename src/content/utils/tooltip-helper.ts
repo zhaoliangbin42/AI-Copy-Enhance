@@ -17,7 +17,7 @@ export class TooltipHelper {
         this.tooltipContainer.className = 'aicopy-tooltip-container';
         this.tooltipContainer.style.cssText = `
       position: fixed;
-      z-index: var(--aimd-z-tooltip, 1070);
+      z-index: var(--aimd-z-tooltip);
       pointer-events: none;
     `;
         document.body.appendChild(this.tooltipContainer);
