@@ -6,10 +6,16 @@ import { TooltipManager, tooltipStyles } from '../utils/TooltipManager';
 import { DotPaginationController } from '../utils/DotPaginationController';
 import { NavigationButtonsController } from '../utils/NavigationButtonsController';
 import { readerPanelStyles } from '../utils/ReaderPanelStyles';
+import { floatingInputStyles } from '../utils/FloatingInputStyles';
+import { FloatingInput } from '../components/FloatingInput';
+import { MessageSender } from './MessageSender';
+import { adapterRegistry } from '../adapters/registry';
+import { Icons } from '../../assets/icons';
 import { DesignTokens } from '../../utils/design-tokens';
 import { logger } from '../../utils/logger';
 import { ReaderItem, resolveContent } from '../types/ReaderTypes';
 import { collectFromLivePage, getMessageRefs } from '../datasource/LivePageDataSource';
+import { eventBus } from '../utils/EventBus';
 
 type GetMarkdownFn = (element: HTMLElement) => string;
 
@@ -39,6 +45,15 @@ export class ReaderPanel {
     private paginationController: DotPaginationController | null = null;
     private navButtonsController: NavigationButtonsController | null = null;
     private keyHandler: ((e: KeyboardEvent) => void) | null = null;
+
+    // Message sending UI components
+    private floatingInput: FloatingInput | null = null;
+    private triggerBtn: HTMLButtonElement | null = null;
+    private isSending: boolean = false;
+    private messageSender: MessageSender | null = null;
+
+    // EventBus subscription cleanup
+    private unsubscribeNewMessage: (() => void) | null = null;
 
     /**
      * 【新方法】通用入口：接受标准化的 ReaderItem[]
@@ -117,9 +132,52 @@ export class ReaderPanel {
         this.navButtonsController?.destroy();
         this.navButtonsController = null;
 
+        // 清理消息发送组件
+        this.floatingInput?.destroy();
+        this.floatingInput = null;
+        this.triggerBtn = null;
+        this.isSending = false;
+        this.messageSender?.destroy();
+        this.messageSender = null;
+
         if (this.keyHandler) {
             document.removeEventListener('keydown', this.keyHandler);
             this.keyHandler = null;
+        }
+
+        // 清理 EventBus 订阅
+        this.unsubscribeNewMessage?.();
+        this.unsubscribeNewMessage = null;
+    }
+
+    /**
+     * 刷新数据项（用于实时更新分页）
+     */
+    private async refreshItems(): Promise<void> {
+        // 获取 adapter 来查询消息
+        const adapter = adapterRegistry.getAdapter();
+        if (!adapter) return;
+
+        const messageSelector = adapter.getMessageSelector();
+        const newCount = document.querySelectorAll(messageSelector).length;
+
+        if (newCount === this.items.length) {
+            return; // 没有变化
+        }
+
+        logger.info(`[ReaderPanel] Refreshing items: ${this.items.length} -> ${newCount}`);
+
+        // 注意：这里只更新分页数量，不重新收集 items
+        // 因为 items 已经绑定了 getMarkdown 函数，我们只需要更新分页点
+        const wasAtLast = this.currentIndex === this.items.length - 1;
+
+        // 更新分页控制器
+        this.paginationController?.updateTotalItems(newCount);
+
+        // 提示用户有新消息（可选）
+        if (wasAtLast && newCount > this.items.length) {
+            // 可以在这里添加视觉提示
+            logger.info(`[ReaderPanel] New message available`);
         }
     }
 
@@ -154,7 +212,7 @@ export class ReaderPanel {
         this.shadowRoot.insertBefore(tokenStyle, this.shadowRoot.firstChild);
 
         const styleEl = document.createElement('style');
-        styleEl.textContent = readerPanelStyles + tooltipStyles;
+        styleEl.textContent = readerPanelStyles + tooltipStyles + floatingInputStyles;
         this.shadowRoot.appendChild(styleEl);
 
         // 创建 UI 结构
@@ -173,6 +231,14 @@ export class ReaderPanel {
 
         // 聚焦面板
         panel.focus();
+
+        // 订阅新消息事件，用于实时更新分页
+        this.unsubscribeNewMessage = eventBus.on<{ count: number }>('message:new', ({ count }) => {
+            if (count !== this.items.length) {
+                logger.info(`[ReaderPanel] New message detected: ${this.items.length} -> ${count}`);
+                this.refreshItems();
+            }
+        });
     }
 
     /**
@@ -253,6 +319,10 @@ export class ReaderPanel {
 
         logger.debug(`[ReaderPanel] Pagination rendered, container has ${this.paginationController.getDots().length} dots`);
 
+        // 创建消息发送触发按钮（插入到最左侧）
+        const triggerWrapper = this.createMessageTriggerButton();
+        paginationContainer.insertBefore(triggerWrapper, paginationContainer.firstChild);
+
         // 创建导航按钮控制器
         this.navButtonsController = new NavigationButtonsController(
             paginationContainer,
@@ -294,6 +364,122 @@ export class ReaderPanel {
         paginationContainer.appendChild(hint);
 
         return paginationContainer;
+    }
+
+    /**
+     * 创建消息发送触发按钮
+     */
+    private createMessageTriggerButton(): HTMLElement {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'aimd-trigger-btn-wrapper';
+
+        // 创建触发按钮
+        this.triggerBtn = document.createElement('button');
+        this.triggerBtn.className = 'aimd-trigger-btn';
+        this.triggerBtn.title = 'Send message';
+        this.triggerBtn.innerHTML = Icons.messageSquareText;
+
+        // 初始化 MessageSender
+        const adapter = adapterRegistry.getAdapter();
+        if (adapter) {
+            this.messageSender = new MessageSender({ adapter });
+        } else {
+            logger.warn('[ReaderPanel] No adapter found for MessageSender');
+        }
+
+        // 创建浮动输入组件
+        this.floatingInput = new FloatingInput({
+            onSend: async (text) => {
+                logger.debug('[ReaderPanel] Send clicked:', text.substring(0, 50));
+                this.floatingInput?.hide();
+                this.setTriggerButtonState('waiting');
+
+                // 监听官方按钮状态
+                let unwatch: (() => void) | undefined;
+                if (this.messageSender) {
+                    unwatch = this.messageSender.watchSendButtonState((isLoading) => {
+                        this.setTriggerButtonState(isLoading ? 'waiting' : 'default');
+                        if (!isLoading && unwatch) {
+                            unwatch();
+                        }
+                    });
+                }
+
+                // 发送消息
+                if (this.messageSender) {
+                    const success = await this.messageSender.send(text);
+                    logger.debug('[ReaderPanel] Send result:', success);
+                }
+
+                // 超时保护（10秒）
+                setTimeout(() => {
+                    unwatch?.();
+                    this.setTriggerButtonState('default');
+                }, 10000);
+            },
+            onCollapse: (text) => {
+                logger.debug('[ReaderPanel] FloatingInput collapsed, text length:', text.length);
+                // 强制同步到官方输入框
+                if (text.trim() && this.messageSender) {
+                    this.messageSender.forceSyncToNative(text);
+                }
+            },
+            onInput: (text) => {
+                // debounce 同步到官方输入框
+                this.messageSender?.syncToNativeDebounced(text);
+            },
+            initialText: this.messageSender?.readFromNative() || ''
+        });
+
+        // 点击触发按钮显示/隐藏浮动输入框
+        this.triggerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            logger.info('[ReaderPanel] Trigger button clicked', {
+                isSending: this.isSending,
+                floatingVisible: this.floatingInput?.visible
+            });
+            if (this.isSending) return; // 发送中禁止操作
+
+            const wasHidden = !this.floatingInput?.visible;
+
+            // 先 toggle 显示
+            this.floatingInput?.toggle(wrapper);
+
+            // 如果是从隐藏变为显示，同步官方输入框内容
+            if (wasHidden && this.floatingInput?.visible && this.messageSender) {
+                const nativeText = this.messageSender.readFromNative();
+                logger.info('[ReaderPanel] Reading native input for sync', {
+                    nativeTextLength: nativeText.length,
+                    nativeTextPreview: nativeText.substring(0, 50)
+                });
+                this.floatingInput.setText(nativeText);
+            }
+        });
+
+        wrapper.appendChild(this.triggerBtn);
+        return wrapper;
+    }
+
+    /**
+     * 设置触发按钮状态
+     */
+    private setTriggerButtonState(state: 'default' | 'waiting'): void {
+        logger.info('[ReaderPanel] setTriggerButtonState called', { state, hasTriggerBtn: !!this.triggerBtn });
+        if (!this.triggerBtn) return;
+
+        if (state === 'waiting') {
+            this.triggerBtn.innerHTML = Icons.hourglass;
+            this.triggerBtn.classList.add('waiting');
+            this.triggerBtn.disabled = true;
+            this.isSending = true;
+            logger.info('[ReaderPanel] Button set to WAITING state');
+        } else {
+            this.triggerBtn.innerHTML = Icons.messageSquareText;
+            this.triggerBtn.classList.remove('waiting');
+            this.triggerBtn.disabled = false;
+            this.isSending = false;
+            logger.info('[ReaderPanel] Button set to DEFAULT state');
+        }
     }
 
     /**

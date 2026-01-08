@@ -316,6 +316,43 @@ export const Icons = {
     menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`,
 
     // ============================================
+    // MESSAGE SENDING ICONS (for ReaderPanel)
+    // ============================================
+
+    /**
+     * Message square text icon
+     * Usage: Message sending trigger button in ReaderPanel
+     * Source: Lucide Icons (ISC License)
+     */
+    messageSquareText: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    <path d="M13 8H7"/>
+    <path d="M17 12H7"/>
+  </svg>`,
+
+    /**
+     * Hourglass icon
+     * Usage: Waiting/loading state for message sending
+     * Source: Lucide Icons (ISC License)
+     */
+    hourglass: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 22h14"/>
+    <path d="M5 2h14"/>
+    <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/>
+    <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>
+  </svg>`,
+
+    /**
+     * Send icon
+     * Usage: Send button in floating input
+     * Source: Lucide Icons (ISC License)
+     */
+    send: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m22 2-7 20-4-9-9-4Z"/>
+    <path d="M22 2 11 13"/>
+  </svg>`,
+
+    // ============================================
     // PLATFORM ICONS (Official Branding)
     // ============================================
 

@@ -150,6 +150,9 @@ export const readerPanelStyles = `
   flex-shrink: 0;
   flex-wrap: wrap;
   max-width: 100%;
+  
+  /* For absolute positioning of trigger button */
+  position: relative;
 }
 
 /* Individual Dot - GPU optimized */

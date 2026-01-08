@@ -1,0 +1,354 @@
+/**
+ * FloatingInput - UI Component for Message Sending
+ * 
+ * A floating input box that appears above the trigger button in ReaderPanel.
+ * UI-only implementation - logic will be added in Phase 3.
+ * 
+ * Features:
+ * - Expands from trigger button position
+ * - Resizable (min: 280x150, max: panel size)
+ * - Collapse button (top) + Send button (bottom-right)
+ * - Smooth animations
+ */
+
+import { Icons } from '../../assets/icons';
+import { logger } from '../../utils/logger';
+
+export interface FloatingInputOptions {
+    /** Callback when user clicks send button */
+    onSend?: (text: string) => void;
+    /** Callback when input box is collapsed */
+    onCollapse?: (text: string) => void;
+    /** Callback when text changes (debounced in Phase 3) */
+    onInput?: (text: string) => void;
+    /** Initial text content */
+    initialText?: string;
+}
+
+export class FloatingInput {
+    private container: HTMLElement | null = null;
+    private textarea: HTMLTextAreaElement | null = null;
+    private sendBtn: HTMLButtonElement | null = null;
+    private isVisible: boolean = false;
+    private options: FloatingInputOptions;
+    private shadowRoot: ShadowRoot | null = null;
+    private outsideClickHandler: EventListener | null = null;
+
+    constructor(options: FloatingInputOptions = {}) {
+        this.options = options;
+    }
+
+    /**
+     * Show the floating input box
+     * @param anchorElement - The element to anchor the floating box to
+     */
+    show(anchorElement: HTMLElement): void {
+        if (this.isVisible) {
+            this.hide();
+            return;
+        }
+
+        this.container = this.createElement();
+
+        // Get shadow root for outside click handling
+        this.shadowRoot = anchorElement.getRootNode() as ShadowRoot;
+
+        // Position relative to anchor's parent
+        const parentElement = anchorElement.parentElement;
+
+        if (parentElement) {
+            parentElement.style.position = 'relative';
+            parentElement.appendChild(this.container);
+        }
+
+        // Set initial text if provided
+        if (this.options.initialText && this.textarea) {
+            this.textarea.value = this.options.initialText;
+        }
+
+        // Focus textarea
+        this.textarea?.focus();
+
+        this.isVisible = true;
+        logger.debug('[FloatingInput] Shown');
+
+        // Setup outside click handler
+        this.setupOutsideClickHandler();
+    }
+
+    /**
+     * Hide the floating input box with animation
+     */
+    hide(): void {
+        if (!this.container || !this.isVisible) return;
+
+        // Get text before removal
+        const text = this.textarea?.value || '';
+
+        // Add collapse animation
+        this.container.classList.add('collapsing');
+
+        // Fire callback
+        this.options.onCollapse?.(text);
+
+        // Remove outside click handler
+        if (this.outsideClickHandler && this.shadowRoot) {
+            this.shadowRoot.removeEventListener('click', this.outsideClickHandler, true);
+            this.outsideClickHandler = null;
+        }
+
+        // Remove after animation
+        setTimeout(() => {
+            this.container?.remove();
+            this.container = null;
+            this.textarea = null;
+            this.sendBtn = null;
+            this.isVisible = false;
+            this.shadowRoot = null;
+            logger.debug('[FloatingInput] Hidden');
+        }, 150);
+    }
+
+    /**
+     * Toggle visibility
+     */
+    toggle(anchorElement: HTMLElement): void {
+        if (this.isVisible) {
+            this.hide();
+        } else {
+            this.show(anchorElement);
+        }
+    }
+
+    /**
+     * Get current text content
+     */
+    getText(): string {
+        return this.textarea?.value || '';
+    }
+
+    /**
+     * Set text content
+     */
+    setText(text: string): void {
+        if (this.textarea) {
+            this.textarea.value = text;
+        }
+    }
+
+    /**
+     * Set send button disabled state
+     */
+    setSendDisabled(disabled: boolean): void {
+        if (this.sendBtn) {
+            this.sendBtn.disabled = disabled;
+        }
+    }
+
+    /**
+     * Check if currently visible
+     */
+    get visible(): boolean {
+        return this.isVisible;
+    }
+
+    /**
+     * Destroy and cleanup
+     */
+    destroy(): void {
+        // Remove outside click handler
+        if (this.outsideClickHandler && this.shadowRoot) {
+            this.shadowRoot.removeEventListener('click', this.outsideClickHandler, true);
+            this.outsideClickHandler = null;
+        }
+
+        this.container?.remove();
+        this.container = null;
+        this.textarea = null;
+        this.sendBtn = null;
+        this.isVisible = false;
+        this.shadowRoot = null;
+    }
+
+    /**
+     * Create the floating input DOM structure
+     */
+    private createElement(): HTMLElement {
+        const container = document.createElement('div');
+        container.className = 'aimd-floating-input';
+
+        // Top-right resize handle
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'aimd-resize-handle';
+        this.setupResizeHandle(resizeHandle, container);
+        container.appendChild(resizeHandle);
+
+        // Header with title and collapse button
+        const header = document.createElement('div');
+        header.className = 'aimd-float-header';
+
+        // Title on the left
+        const title = document.createElement('span');
+        title.className = 'aimd-float-title';
+        title.textContent = '输入消息';
+        header.appendChild(title);
+
+        // Collapse button on the right
+        const collapseBtn = document.createElement('button');
+        collapseBtn.className = 'aimd-float-collapse-btn';
+        collapseBtn.title = 'Collapse';
+        collapseBtn.innerHTML = Icons.chevronDown;
+        collapseBtn.addEventListener('click', () => this.hide());
+        header.appendChild(collapseBtn);
+
+        // Body with textarea
+        const body = document.createElement('div');
+        body.className = 'aimd-float-body';
+
+        this.textarea = document.createElement('textarea');
+        this.textarea.className = 'aimd-float-textarea';
+        this.textarea.placeholder = 'Type your message...';
+
+        // Event isolation: prevent host page from intercepting keyboard events
+        this.setupKeyboardIsolation(this.textarea);
+
+        this.textarea.addEventListener('input', (e) => {
+            e.stopPropagation();
+            this.options.onInput?.(this.textarea?.value || '');
+        });
+
+        // Handle Escape to collapse
+        this.textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.hide();
+            }
+        });
+
+        body.appendChild(this.textarea);
+
+        // Footer with send button
+        const footer = document.createElement('div');
+        footer.className = 'aimd-float-footer';
+
+        this.sendBtn = document.createElement('button');
+        this.sendBtn.className = 'aimd-float-send-btn';
+        this.sendBtn.title = 'Send';
+        this.sendBtn.innerHTML = Icons.send;
+        this.sendBtn.addEventListener('click', () => {
+            const text = this.textarea?.value.trim() || '';
+            if (text) {
+                this.options.onSend?.(text);
+            }
+        });
+        footer.appendChild(this.sendBtn);
+
+        // Assemble
+        container.appendChild(header);
+        container.appendChild(body);
+        container.appendChild(footer);
+
+        return container;
+    }
+
+    /**
+     * Setup click outside handler to collapse (Shadow DOM aware)
+     */
+    private setupOutsideClickHandler(): void {
+        this.outsideClickHandler = ((e: Event) => {
+            if (!this.container || !this.isVisible) {
+                return;
+            }
+
+            const path = e.composedPath();
+
+            // Check if click is inside the floating input or trigger button
+            const clickedInside = path.some(el => {
+                if (el instanceof HTMLElement) {
+                    return el === this.container ||
+                        el.classList.contains('aimd-trigger-btn') ||
+                        el.classList.contains('aimd-trigger-btn-wrapper');
+                }
+                return false;
+            });
+
+            if (!clickedInside) {
+                this.hide();
+            }
+        }) as EventListener;
+
+        // Use capturing phase on shadow root
+        setTimeout(() => {
+            this.shadowRoot?.addEventListener('click', this.outsideClickHandler!, true);
+        }, 100);
+    }
+
+    /**
+     * Setup keyboard event isolation to prevent host page interference
+     * Based on proven pattern from SimpleBookmarkPanel
+     */
+    private setupKeyboardIsolation(textarea: HTMLTextAreaElement): void {
+        // Stop keyboard events from bubbling to host page
+        const stopKeyboard = (e: KeyboardEvent) => {
+            // Allow Tab for focus navigation (accessibility)
+            if (e.key === 'Tab') return;
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        };
+
+        textarea.addEventListener('keydown', stopKeyboard, true);
+        textarea.addEventListener('keyup', (e) => {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        }, true);
+        textarea.addEventListener('keypress', (e) => {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        }, true);
+
+        // Stop mouse events from bubbling
+        const stopMouse = (e: Event) => {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        };
+        textarea.addEventListener('mousedown', stopMouse, true);
+        textarea.addEventListener('click', stopMouse, true);
+    }
+
+    /**
+     * Setup resize handle drag behavior
+     */
+    private setupResizeHandle(handle: HTMLElement, container: HTMLElement): void {
+        let startX = 0;
+        let startY = 0;
+        let startWidth = 0;
+        let startHeight = 0;
+
+        const onMouseMove = (e: MouseEvent) => {
+            const deltaX = e.clientX - startX;
+            const deltaY = startY - e.clientY; // Inverted for top-right
+
+            const newWidth = Math.max(280, Math.min(startWidth + deltaX, 800));
+            const newHeight = Math.max(150, Math.min(startHeight + deltaY, 600));
+
+            container.style.width = `${newWidth}px`;
+            container.style.height = `${newHeight}px`;
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startX = e.clientX;
+            startY = e.clientY;
+            startWidth = container.offsetWidth;
+            startHeight = container.offsetHeight;
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    }
+}

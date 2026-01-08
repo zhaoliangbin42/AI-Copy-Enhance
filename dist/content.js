@@ -81,6 +81,22 @@ class SiteAdapter {
   isNoiseNode(_node, _context) {
     return false;
   }
+  /**
+   * Get the native input element instance
+   * @returns The input element or null if not found
+   */
+  getInputElement() {
+    const selector = this.getInputSelector();
+    return document.querySelector(selector);
+  }
+  /**
+   * Get the native send button element instance
+   * @returns The send button or null if not found
+   */
+  getSendButton() {
+    const selector = this.getSendButtonSelector();
+    return document.querySelector(selector);
+  }
 }
 
 var LogLevel = /* @__PURE__ */ ((LogLevel2) => {
@@ -383,6 +399,39 @@ const Icons = {
   </svg>`,
   menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`,
   // ============================================
+  // MESSAGE SENDING ICONS (for ReaderPanel)
+  // ============================================
+  /**
+   * Message square text icon
+   * Usage: Message sending trigger button in ReaderPanel
+   * Source: Lucide Icons (ISC License)
+   */
+  messageSquareText: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    <path d="M13 8H7"/>
+    <path d="M17 12H7"/>
+  </svg>`,
+  /**
+   * Hourglass icon
+   * Usage: Waiting/loading state for message sending
+   * Source: Lucide Icons (ISC License)
+   */
+  hourglass: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 22h14"/>
+    <path d="M5 2h14"/>
+    <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/>
+    <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>
+  </svg>`,
+  /**
+   * Send icon
+   * Usage: Send button in floating input
+   * Source: Lucide Icons (ISC License)
+   */
+  send: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m22 2-7 20-4-9-9-4Z"/>
+    <path d="M22 2 11 13"/>
+  </svg>`,
+  // ============================================
   // PLATFORM ICONS (Official Branding)
   // ============================================
   /**
@@ -578,6 +627,15 @@ let ChatGPTAdapter$1 = class ChatGPTAdapter extends SiteAdapter {
     }
     return false;
   }
+  // ========================================
+  // Message Sending Support
+  // ========================================
+  getInputSelector() {
+    return '#prompt-textarea, div[contenteditable="true"].ProseMirror';
+  }
+  getSendButtonSelector() {
+    return 'button[data-testid="send-button"], button[aria-label="Send prompt"]';
+  }
   getIcon() {
     return Icons.chatgpt;
   }
@@ -754,6 +812,15 @@ let GeminiAdapter$1 = class GeminiAdapter extends SiteAdapter {
       return true;
     }
     return false;
+  }
+  // ========================================
+  // Message Sending Support
+  // ========================================
+  getInputSelector() {
+    return 'rich-textarea .ql-editor[contenteditable="true"]';
+  }
+  getSendButtonSelector() {
+    return 'button.send-button, button[aria-label*="Send"]';
   }
   getIcon() {
     return Icons.gemini;
@@ -26420,6 +26487,47 @@ class DotPaginationController {
     return this.config.currentIndex;
   }
   /**
+   * Get total items count
+   */
+  getTotalItems() {
+    return this.config.totalItems;
+  }
+  /**
+   * Update total items and add new dots incrementally
+   * Used for dynamic pagination updates (e.g., new messages)
+   * Note: Only adds new dots, does not re-render to preserve other UI elements
+   */
+  updateTotalItems(newTotal) {
+    if (newTotal === this.config.totalItems || newTotal < 1) {
+      return;
+    }
+    console.log(`[DotPaginationController] updateTotalItems: ${this.config.totalItems} -> ${newTotal}`);
+    const oldTotal = this.config.totalItems;
+    this.config.totalItems = newTotal;
+    const sizing = this.calculateDotSize();
+    this.container.style.setProperty("--dot-size", `${sizing.size}px`);
+    this.container.style.setProperty("--dot-gap", `${sizing.gap}px`);
+    if (newTotal > oldTotal) {
+      for (let i = oldTotal; i < newTotal; i++) {
+        const dot = this.createDot(i);
+        this.dots.push(dot);
+        this.container.appendChild(dot);
+      }
+      console.log(`[DotPaginationController] Added ${newTotal - oldTotal} new dots`);
+    } else {
+      const dotsToRemove = oldTotal - newTotal;
+      for (let i = 0; i < dotsToRemove; i++) {
+        const dot = this.dots.pop();
+        dot?.remove();
+      }
+      console.log(`[DotPaginationController] Removed ${dotsToRemove} dots`);
+      if (this.config.currentIndex >= newTotal) {
+        this.config.currentIndex = newTotal - 1;
+      }
+    }
+    this.updateActiveDot();
+  }
+  /**
    * Cleanup
    */
   destroy() {
@@ -26661,6 +26769,9 @@ const readerPanelStyles = `
   flex-shrink: 0;
   flex-wrap: wrap;
   max-width: 100%;
+  
+  /* For absolute positioning of trigger button */
+  position: relative;
 }
 
 /* Individual Dot - GPU optimized */
@@ -26863,6 +26974,837 @@ const readerPanelStyles = `
 
 `;
 
+const floatingInputStyles = `
+/* Floating Input Container */
+.aimd-floating-input {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: var(--aimd-space-2);
+  
+  width: 400px;
+  height: 300px;
+  min-width: 280px;
+  min-height: 150px;
+  
+  /* Glass background */
+  background: var(--aimd-panel-bg);
+  backdrop-filter: var(--aimd-glass-blur);
+  -webkit-backdrop-filter: var(--aimd-glass-blur);
+  
+  border-radius: var(--aimd-radius-xl);
+  border: 1px solid var(--aimd-border-glass);
+  box-shadow: var(--aimd-shadow-xl);
+  
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  
+  /* Animation */
+  animation: floatInputSlideUp 0.2s ease-out;
+  transform-origin: bottom left;
+}
+
+/* Top-right resize handle */
+.aimd-floating-input .aimd-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: ne-resize;
+  z-index: 10;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.aimd-floating-input .aimd-resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid var(--aimd-text-tertiary);
+  border-right: 2px solid var(--aimd-text-tertiary);
+}
+
+@keyframes floatInputSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatInputSlideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.aimd-floating-input.collapsing {
+  animation: floatInputSlideDown 0.15s ease-in forwards;
+}
+
+/* Header with title and collapse button */
+.aimd-float-header {
+  padding: var(--aimd-space-2) var(--aimd-space-3);
+  border-bottom: 1px solid var(--aimd-border-default);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--aimd-panel-header-bg);
+  flex-shrink: 0;
+}
+
+.aimd-float-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aimd-text-primary);
+  user-select: none;
+}
+
+.aimd-float-collapse-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--aimd-radius-md);
+  border: none;
+  background: transparent;
+  color: var(--aimd-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--aimd-duration-fast) ease,
+              color var(--aimd-duration-fast) ease;
+}
+
+.aimd-float-collapse-btn:hover {
+  background: var(--aimd-interactive-hover);
+  color: var(--aimd-text-primary);
+}
+
+/* Input Area */
+.aimd-float-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--aimd-space-3);
+}
+
+.aimd-float-textarea {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--aimd-text-primary);
+  font-size: 14px;
+  font-family: var(--aimd-font-sans);
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  overflow-y: auto;
+}
+
+.aimd-float-textarea::placeholder {
+  color: var(--aimd-text-tertiary);
+}
+
+/* Footer with send button */
+.aimd-float-footer {
+  padding: var(--aimd-space-2) var(--aimd-space-3);
+  border-top: 1px solid var(--aimd-border-default);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  background: var(--aimd-panel-header-bg);
+  flex-shrink: 0;
+}
+
+.aimd-float-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--aimd-radius-lg);
+  border: none;
+  background: var(--aimd-button-primary-bg);
+  color: var(--aimd-button-primary-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--aimd-duration-fast) ease,
+              transform var(--aimd-duration-fast) ease;
+}
+
+.aimd-float-send-btn:hover:not(:disabled) {
+  background: var(--aimd-button-primary-hover);
+  transform: scale(1.05);
+}
+
+.aimd-float-send-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.aimd-float-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.aimd-float-send-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Trigger Button (absolutely positioned at far-left of pagination) */
+.aimd-trigger-btn-wrapper {
+  position: absolute;
+  left: var(--aimd-space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+}
+
+.aimd-trigger-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--aimd-radius-lg);
+  border: none;
+  background: transparent;
+  color: var(--aimd-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--aimd-duration-fast) ease,
+              color var(--aimd-duration-fast) ease;
+}
+
+.aimd-trigger-btn:hover:not(:disabled) {
+  background: var(--aimd-interactive-hover);
+  color: var(--aimd-text-primary);
+}
+
+.aimd-trigger-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.aimd-trigger-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Trigger button states */
+.aimd-trigger-btn.waiting {
+  color: var(--aimd-text-tertiary);
+}
+
+/* Custom scrollbar for textarea */
+.aimd-float-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.aimd-float-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.aimd-float-textarea::-webkit-scrollbar-thumb {
+  background: var(--aimd-scrollbar-thumb);
+  border-radius: var(--aimd-radius-sm);
+}
+
+.aimd-float-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--aimd-scrollbar-thumb-hover);
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .aimd-floating-input {
+    animation: none;
+  }
+  .aimd-floating-input.collapsing {
+    animation: none;
+  }
+  .aimd-float-send-btn,
+  .aimd-float-collapse-btn,
+  .aimd-trigger-btn {
+    transition: none;
+  }
+}
+`;
+
+class FloatingInput {
+  container = null;
+  textarea = null;
+  sendBtn = null;
+  isVisible = false;
+  options;
+  shadowRoot = null;
+  outsideClickHandler = null;
+  constructor(options = {}) {
+    this.options = options;
+  }
+  /**
+   * Show the floating input box
+   * @param anchorElement - The element to anchor the floating box to
+   */
+  show(anchorElement) {
+    if (this.isVisible) {
+      this.hide();
+      return;
+    }
+    this.container = this.createElement();
+    this.shadowRoot = anchorElement.getRootNode();
+    const parentElement = anchorElement.parentElement;
+    if (parentElement) {
+      parentElement.style.position = "relative";
+      parentElement.appendChild(this.container);
+    }
+    if (this.options.initialText && this.textarea) {
+      this.textarea.value = this.options.initialText;
+    }
+    this.textarea?.focus();
+    this.isVisible = true;
+    logger$1.debug("[FloatingInput] Shown");
+    this.setupOutsideClickHandler();
+  }
+  /**
+   * Hide the floating input box with animation
+   */
+  hide() {
+    if (!this.container || !this.isVisible) return;
+    const text = this.textarea?.value || "";
+    this.container.classList.add("collapsing");
+    this.options.onCollapse?.(text);
+    if (this.outsideClickHandler && this.shadowRoot) {
+      this.shadowRoot.removeEventListener("click", this.outsideClickHandler, true);
+      this.outsideClickHandler = null;
+    }
+    setTimeout(() => {
+      this.container?.remove();
+      this.container = null;
+      this.textarea = null;
+      this.sendBtn = null;
+      this.isVisible = false;
+      this.shadowRoot = null;
+      logger$1.debug("[FloatingInput] Hidden");
+    }, 150);
+  }
+  /**
+   * Toggle visibility
+   */
+  toggle(anchorElement) {
+    if (this.isVisible) {
+      this.hide();
+    } else {
+      this.show(anchorElement);
+    }
+  }
+  /**
+   * Get current text content
+   */
+  getText() {
+    return this.textarea?.value || "";
+  }
+  /**
+   * Set text content
+   */
+  setText(text) {
+    if (this.textarea) {
+      this.textarea.value = text;
+    }
+  }
+  /**
+   * Set send button disabled state
+   */
+  setSendDisabled(disabled) {
+    if (this.sendBtn) {
+      this.sendBtn.disabled = disabled;
+    }
+  }
+  /**
+   * Check if currently visible
+   */
+  get visible() {
+    return this.isVisible;
+  }
+  /**
+   * Destroy and cleanup
+   */
+  destroy() {
+    if (this.outsideClickHandler && this.shadowRoot) {
+      this.shadowRoot.removeEventListener("click", this.outsideClickHandler, true);
+      this.outsideClickHandler = null;
+    }
+    this.container?.remove();
+    this.container = null;
+    this.textarea = null;
+    this.sendBtn = null;
+    this.isVisible = false;
+    this.shadowRoot = null;
+  }
+  /**
+   * Create the floating input DOM structure
+   */
+  createElement() {
+    const container = document.createElement("div");
+    container.className = "aimd-floating-input";
+    const resizeHandle = document.createElement("div");
+    resizeHandle.className = "aimd-resize-handle";
+    this.setupResizeHandle(resizeHandle, container);
+    container.appendChild(resizeHandle);
+    const header = document.createElement("div");
+    header.className = "aimd-float-header";
+    const title = document.createElement("span");
+    title.className = "aimd-float-title";
+    title.textContent = "输入消息";
+    header.appendChild(title);
+    const collapseBtn = document.createElement("button");
+    collapseBtn.className = "aimd-float-collapse-btn";
+    collapseBtn.title = "Collapse";
+    collapseBtn.innerHTML = Icons.chevronDown;
+    collapseBtn.addEventListener("click", () => this.hide());
+    header.appendChild(collapseBtn);
+    const body = document.createElement("div");
+    body.className = "aimd-float-body";
+    this.textarea = document.createElement("textarea");
+    this.textarea.className = "aimd-float-textarea";
+    this.textarea.placeholder = "Type your message...";
+    this.setupKeyboardIsolation(this.textarea);
+    this.textarea.addEventListener("input", (e) => {
+      e.stopPropagation();
+      this.options.onInput?.(this.textarea?.value || "");
+    });
+    this.textarea.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        this.hide();
+      }
+    });
+    body.appendChild(this.textarea);
+    const footer = document.createElement("div");
+    footer.className = "aimd-float-footer";
+    this.sendBtn = document.createElement("button");
+    this.sendBtn.className = "aimd-float-send-btn";
+    this.sendBtn.title = "Send";
+    this.sendBtn.innerHTML = Icons.send;
+    this.sendBtn.addEventListener("click", () => {
+      const text = this.textarea?.value.trim() || "";
+      if (text) {
+        this.options.onSend?.(text);
+      }
+    });
+    footer.appendChild(this.sendBtn);
+    container.appendChild(header);
+    container.appendChild(body);
+    container.appendChild(footer);
+    return container;
+  }
+  /**
+   * Setup click outside handler to collapse (Shadow DOM aware)
+   */
+  setupOutsideClickHandler() {
+    this.outsideClickHandler = (e) => {
+      if (!this.container || !this.isVisible) {
+        return;
+      }
+      const path = e.composedPath();
+      const clickedInside = path.some((el) => {
+        if (el instanceof HTMLElement) {
+          return el === this.container || el.classList.contains("aimd-trigger-btn") || el.classList.contains("aimd-trigger-btn-wrapper");
+        }
+        return false;
+      });
+      if (!clickedInside) {
+        this.hide();
+      }
+    };
+    setTimeout(() => {
+      this.shadowRoot?.addEventListener("click", this.outsideClickHandler, true);
+    }, 100);
+  }
+  /**
+   * Setup keyboard event isolation to prevent host page interference
+   * Based on proven pattern from SimpleBookmarkPanel
+   */
+  setupKeyboardIsolation(textarea) {
+    const stopKeyboard = (e) => {
+      if (e.key === "Tab") return;
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+    textarea.addEventListener("keydown", stopKeyboard, true);
+    textarea.addEventListener("keyup", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }, true);
+    textarea.addEventListener("keypress", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }, true);
+    const stopMouse = (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+    textarea.addEventListener("mousedown", stopMouse, true);
+    textarea.addEventListener("click", stopMouse, true);
+  }
+  /**
+   * Setup resize handle drag behavior
+   */
+  setupResizeHandle(handle, container) {
+    let startX = 0;
+    let startY = 0;
+    let startWidth = 0;
+    let startHeight = 0;
+    const onMouseMove = (e) => {
+      const deltaX = e.clientX - startX;
+      const deltaY = startY - e.clientY;
+      const newWidth = Math.max(280, Math.min(startWidth + deltaX, 800));
+      const newHeight = Math.max(150, Math.min(startHeight + deltaY, 600));
+      container.style.width = `${newWidth}px`;
+      container.style.height = `${newHeight}px`;
+    };
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+    handle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = container.offsetWidth;
+      startHeight = container.offsetHeight;
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
+  }
+}
+
+class MessageSender {
+  adapter;
+  debounceMs;
+  debounceTimer = null;
+  constructor(options) {
+    this.adapter = options.adapter;
+    this.debounceMs = options.debounceMs ?? 500;
+  }
+  /**
+   * Read current content from native input
+   */
+  readFromNative() {
+    const input = this.adapter.getInputElement();
+    logger$1.info("[MessageSender] readFromNative called", {
+      hasInput: !!input,
+      inputTag: input?.tagName,
+      inputClass: input?.className
+    });
+    if (!input) {
+      logger$1.warn("[MessageSender] Native input not found");
+      return "";
+    }
+    if (input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement) {
+      const value = input.value;
+      logger$1.info("[MessageSender] Read from textarea/input", { length: value.length, preview: value.substring(0, 50) });
+      return value;
+    }
+    if (input.getAttribute("contenteditable") === "true") {
+      const text = input.textContent || "";
+      logger$1.info("[MessageSender] Read from contenteditable", { length: text.length, preview: text.substring(0, 50) });
+      return text;
+    }
+    logger$1.warn("[MessageSender] Unknown input type");
+    return "";
+  }
+  /**
+   * Sync content to native input using 3-layer fallback strategy
+   * @param text - Text to write to native input
+   * @param focusInput - Whether to focus the input (default: true, set false for background sync)
+   * @returns true if successful
+   */
+  async syncToNative(text, focusInput = true) {
+    const input = this.adapter.getInputElement();
+    if (!input) {
+      logger$1.warn("[MessageSender] Native input not found");
+      return false;
+    }
+    if (focusInput) {
+      input.focus();
+    }
+    await this.clearInput(input, focusInput);
+    const success = this.tryExecCommand(input, text, focusInput) || this.tryInputEvent(input, text) || this.tryDirectDOM(input, text);
+    if (success) {
+      logger$1.debug("[MessageSender] Synced to native input:", text.substring(0, 30));
+    } else {
+      logger$1.error("[MessageSender] All sync strategies failed");
+    }
+    return success;
+  }
+  /**
+   * Debounced sync to native input (background sync, no focus stealing)
+   * Uses silentSync for background updates
+   */
+  syncToNativeDebounced(text) {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    this.debounceTimer = setTimeout(() => {
+      this.silentSync(text);
+      this.debounceTimer = null;
+    }, this.debounceMs);
+  }
+  /**
+   * Sync to native input using input event simulation
+   * Triggers beforeinput + input events to notify framework of changes
+   */
+  silentSync(text) {
+    logger$1.info("[MessageSender] silentSync called", { textLength: text.length, preview: text.substring(0, 30) });
+    const input = this.adapter.getInputElement();
+    if (!input) {
+      logger$1.warn("[MessageSender] Native input not found for silentSync");
+      return false;
+    }
+    try {
+      if (input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement) {
+        input.value = text;
+        logger$1.info("[MessageSender] Set textarea/input value");
+      } else {
+        input.textContent = text;
+        logger$1.info("[MessageSender] Set contenteditable textContent");
+      }
+      input.dispatchEvent(new InputEvent("beforeinput", {
+        bubbles: true,
+        cancelable: true,
+        inputType: "insertText",
+        data: text
+      }));
+      logger$1.info("[MessageSender] Dispatched beforeinput event");
+      input.dispatchEvent(new InputEvent("input", {
+        bubbles: true,
+        cancelable: false,
+        inputType: "insertText",
+        data: text
+      }));
+      logger$1.info("[MessageSender] Dispatched input event");
+      logger$1.info("[MessageSender] silentSync completed successfully");
+      return true;
+    } catch (e) {
+      logger$1.error("[MessageSender] silentSync failed:", e);
+      return false;
+    }
+  }
+  /**
+   * Force sync (cancel debounce and sync immediately, no focus stealing)
+   */
+  forceSyncToNative(text) {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+    return this.silentSync(text);
+  }
+  /**
+   * Wait for send button to become ready (enabled)
+   * @param timeoutMs - Maximum wait time
+   * @returns true if button is ready, false if timeout
+   */
+  async waitForSendButtonReady(timeoutMs = 3e3) {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeoutMs) {
+      const sendBtn = this.adapter.getSendButton();
+      if (sendBtn && !sendBtn.hasAttribute("disabled")) {
+        logger$1.debug("[MessageSender] Send button ready");
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    logger$1.warn("[MessageSender] Send button ready timeout");
+    return false;
+  }
+  /**
+   * Trigger the native send button
+   * @returns true if triggered successfully
+   */
+  async triggerSend() {
+    const sendBtn = this.adapter.getSendButton();
+    if (!sendBtn) {
+      logger$1.warn("[MessageSender] Send button not found");
+      return false;
+    }
+    if (sendBtn.hasAttribute("disabled")) {
+      logger$1.warn("[MessageSender] Send button is disabled");
+      return false;
+    }
+    sendBtn.click();
+    logger$1.debug("[MessageSender] Send button clicked");
+    return true;
+  }
+  /**
+   * Full send flow: sync content + trigger send
+   */
+  async send(text) {
+    const synced = await this.syncToNative(text, true);
+    if (!synced) {
+      return false;
+    }
+    const ready = await this.waitForSendButtonReady();
+    if (!ready) {
+      return false;
+    }
+    return this.triggerSend();
+  }
+  /**
+   * Cleanup resources
+   */
+  destroy() {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+  }
+  /**
+   * Watch send button state changes using MutationObserver
+   * @param onChange - Callback when loading state changes
+   * @returns Cleanup function to disconnect observer
+   */
+  watchSendButtonState(onChange) {
+    const sendBtn = this.adapter.getSendButton();
+    logger$1.info("[MessageSender] watchSendButtonState called", {
+      hasSendBtn: !!sendBtn,
+      sendBtnTag: sendBtn?.tagName,
+      sendBtnDisabled: sendBtn?.hasAttribute("disabled"),
+      sendBtnAriaDisabled: sendBtn?.getAttribute("aria-disabled")
+    });
+    if (!sendBtn) {
+      logger$1.warn("[MessageSender] Send button not found for watching");
+      return () => {
+      };
+    }
+    const checkState = () => {
+      const isDisabled = sendBtn.hasAttribute("disabled");
+      const ariaDisabled = sendBtn.getAttribute("aria-disabled");
+      logger$1.info("[MessageSender] Button state changed", {
+        isDisabled,
+        ariaDisabled,
+        className: sendBtn.className
+      });
+      onChange(isDisabled);
+    };
+    const observer = new MutationObserver((mutations) => {
+      logger$1.info("[MessageSender] MutationObserver triggered", {
+        mutationsCount: mutations.length,
+        types: mutations.map((m) => m.attributeName)
+      });
+      checkState();
+    });
+    observer.observe(sendBtn, {
+      attributes: true,
+      attributeFilter: ["disabled", "aria-disabled"]
+    });
+    logger$1.info("[MessageSender] MutationObserver started on send button");
+    return () => {
+      logger$1.info("[MessageSender] MutationObserver disconnected");
+      observer.disconnect();
+    };
+  }
+  // ========================================
+  // Private: Input Strategies
+  // ========================================
+  /**
+   * Clear input content
+   */
+  async clearInput(input, focusInput = true) {
+    if (input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement) {
+      input.value = "";
+    } else if (input.getAttribute("contenteditable") === "true") {
+      if (focusInput) {
+        input.focus();
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(input);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        if (!document.execCommand("delete")) {
+          input.innerHTML = "";
+        }
+      } else {
+        input.innerHTML = "";
+      }
+    }
+  }
+  /**
+   * Strategy 1: execCommand (best compatibility with React/Vue)
+   */
+  tryExecCommand(input, text, focusInput = true) {
+    try {
+      if (focusInput) {
+        input.focus();
+      }
+      const success = document.execCommand("insertText", false, text);
+      if (success) {
+        logger$1.debug("[MessageSender] execCommand succeeded");
+        return true;
+      }
+    } catch (e) {
+      logger$1.debug("[MessageSender] execCommand failed:", e);
+    }
+    return false;
+  }
+  /**
+   * Strategy 2: InputEvent dispatch
+   */
+  tryInputEvent(input, text) {
+    try {
+      if (input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement) {
+        input.value = text;
+      } else {
+        input.textContent = text;
+      }
+      const inputEvent = new InputEvent("input", {
+        bubbles: true,
+        cancelable: true,
+        inputType: "insertText",
+        data: text
+      });
+      input.dispatchEvent(inputEvent);
+      logger$1.debug("[MessageSender] InputEvent succeeded");
+      return true;
+    } catch (e) {
+      logger$1.debug("[MessageSender] InputEvent failed:", e);
+    }
+    return false;
+  }
+  /**
+   * Strategy 3: Direct DOM manipulation (last resort)
+   */
+  tryDirectDOM(input, text) {
+    try {
+      if (input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement) {
+        input.value = text;
+      } else {
+        input.textContent = text;
+      }
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      logger$1.debug("[MessageSender] Direct DOM succeeded");
+      return true;
+    } catch (e) {
+      logger$1.debug("[MessageSender] Direct DOM failed:", e);
+    }
+    return false;
+  }
+}
+
 async function resolveContent(provider) {
   if (typeof provider === "string") {
     return provider;
@@ -26906,6 +27848,56 @@ function getDefaultIcon() {
     </svg>`;
 }
 
+class EventBus {
+  listeners = /* @__PURE__ */ new Map();
+  /**
+   * Subscribe to an event
+   * @returns Unsubscribe function
+   */
+  on(event, callback) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, /* @__PURE__ */ new Set());
+    }
+    this.listeners.get(event).add(callback);
+    return () => this.off(event, callback);
+  }
+  /**
+   * Subscribe to an event, but only once
+   */
+  once(event, callback) {
+    const wrapper = (data) => {
+      this.off(event, wrapper);
+      callback(data);
+    };
+    return this.on(event, wrapper);
+  }
+  /**
+   * Unsubscribe from an event
+   */
+  off(event, callback) {
+    this.listeners.get(event)?.delete(callback);
+  }
+  /**
+   * Emit an event
+   */
+  emit(event, data) {
+    this.listeners.get(event)?.forEach((callback) => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error(`[EventBus] Error in listener for "${event}":`, e);
+      }
+    });
+  }
+  /**
+   * Clear all listeners (for cleanup)
+   */
+  clear() {
+    this.listeners.clear();
+  }
+}
+const eventBus = new EventBus();
+
 class ReaderPanel {
   container = null;
   shadowRoot = null;
@@ -26918,6 +27910,13 @@ class ReaderPanel {
   paginationController = null;
   navButtonsController = null;
   keyHandler = null;
+  // Message sending UI components
+  floatingInput = null;
+  triggerBtn = null;
+  isSending = false;
+  messageSender = null;
+  // EventBus subscription cleanup
+  unsubscribeNewMessage = null;
   /**
    * 【新方法】通用入口：接受标准化的 ReaderItem[]
    * 
@@ -26973,9 +27972,35 @@ class ReaderPanel {
     this.paginationController = null;
     this.navButtonsController?.destroy();
     this.navButtonsController = null;
+    this.floatingInput?.destroy();
+    this.floatingInput = null;
+    this.triggerBtn = null;
+    this.isSending = false;
+    this.messageSender?.destroy();
+    this.messageSender = null;
     if (this.keyHandler) {
       document.removeEventListener("keydown", this.keyHandler);
       this.keyHandler = null;
+    }
+    this.unsubscribeNewMessage?.();
+    this.unsubscribeNewMessage = null;
+  }
+  /**
+   * 刷新数据项（用于实时更新分页）
+   */
+  async refreshItems() {
+    const adapter = adapterRegistry.getAdapter();
+    if (!adapter) return;
+    const messageSelector = adapter.getMessageSelector();
+    const newCount = document.querySelectorAll(messageSelector).length;
+    if (newCount === this.items.length) {
+      return;
+    }
+    logger$1.info(`[ReaderPanel] Refreshing items: ${this.items.length} -> ${newCount}`);
+    const wasAtLast = this.currentIndex === this.items.length - 1;
+    this.paginationController?.updateTotalItems(newCount);
+    if (wasAtLast && newCount > this.items.length) {
+      logger$1.info(`[ReaderPanel] New message available`);
     }
   }
   /**
@@ -27000,7 +28025,7 @@ class ReaderPanel {
     tokenStyle.textContent = `:host { ${DesignTokens.getCompleteTokens(this.currentThemeIsDark)} }`;
     this.shadowRoot.insertBefore(tokenStyle, this.shadowRoot.firstChild);
     const styleEl = document.createElement("style");
-    styleEl.textContent = readerPanelStyles + tooltipStyles;
+    styleEl.textContent = readerPanelStyles + tooltipStyles + floatingInputStyles;
     this.shadowRoot.appendChild(styleEl);
     const overlay = this.createOverlay();
     const panel = this.createPanelElement();
@@ -27010,6 +28035,12 @@ class ReaderPanel {
     await this.renderMessage(this.currentIndex);
     this.setupKeyboardNavigation(panel);
     panel.focus();
+    this.unsubscribeNewMessage = eventBus.on("message:new", ({ count }) => {
+      if (count !== this.items.length) {
+        logger$1.info(`[ReaderPanel] New message detected: ${this.items.length} -> ${count}`);
+        this.refreshItems();
+      }
+    });
   }
   /**
    * 创建遮罩层
@@ -27071,6 +28102,8 @@ class ReaderPanel {
     });
     this.paginationController.render();
     logger$1.debug(`[ReaderPanel] Pagination rendered, container has ${this.paginationController.getDots().length} dots`);
+    const triggerWrapper = this.createMessageTriggerButton();
+    paginationContainer.insertBefore(triggerWrapper, paginationContainer.firstChild);
     this.navButtonsController = new NavigationButtonsController(
       paginationContainer,
       {
@@ -27105,6 +28138,97 @@ class ReaderPanel {
     hint.textContent = '"← →" to navigate';
     paginationContainer.appendChild(hint);
     return paginationContainer;
+  }
+  /**
+   * 创建消息发送触发按钮
+   */
+  createMessageTriggerButton() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "aimd-trigger-btn-wrapper";
+    this.triggerBtn = document.createElement("button");
+    this.triggerBtn.className = "aimd-trigger-btn";
+    this.triggerBtn.title = "Send message";
+    this.triggerBtn.innerHTML = Icons.messageSquareText;
+    const adapter = adapterRegistry.getAdapter();
+    if (adapter) {
+      this.messageSender = new MessageSender({ adapter });
+    } else {
+      logger$1.warn("[ReaderPanel] No adapter found for MessageSender");
+    }
+    this.floatingInput = new FloatingInput({
+      onSend: async (text) => {
+        logger$1.debug("[ReaderPanel] Send clicked:", text.substring(0, 50));
+        this.floatingInput?.hide();
+        this.setTriggerButtonState("waiting");
+        let unwatch;
+        if (this.messageSender) {
+          unwatch = this.messageSender.watchSendButtonState((isLoading) => {
+            this.setTriggerButtonState(isLoading ? "waiting" : "default");
+            if (!isLoading && unwatch) {
+              unwatch();
+            }
+          });
+        }
+        if (this.messageSender) {
+          const success = await this.messageSender.send(text);
+          logger$1.debug("[ReaderPanel] Send result:", success);
+        }
+        setTimeout(() => {
+          unwatch?.();
+          this.setTriggerButtonState("default");
+        }, 1e4);
+      },
+      onCollapse: (text) => {
+        logger$1.debug("[ReaderPanel] FloatingInput collapsed, text length:", text.length);
+        if (text.trim() && this.messageSender) {
+          this.messageSender.forceSyncToNative(text);
+        }
+      },
+      onInput: (text) => {
+        this.messageSender?.syncToNativeDebounced(text);
+      },
+      initialText: this.messageSender?.readFromNative() || ""
+    });
+    this.triggerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      logger$1.info("[ReaderPanel] Trigger button clicked", {
+        isSending: this.isSending,
+        floatingVisible: this.floatingInput?.visible
+      });
+      if (this.isSending) return;
+      const wasHidden = !this.floatingInput?.visible;
+      this.floatingInput?.toggle(wrapper);
+      if (wasHidden && this.floatingInput?.visible && this.messageSender) {
+        const nativeText = this.messageSender.readFromNative();
+        logger$1.info("[ReaderPanel] Reading native input for sync", {
+          nativeTextLength: nativeText.length,
+          nativeTextPreview: nativeText.substring(0, 50)
+        });
+        this.floatingInput.setText(nativeText);
+      }
+    });
+    wrapper.appendChild(this.triggerBtn);
+    return wrapper;
+  }
+  /**
+   * 设置触发按钮状态
+   */
+  setTriggerButtonState(state) {
+    logger$1.info("[ReaderPanel] setTriggerButtonState called", { state, hasTriggerBtn: !!this.triggerBtn });
+    if (!this.triggerBtn) return;
+    if (state === "waiting") {
+      this.triggerBtn.innerHTML = Icons.hourglass;
+      this.triggerBtn.classList.add("waiting");
+      this.triggerBtn.disabled = true;
+      this.isSending = true;
+      logger$1.info("[ReaderPanel] Button set to WAITING state");
+    } else {
+      this.triggerBtn.innerHTML = Icons.messageSquareText;
+      this.triggerBtn.classList.remove("waiting");
+      this.triggerBtn.disabled = false;
+      this.isSending = false;
+      logger$1.info("[ReaderPanel] Button set to DEFAULT state");
+    }
   }
   /**
    * 设置键盘导航
@@ -35958,6 +37082,12 @@ class ContentScript {
       }, 1e3);
     }
     logger$1.info("=== handleNewMessage END ===");
+    const adapter2 = adapterRegistry.getAdapter();
+    if (adapter2) {
+      const messageSelector = adapter2.getMessageSelector();
+      const allMessages = document.querySelectorAll(messageSelector);
+      eventBus.emit("message:new", { count: allMessages.length });
+    }
   }
   /**
    * Get Markdown from message element

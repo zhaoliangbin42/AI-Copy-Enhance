@@ -20,6 +20,8 @@ docs/
 .agent/
 *.private.md
 *-internal.md
+GEMINI.md
+Agents.md
 
 # Logs
 *.log

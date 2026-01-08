@@ -13,6 +13,7 @@ import { BookmarkSaveModal } from '../bookmarks/components/BookmarkSaveModal';
 import { pageHeaderIcon } from './components/PageHeaderIcon';
 import { geminiPanelButton } from './components/GeminiPanelButton';
 import { ThemeManager, Theme } from '../utils/ThemeManager';
+import { eventBus } from './utils/EventBus';
 
 /**
  * Main content script controller
@@ -373,6 +374,14 @@ class ContentScript {
         }
 
         logger.info('=== handleNewMessage END ===');
+
+        // Emit event for pagination update
+        const adapter2 = adapterRegistry.getAdapter();
+        if (adapter2) {
+            const messageSelector = adapter2.getMessageSelector();
+            const allMessages = document.querySelectorAll(messageSelector);
+            eventBus.emit('message:new', { count: allMessages.length });
+        }
     }
     /**
      * Get Markdown from message element
