@@ -28804,7 +28804,90 @@ class DeepResearchHandler {
   }
 }
 
+class StorageQueue {
+  static instance;
+  queue = [];
+  processing = false;
+  constructor() {
+    logger$1.debug("[StorageQueue] Initialized");
+  }
+  /**
+   * Get singleton instance
+   */
+  static getInstance() {
+    if (!StorageQueue.instance) {
+      StorageQueue.instance = new StorageQueue();
+    }
+    return StorageQueue.instance;
+  }
+  /**
+   * Enqueue a storage operation for sequential execution
+   * 
+   * @param operation - Async function that performs the storage operation
+   * @returns Promise that resolves when the operation completes
+   */
+  async enqueue(operation) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({
+        operation,
+        resolve,
+        reject
+      });
+      logger$1.debug(`[StorageQueue] Enqueued operation, queue length: ${this.queue.length}`);
+      this.processQueue();
+    });
+  }
+  /**
+   * Process queued operations sequentially
+   */
+  async processQueue() {
+    if (this.processing) {
+      return;
+    }
+    this.processing = true;
+    while (this.queue.length > 0) {
+      const item = this.queue.shift();
+      if (!item) continue;
+      try {
+        const result = await item.operation();
+        item.resolve(result);
+        logger$1.debug("[StorageQueue] Operation completed successfully");
+      } catch (error) {
+        logger$1.error("[StorageQueue] Operation failed:", error);
+        item.reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+    this.processing = false;
+    logger$1.debug("[StorageQueue] Queue processing complete");
+  }
+  /**
+   * Get current queue length (for testing/debugging)
+   */
+  getQueueLength() {
+    return this.queue.length;
+  }
+  /**
+   * Check if queue is currently processing (for testing/debugging)
+   */
+  isProcessing() {
+    return this.processing;
+  }
+  /**
+   * Reset the singleton instance (for testing only)
+   */
+  static resetInstance() {
+    StorageQueue.instance = void 0;
+  }
+}
+
 class SimpleBookmarkStorage {
+  // Storage quota thresholds
+  static STORAGE_LIMIT = 10 * 1024 * 1024;
+  // 10MB (chrome.storage.local default)
+  static QUOTA_WARNING_THRESHOLD = 0.95;
+  // 95% - show auto-dismiss warning
+  static QUOTA_CRITICAL_THRESHOLD = 0.98;
+  // 98% - block save
   /**
    * Generate storage key - AITimeline format
    */
@@ -28816,39 +28899,43 @@ class SimpleBookmarkStorage {
    * Save a bookmark
    */
   static async save(url, position, userMessage, aiResponse, title, platform, timestamp, folderPath) {
-    try {
-      const key = this.getKey(url, position);
-      const urlWithoutProtocol = url.replace(/^https?:\/\//, "");
-      const value = {
-        url,
-        urlWithoutProtocol,
-        position,
-        userMessage,
-        aiResponse,
-        timestamp: timestamp || Date.now(),
-        title: title || userMessage.substring(0, 50) + (userMessage.length > 50 ? "..." : ""),
-        platform: platform || "ChatGPT",
-        folderPath: folderPath || "Import"
-      };
-      await chrome.storage.local.set({ [key]: value });
-      logger$1.info(`[SimpleBookmarkStorage] Saved bookmark at position ${position}`);
-    } catch (error) {
-      logger$1.error("[SimpleBookmarkStorage] Failed to save bookmark:", error);
-      throw error;
-    }
+    const key = this.getKey(url, position);
+    const urlWithoutProtocol = url.replace(/^https?:\/\//, "");
+    const value = {
+      url,
+      urlWithoutProtocol,
+      position,
+      userMessage,
+      aiResponse,
+      timestamp: timestamp || Date.now(),
+      title: title || userMessage.substring(0, 50) + (userMessage.length > 50 ? "..." : ""),
+      platform: platform || "ChatGPT",
+      folderPath: folderPath || "Import"
+    };
+    await StorageQueue.getInstance().enqueue(async () => {
+      try {
+        await chrome.storage.local.set({ [key]: value });
+        logger$1.info(`[SimpleBookmarkStorage] Saved bookmark at position ${position}`);
+      } catch (error) {
+        logger$1.error("[SimpleBookmarkStorage] Failed to save bookmark:", error);
+        throw error;
+      }
+    });
   }
   /**
    * Remove a bookmark
    */
   static async remove(url, position) {
-    try {
-      const key = this.getKey(url, position);
-      await chrome.storage.local.remove(key);
-      logger$1.info(`[SimpleBookmarkStorage] Removed bookmark at position ${position}`);
-    } catch (error) {
-      logger$1.error("[SimpleBookmarkStorage] Failed to remove bookmark:", error);
-      throw error;
-    }
+    const key = this.getKey(url, position);
+    await StorageQueue.getInstance().enqueue(async () => {
+      try {
+        await chrome.storage.local.remove(key);
+        logger$1.info(`[SimpleBookmarkStorage] Removed bookmark at position ${position}`);
+      } catch (error) {
+        logger$1.error("[SimpleBookmarkStorage] Failed to remove bookmark:", error);
+        throw error;
+      }
+    });
   }
   /**
    * Check if a position is bookmarked
@@ -28893,23 +28980,25 @@ class SimpleBookmarkStorage {
    * Update an existing bookmark
    */
   static async updateBookmark(url, position, updates) {
-    try {
-      const key = this.getKey(url, position);
-      const result = await chrome.storage.local.get(key);
-      const existing = result[key];
-      if (!existing) {
-        throw new Error(`Bookmark not found at position ${position}`);
+    const key = this.getKey(url, position);
+    await StorageQueue.getInstance().enqueue(async () => {
+      try {
+        const result = await chrome.storage.local.get(key);
+        const existing = result[key];
+        if (!existing) {
+          throw new Error(`Bookmark not found at position ${position}`);
+        }
+        const updated = {
+          ...existing,
+          ...updates
+        };
+        await chrome.storage.local.set({ [key]: updated });
+        logger$1.info(`[SimpleBookmarkStorage] Updated bookmark at position ${position}`);
+      } catch (error) {
+        logger$1.error("[SimpleBookmarkStorage] Failed to update bookmark:", error);
+        throw error;
       }
-      const updated = {
-        ...existing,
-        ...updates
-      };
-      await chrome.storage.local.set({ [key]: updated });
-      logger$1.info(`[SimpleBookmarkStorage] Updated bookmark at position ${position}`);
-    } catch (error) {
-      logger$1.error("[SimpleBookmarkStorage] Failed to update bookmark:", error);
-      throw error;
-    }
+    });
   }
   /**
    * Get all bookmarks across all URLs
@@ -28937,13 +29026,161 @@ class SimpleBookmarkStorage {
   static async checkStorageQuota() {
     try {
       const used = await chrome.storage.local.getBytesInUse();
-      const limit = 5 * 1024 * 1024;
+      const limit = this.STORAGE_LIMIT;
       const percentage = used / limit * 100;
-      logger$1.info(`[SimpleBookmarkStorage] Storage usage: ${used} bytes (${percentage.toFixed(2)}%)`);
+      logger$1.debug(`[SimpleBookmarkStorage] Storage usage: ${used} bytes (${percentage.toFixed(2)}%)`);
       return { used, limit, percentage };
     } catch (error) {
       logger$1.error("[SimpleBookmarkStorage] Failed to check storage quota:", error);
-      return { used: 0, limit: 5 * 1024 * 1024, percentage: 0 };
+      return { used: 0, limit: this.STORAGE_LIMIT, percentage: 0 };
+    }
+  }
+  /**
+   * Check if a save operation can proceed
+   * Returns warning level and message based on current storage usage
+   */
+  static async canSave() {
+    try {
+      const { percentage } = await this.checkStorageQuota();
+      const usedPercentage = percentage;
+      if (percentage >= this.QUOTA_CRITICAL_THRESHOLD * 100) {
+        return {
+          canSave: false,
+          warningLevel: "critical",
+          usedPercentage,
+          message: `Storage is ${percentage.toFixed(1)}% full. Please export and delete some bookmarks to continue.`
+        };
+      }
+      if (percentage >= this.QUOTA_WARNING_THRESHOLD * 100) {
+        return {
+          canSave: true,
+          warningLevel: "warning",
+          usedPercentage,
+          message: `Storage is ${percentage.toFixed(1)}% full. Consider exporting bookmarks soon.`
+        };
+      }
+      return {
+        canSave: true,
+        warningLevel: "none",
+        usedPercentage
+      };
+    } catch (error) {
+      logger$1.error("[SimpleBookmarkStorage] Failed to check if can save:", error);
+      return { canSave: true, warningLevel: "none", usedPercentage: 0 };
+    }
+  }
+  /**
+   * Estimate the storage size of a bookmark in bytes
+   * Uses JSON.stringify to get approximate size
+   */
+  static estimateBookmarkSize(bookmark) {
+    try {
+      const key = this.getKey(bookmark.url, bookmark.position);
+      const keySize = key.length;
+      const valueSize = JSON.stringify(bookmark).length;
+      return keySize + valueSize;
+    } catch {
+      return 0;
+    }
+  }
+  /**
+   * Check if importing bookmarks would exceed storage quota
+   * @param bookmarks - Bookmarks to import (after deduplication)
+   * @returns Whether import can proceed and estimated usage after import
+   */
+  static async canImport(bookmarks) {
+    try {
+      const { used } = await this.checkStorageQuota();
+      const estimatedBytes = bookmarks.reduce(
+        (sum, bookmark) => sum + this.estimateBookmarkSize(bookmark),
+        0
+      );
+      const projectedUsed = used + estimatedBytes;
+      const projectedPercentage = projectedUsed / this.STORAGE_LIMIT * 100;
+      if (projectedPercentage >= this.QUOTA_CRITICAL_THRESHOLD * 100) {
+        const estimatedKB = (estimatedBytes / 1024).toFixed(1);
+        const availableKB = ((this.STORAGE_LIMIT * this.QUOTA_CRITICAL_THRESHOLD - used) / 1024).toFixed(1);
+        return {
+          canImport: false,
+          estimatedBytes,
+          currentUsed: used,
+          projectedPercentage,
+          message: `Import requires ~${estimatedKB}KB but only ${availableKB}KB available. Please export and delete some bookmarks first.`
+        };
+      }
+      return {
+        canImport: true,
+        estimatedBytes,
+        currentUsed: used,
+        projectedPercentage
+      };
+    } catch (error) {
+      logger$1.error("[SimpleBookmarkStorage] Failed to check if can import:", error);
+      return { canImport: true, estimatedBytes: 0, currentUsed: 0, projectedPercentage: 0 };
+    }
+  }
+  /**
+   * Bulk save multiple bookmarks in single atomic operation
+   * Bypasses StorageQueue for performance - use only for batch import
+   * 
+   * @param bookmarks - Array of bookmarks to save
+   * @returns Number of bookmarks saved
+   * @throws Error if storage operation fails
+   */
+  static async bulkSave(bookmarks) {
+    if (!bookmarks || bookmarks.length === 0) {
+      logger$1.debug("[SimpleBookmarkStorage] bulkSave called with empty array");
+      return 0;
+    }
+    const perfStart = performance.now();
+    const data = {};
+    for (const bookmark of bookmarks) {
+      const key = this.getKey(bookmark.url, bookmark.position);
+      const urlWithoutProtocol = bookmark.url.replace(/^https?:\/\//, "");
+      data[key] = {
+        url: bookmark.url,
+        urlWithoutProtocol,
+        position: bookmark.position,
+        userMessage: bookmark.userMessage,
+        aiResponse: bookmark.aiResponse,
+        timestamp: bookmark.timestamp || Date.now(),
+        title: bookmark.title || bookmark.userMessage?.substring(0, 50) || "Untitled",
+        platform: bookmark.platform || "ChatGPT",
+        folderPath: bookmark.folderPath || "Import"
+      };
+    }
+    try {
+      await chrome.storage.local.set(data);
+      const perfEnd = performance.now();
+      logger$1.info(`[SimpleBookmarkStorage] Bulk saved ${bookmarks.length} bookmarks in ${(perfEnd - perfStart).toFixed(0)}ms`);
+      return bookmarks.length;
+    } catch (error) {
+      logger$1.error("[SimpleBookmarkStorage] Bulk save failed:", error);
+      throw error;
+    }
+  }
+  /**
+   * Bulk remove multiple bookmarks in single atomic operation
+   * Bypasses StorageQueue for performance - use only for batch delete
+   * 
+   * @param bookmarks - Array of bookmark identifiers (url + position)
+   * @returns Number of bookmarks removed
+   */
+  static async bulkRemove(bookmarks) {
+    if (!bookmarks || bookmarks.length === 0) {
+      logger$1.debug("[SimpleBookmarkStorage] bulkRemove called with empty array");
+      return 0;
+    }
+    const perfStart = performance.now();
+    const keys = bookmarks.map((b) => this.getKey(b.url, b.position));
+    try {
+      await chrome.storage.local.remove(keys);
+      const perfEnd = performance.now();
+      logger$1.info(`[SimpleBookmarkStorage] Bulk removed ${bookmarks.length} bookmarks in ${(perfEnd - perfStart).toFixed(0)}ms`);
+      return bookmarks.length;
+    } catch (error) {
+      logger$1.error("[SimpleBookmarkStorage] Bulk remove failed:", error);
+      throw error;
     }
   }
   /**
@@ -29039,20 +29276,22 @@ class SimpleBookmarkStorage {
    * @param newFolderPath New folder path
    */
   static async moveToFolder(url, position, newFolderPath) {
-    try {
-      const key = this.getKey(url, position);
-      const result = await chrome.storage.local.get(key);
-      const bookmark = result[key];
-      if (!bookmark) {
-        throw new Error(`Bookmark not found: ${url}:${position}`);
+    const key = this.getKey(url, position);
+    await StorageQueue.getInstance().enqueue(async () => {
+      try {
+        const result = await chrome.storage.local.get(key);
+        const bookmark = result[key];
+        if (!bookmark) {
+          throw new Error(`Bookmark not found: ${url}:${position}`);
+        }
+        bookmark.folderPath = newFolderPath;
+        await chrome.storage.local.set({ [key]: bookmark });
+        logger$1.info(`[SimpleBookmarkStorage] Moved bookmark to folder: ${newFolderPath}`);
+      } catch (error) {
+        logger$1.error("[SimpleBookmarkStorage] Failed to move bookmark to folder:", error);
+        throw error;
       }
-      bookmark.folderPath = newFolderPath;
-      await chrome.storage.local.set({ [key]: bookmark });
-      logger$1.info(`[SimpleBookmarkStorage] Moved bookmark to folder: ${newFolderPath}`);
-    } catch (error) {
-      logger$1.error("[SimpleBookmarkStorage] Failed to move bookmark to folder:", error);
-      throw error;
-    }
+    });
   }
 }
 
@@ -29674,6 +29913,35 @@ class FolderStorage {
         `Failed to delete folder: ${error instanceof Error ? error.message : "Unknown error"}`,
         "delete",
         path
+      );
+    }
+  }
+  /**
+   * Bulk delete multiple folders in single atomic operation
+   * NOTE: This bypasses empty-check validation - caller must ensure folders are empty
+   * 
+   * @param paths - Array of folder paths to delete
+   * @returns Number of folders deleted
+   */
+  static async bulkDelete(paths) {
+    if (!paths || paths.length === 0) {
+      return 0;
+    }
+    const perfStart = performance.now();
+    const keys = paths.map((p) => this.getStorageKey(p));
+    try {
+      await chrome.storage.local.remove(keys);
+      const index = await this.getIndex();
+      const updatedIndex = index.filter((p) => !paths.includes(p));
+      await chrome.storage.local.set({ [this.FOLDER_INDEX_KEY]: updatedIndex });
+      const perfEnd = performance.now();
+      logger.info(`Bulk deleted ${paths.length} folders in ${(perfEnd - perfStart).toFixed(0)}ms`);
+      return paths.length;
+    } catch (error) {
+      logger.error("Bulk delete folders failed:", error);
+      throw new FolderOperationError(
+        `Failed to bulk delete folders: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "bulkDelete"
       );
     }
   }
@@ -31678,10 +31946,13 @@ class SimpleBookmarkPanel {
    * Refresh panel content
    */
   async refresh() {
+    const refreshStart = performance.now();
     this.folders = await FolderStorage.getAll();
+    const foldersTime = performance.now();
     this.bookmarks = await SimpleBookmarkStorage.getAllBookmarks();
+    const bookmarksTime = performance.now();
     this.filterBookmarks();
-    logger$1.debug(`[SimpleBookmarkPanel] Refreshed: ${this.folders.length} folders, ${this.bookmarks.length} bookmarks`);
+    logger$1.info(`[SimpleBookmarkPanel][Perf] Refresh: ${this.folders.length} folders (${(foldersTime - refreshStart).toFixed(0)}ms), ${this.bookmarks.length} bookmarks (${(bookmarksTime - foldersTime).toFixed(0)}ms), total ${(bookmarksTime - refreshStart).toFixed(0)}ms`);
     this.refreshContent();
   }
   /**
@@ -33321,6 +33592,12 @@ ${options.message}
         }
       };
       document.addEventListener("keydown", handleEscape);
+      if (options.duration && options.duration > 0) {
+        setTimeout(() => {
+          document.removeEventListener("keydown", handleEscape);
+          closeDialog();
+        }, options.duration);
+      }
     });
   }
   /**
@@ -33392,38 +33669,29 @@ ${options.message}
   }
   /**
    * Execute batch delete with proper order and error handling
-   * Task 3.4.4
+   * Task 3.4.4 - Optimized with bulk operations
    */
   async executeBatchDelete(analysis) {
-    const errors = [];
-    logger$1.info(`[Batch Delete] Deleting ${analysis.bookmarks.length} bookmarks...`);
-    for (const bookmark of analysis.bookmarks) {
-      try {
-        await SimpleBookmarkStorage.remove(
-          bookmark.urlWithoutProtocol,
-          bookmark.position
+    const perfStart = performance.now();
+    try {
+      if (analysis.bookmarks.length > 0) {
+        logger$1.info(`[Batch Delete] Bulk removing ${analysis.bookmarks.length} bookmarks...`);
+        await SimpleBookmarkStorage.bulkRemove(
+          analysis.bookmarks.map((b) => ({ url: b.url, position: b.position }))
         );
-      } catch (error) {
-        errors.push(`Failed to delete bookmark: ${bookmark.title}`);
-        logger$1.error("[Batch Delete] Bookmark error:", error);
       }
-    }
-    const allFolders = [...analysis.folders, ...analysis.subfolders];
-    const sortedFolders = allFolders.sort((a, b) => b.depth - a.depth);
-    logger$1.info(`[Batch Delete] Deleting ${sortedFolders.length} folders (deepest first)...`);
-    for (const folder of sortedFolders) {
-      try {
-        await FolderStorage.delete(folder.path);
-      } catch (error) {
-        errors.push(`Failed to delete folder: ${folder.name}`);
-        logger$1.error("[Batch Delete] Folder error:", error);
+      const allFolders = [...analysis.folders, ...analysis.subfolders];
+      if (allFolders.length > 0) {
+        const sortedPaths = allFolders.sort((a, b) => b.depth - a.depth).map((f) => f.path);
+        logger$1.info(`[Batch Delete] Bulk removing ${sortedPaths.length} folders...`);
+        await FolderStorage.bulkDelete(sortedPaths);
       }
-    }
-    if (errors.length > 0) {
-      this.showErrorSummary(errors);
-    } else {
-      const totalDeleted = analysis.bookmarks.length + sortedFolders.length;
-      logger$1.info(`[Batch Delete] Successfully deleted ${totalDeleted} items`);
+      const perfEnd = performance.now();
+      const totalDeleted = analysis.bookmarks.length + allFolders.length;
+      logger$1.info(`[Batch Delete] Successfully deleted ${totalDeleted} items in ${(perfEnd - perfStart).toFixed(0)}ms`);
+    } catch (error) {
+      logger$1.error("[Batch Delete] Error:", error);
+      this.showErrorSummary([`Batch delete failed: ${error instanceof Error ? error.message : "Unknown error"}`]);
     }
     this.selectedItems.clear();
     await this.refresh();
@@ -33520,6 +33788,23 @@ ${options.message}
    * Execute batch move operation
    */
   async executeBatchMove(bookmarks, targetPath) {
+    const quotaCheck = await SimpleBookmarkStorage.canSave();
+    if (!quotaCheck.canSave) {
+      await this.showNotification({
+        type: "error",
+        title: "Storage Full",
+        message: quotaCheck.message || "Storage quota exceeded"
+      });
+      return;
+    }
+    if (quotaCheck.warningLevel === "warning") {
+      this.showNotification({
+        type: "warning",
+        title: "Storage Warning",
+        message: quotaCheck.message || "Storage is getting full",
+        duration: 3e3
+      });
+    }
     const errors = [];
     let successCount = 0;
     logger$1.info(`[Batch Move] Moving ${bookmarks.length} bookmarks to ${targetPath || "root"}...`);
@@ -33711,10 +33996,11 @@ ${options.message}
       const file = e.target.files?.[0];
       if (!file) return;
       try {
+        const handleImportStart = performance.now();
         const text = await file.text();
         const data = JSON.parse(text);
         const bookmarks = this.validateImportData(data);
-        logger$1.info(`[Import] Validated ${bookmarks.length} bookmarks`);
+        logger$1.info(`[Import][Perf] Validated ${bookmarks.length} bookmarks in ${(performance.now() - handleImportStart).toFixed(0)}ms`);
         const analysis = this.analyzeImportData(bookmarks);
         const importFolderSet = /* @__PURE__ */ new Set([
           ...analysis.noFolder,
@@ -33748,15 +34034,15 @@ ${options.message}
         }
         this.folders = await FolderStorage.getAll();
         logger$1.info(`[Import] Loaded ${this.folders.length} folders after creation`);
-        const conflicts = await this.detectConflicts(allBookmarks);
         const mergeEntries = await this.buildImportMergeEntries(allBookmarks, importFolderSet);
         const hasRenameConflicts = mergeEntries.some((entry) => entry.status === "rename");
         const hasImportFolder = mergeEntries.some((entry) => entry.status === "import");
-        const shouldPrompt = conflicts.length > 0 || hasRenameConflicts || hasImportFolder;
+        const hasDuplicates = mergeEntries.some((entry) => entry.status === "duplicate");
+        const shouldPrompt = hasDuplicates || hasRenameConflicts || hasImportFolder;
         if (shouldPrompt) {
           const action = await this.showMergeDialog(mergeEntries, {
             hasRenameConflicts,
-            duplicateCount: conflicts.length
+            duplicateCount: mergeEntries.filter((e2) => e2.status === "duplicate").length
           });
           if (action === "cancel") {
             logger$1.info("[Import] User cancelled import");
@@ -33770,21 +34056,31 @@ ${options.message}
             });
           }
         }
-        await this.importBookmarks(allBookmarks, true);
-        await this.refresh();
-        let message = `Successfully imported ${bookmarks.length} bookmark(s)!`;
-        if (analysis.noFolder.length > 0 || analysis.tooDeep.length > 0) {
-          const importCount = analysis.noFolder.length + analysis.tooDeep.length;
-          message += `
-
-${importCount} bookmark(s) without valid folder paths were placed in "Import" folder.`;
+        const bookmarksToImport = mergeEntries.filter((entry) => entry.status !== "duplicate").map((entry) => entry.bookmark);
+        const importCheck = await SimpleBookmarkStorage.canImport(bookmarksToImport);
+        if (!importCheck.canImport) {
+          await this.showNotification({
+            type: "error",
+            title: "Storage Full",
+            message: importCheck.message || "Not enough storage space for import"
+          });
+          return;
         }
+        await this.importBookmarks(bookmarksToImport);
+        await this.refresh();
+        const importedCount = bookmarksToImport.length;
+        const skippedCount = mergeEntries.filter((e2) => e2.status === "duplicate").length;
+        let message = `Imported ${importedCount} bookmark(s)`;
+        if (skippedCount > 0) {
+          message += `, skipped ${skippedCount} duplicate(s)`;
+        }
+        message += ".";
         await this.showNotification({
           type: "success",
           title: "Import Successful",
           message
         });
-        logger$1.info(`[Import] Successfully imported ${bookmarks.length} bookmarks`);
+        logger$1.info(`[Import] Imported ${importedCount} bookmarks, skipped ${skippedCount} duplicates`);
       } catch (error) {
         logger$1.error("[Import] Failed:", error);
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -33866,26 +34162,15 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
     return validBookmarks;
   }
   /**
-   * Detect conflicts (existing bookmarks with same url+position)
-   */
-  async detectConflicts(bookmarks) {
-    const conflicts = [];
-    for (const bookmark of bookmarks) {
-      const exists = await SimpleBookmarkStorage.isBookmarked(
-        bookmark.url,
-        bookmark.position
-      );
-      if (exists) {
-        conflicts.push(bookmark);
-      }
-    }
-    return conflicts;
-  }
-  /**
    * Build merge entries with status + rename preview
    */
   async buildImportMergeEntries(bookmarks, importFolderSet) {
     const existingBookmarks = this.bookmarks.length > 0 ? this.bookmarks : await SimpleBookmarkStorage.getAllBookmarks();
+    const existingByKey = /* @__PURE__ */ new Map();
+    existingBookmarks.forEach((b) => {
+      const key = `${b.url}:${b.position}`;
+      existingByKey.set(key, b);
+    });
     const usedTitlesByFolder = /* @__PURE__ */ new Map();
     const entries = [];
     const getUsedTitles = (folderPath) => {
@@ -33907,17 +34192,27 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
       const normalizedTitle = this.normalizeBookmarkTitle(bookmark.title);
       let status = "normal";
       let renameTo;
-      if (normalizedTitle && usedTitles.has(normalizedTitle)) {
-        status = "rename";
-        renameTo = this.generateUniqueTitle(bookmark.title, usedTitles);
-        usedTitles.add(this.normalizeBookmarkTitle(renameTo));
-      } else if (normalizedTitle) {
-        usedTitles.add(normalizedTitle);
+      let existingTitle;
+      const duplicateKey = `${bookmark.url}:${bookmark.position}`;
+      const existingDuplicate = existingByKey.get(duplicateKey);
+      let existingFolderPath;
+      if (existingDuplicate) {
+        status = "duplicate";
+        existingTitle = existingDuplicate.title;
+        existingFolderPath = existingDuplicate.folderPath;
+      } else {
+        if (normalizedTitle && usedTitles.has(normalizedTitle)) {
+          status = "rename";
+          renameTo = this.generateUniqueTitle(bookmark.title, usedTitles);
+          usedTitles.add(this.normalizeBookmarkTitle(renameTo));
+        } else if (normalizedTitle) {
+          usedTitles.add(normalizedTitle);
+        }
+        if (status !== "rename" && importFolderSet.has(bookmark)) {
+          status = "import";
+        }
       }
-      if (status !== "rename" && importFolderSet.has(bookmark)) {
-        status = "import";
-      }
-      entries.push({ bookmark, status, renameTo });
+      entries.push({ bookmark, status, renameTo, existingTitle, existingFolderPath });
     }
     return entries;
   }
@@ -34001,6 +34296,13 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 .merge-badge-normal { background: var(--aimd-feedback-success-bg); color: var(--aimd-feedback-success-text); }
                 .merge-badge-rename { background: var(--aimd-feedback-warning-bg); color: var(--aimd-feedback-warning-text); }
                 .merge-badge-import { background: var(--aimd-feedback-info-bg); color: var(--aimd-interactive-primary-hover); }
+                .merge-badge-duplicate { background: var(--aimd-feedback-danger-bg); color: var(--aimd-feedback-danger-text); }
+                
+                .merge-item-compare { font-size: 12px; color: var(--aimd-text-secondary); margin-top: 4px; padding: 6px 8px; background: var(--aimd-bg-secondary); border-radius: var(--aimd-radius-sm); }
+                .merge-item-compare-row { display: flex; gap: 4px; margin-bottom: 2px; }
+                .merge-item-compare-row:last-child { margin-bottom: 0; }
+                .merge-item-compare-label { color: var(--aimd-text-secondary); min-width: 50px; }
+                .merge-item-compare-value { color: var(--aimd-text-primary); word-break: break-word; }
                 
                 .duplicate-dialog-hint { margin: 6px 0 0 0; color: var(--aimd-text-secondary); font-size: 13px; font-style: italic; opacity: 0.9; }
                 
@@ -34016,43 +34318,45 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
       const modal = document.createElement("div");
       modal.className = "duplicate-dialog-modal";
       const statusLabels = {
-        normal: "正常导入",
-        rename: "重命名合并",
-        import: "合并到 import 文件夹"
+        normal: "Normal Import",
+        rename: "Rename & Merge",
+        import: "Move to Import",
+        duplicate: "Skip (Duplicate)"
       };
       const counts = entries.reduce(
         (acc, entry) => {
           acc[entry.status] += 1;
           return acc;
         },
-        { normal: 0, rename: 0, import: 0 }
+        { normal: 0, rename: 0, import: 0, duplicate: 0 }
       );
-      const primaryLabel = options.hasRenameConflicts ? "重命名合并" : "合并";
+      const primaryLabel = options.hasRenameConflicts ? "Rename & Merge" : "Merge";
       modal.innerHTML = `
             <div class="duplicate-dialog-content">
                 <div class="duplicate-dialog-header">
                     <span class="duplicate-dialog-icon">${Icons.alertTriangle}</span>
-                    <h3 class="duplicate-dialog-title">导入确认</h3>
+                    <h3 class="duplicate-dialog-title">Import Confirmation</h3>
                 </div>
                 <div class="duplicate-dialog-body">
-                    <p class="duplicate-dialog-text">本次导入 <strong>${entries.length}</strong> 条记录。</p>
-                    <div class="merge-summary">
+                    <p class="duplicate-dialog-text">Importing <strong>${entries.length}</strong> bookmark(s).</p>
+                    <div class="merge-summary" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
                         <div class="merge-summary-item">
-                            <span class="merge-summary-label">正常导入</span>
+                            <span class="merge-summary-label">Normal</span>
                             <span class="merge-summary-value">${counts.normal}</span>
                         </div>
                         <div class="merge-summary-item">
-                            <span class="merge-summary-label">重命名合并</span>
+                            <span class="merge-summary-label">Renamed</span>
                             <span class="merge-summary-value">${counts.rename}</span>
                         </div>
                         <div class="merge-summary-item">
-                            <span class="merge-summary-label">合并到 import 文件夹</span>
+                            <span class="merge-summary-label">To Import</span>
                             <span class="merge-summary-value">${counts.import}</span>
                         </div>
+                        <div class="merge-summary-item">
+                            <span class="merge-summary-label">Skipped</span>
+                            <span class="merge-summary-value">${counts.duplicate}</span>
+                        </div>
                     </div>
-                    ${options.duplicateCount > 0 ? `
-                        <p class="duplicate-dialog-hint">检测到 ${options.duplicateCount} 个重复书签，将保留现有条目并跳过导入。</p>
-                    ` : ""}
                     <div class="merge-list-container">
                         ${entries.map((entry) => `
                             <div class="merge-list-item">
@@ -34067,7 +34371,19 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                                     ${this.escapeHtml(entry.bookmark.folderPath || "Import")}
                                 </div>
                                 ${entry.renameTo ? `
-                                    <div class="merge-item-rename">重命名为：${this.escapeHtml(entry.renameTo)}</div>
+                                    <div class="merge-item-rename">Renamed to: ${this.escapeHtml(entry.renameTo)}</div>
+                                ` : ""}
+                                ${entry.status === "duplicate" && entry.existingTitle ? `
+                                    <div class="merge-item-compare">
+                                        <div class="merge-item-compare-row">
+                                            <span class="merge-item-compare-label">Existing entry:</span>
+                                            <span class="merge-item-compare-value">${this.escapeHtml((entry.existingFolderPath || "Import") + "/" + entry.existingTitle)}</span>
+                                        </div>
+                                        <div class="merge-item-compare-row">
+                                            <span class="merge-item-compare-label">Pending import:</span>
+                                            <span class="merge-item-compare-value">${this.escapeHtml((entry.bookmark.folderPath || "Import") + "/" + entry.bookmark.title)}</span>
+                                        </div>
+                                    </div>
                                 ` : ""}
                             </div>
                         `).join("")}
@@ -34075,7 +34391,7 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
                 </div>
             </div>
             <div class="import-summary-footer">
-                <button class="cancel-btn">取消</button>
+                <button class="cancel-btn">Cancel</button>
                 <button class="merge-btn">${primaryLabel}</button>
             </div>
         `;
@@ -34117,37 +34433,26 @@ ${importCount} bookmark(s) without valid folder paths were placed in "Import" fo
   }
   /**
    * Import bookmarks (batch save)
+   * Uses bulkSave() for optimal performance - single atomic write
    */
-  async importBookmarks(bookmarks, skipDuplicates) {
-    const promises = [];
-    for (const bookmark of bookmarks) {
-      if (skipDuplicates) {
-        const exists = await SimpleBookmarkStorage.isBookmarked(
-          bookmark.url,
-          bookmark.position
-        );
-        if (exists) {
-          logger$1.debug(`[Import] Skipping duplicate: ${bookmark.url}:${bookmark.position}`);
-          continue;
-        }
-      }
-      promises.push(
-        SimpleBookmarkStorage.save(
-          bookmark.url,
-          bookmark.position,
-          bookmark.userMessage,
-          bookmark.aiResponse,
-          bookmark.title,
-          bookmark.platform,
-          bookmark.timestamp,
-          // Preserve original timestamp from JSON
-          bookmark.folderPath
-          // CRITICAL: Preserve folder structure from import
-        )
-      );
+  async importBookmarks(bookmarks) {
+    const perfStart = performance.now();
+    logger$1.info(`[Import][Perf] Starting bulk import of ${bookmarks.length} bookmarks`);
+    const quotaCheck = await SimpleBookmarkStorage.canSave();
+    if (!quotaCheck.canSave) {
+      throw new Error(quotaCheck.message || "Storage quota exceeded");
     }
-    await Promise.all(promises);
-    logger$1.info(`[Import] Imported ${promises.length} bookmarks`);
+    if (quotaCheck.warningLevel === "warning") {
+      this.showNotification({
+        type: "warning",
+        title: "Storage Warning",
+        message: quotaCheck.message || "Storage is getting full",
+        duration: 3e3
+      });
+    }
+    await SimpleBookmarkStorage.bulkSave(bookmarks);
+    const perfEnd = performance.now();
+    logger$1.info(`[Import][Perf] Bulk import complete: ${bookmarks.length} bookmarks in ${(perfEnd - perfStart).toFixed(0)}ms`);
   }
   /**
    * Setup storage change listener - AITimeline pattern
@@ -37016,6 +37321,11 @@ class GeminiPanelButton {
 }
 const geminiPanelButton = new GeminiPanelButton();
 
+chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
+  if (request.action === "openBookmarkPanel") {
+    simpleBookmarkPanel.toggle();
+  }
+});
 class ContentScript {
   observer = null;
   injector = null;
@@ -37150,8 +37460,8 @@ class ContentScript {
    * Check for cross-page bookmark navigation - AITimeline pattern
    */
   async checkBookmarkNavigation() {
-    const { simpleBookmarkPanel } = await __vitePreload(async () => { const { simpleBookmarkPanel } = await Promise.resolve().then(() => SimpleBookmarkPanel$1);return { simpleBookmarkPanel }},true?void 0:void 0);
-    await simpleBookmarkPanel.checkNavigationTarget();
+    const { simpleBookmarkPanel: simpleBookmarkPanel2 } = await __vitePreload(async () => { const { simpleBookmarkPanel: simpleBookmarkPanel2 } = await Promise.resolve().then(() => SimpleBookmarkPanel$1);return { simpleBookmarkPanel: simpleBookmarkPanel2 }},true?void 0:void 0);
+    await simpleBookmarkPanel2.checkNavigationTarget();
   }
   /**
    * Handle new message detected

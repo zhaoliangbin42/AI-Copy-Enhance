@@ -10,10 +10,20 @@ import { DeepResearchHandler } from './features/deep-research-handler';
 import { logger, LogLevel } from '../utils/logger';
 import { SimpleBookmarkStorage } from '../bookmarks/storage/SimpleBookmarkStorage';
 import { BookmarkSaveModal } from '../bookmarks/components/BookmarkSaveModal';
+import { simpleBookmarkPanel } from '../bookmarks/components/SimpleBookmarkPanel';
 import { pageHeaderIcon } from './components/PageHeaderIcon';
 import { geminiPanelButton } from './components/GeminiPanelButton';
 import { ThemeManager, Theme } from '../utils/ThemeManager';
 import { eventBus } from './utils/EventBus';
+
+/**
+ * Listen for messages from background script
+ */
+chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
+    if (request.action === 'openBookmarkPanel') {
+        simpleBookmarkPanel.toggle();
+    }
+});
 
 /**
  * Main content script controller

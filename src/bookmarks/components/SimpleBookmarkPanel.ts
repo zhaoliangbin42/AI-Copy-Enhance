@@ -615,11 +615,17 @@ export class SimpleBookmarkPanel {
      * Refresh panel content
      */
     async refresh(): Promise<void> {
+        const refreshStart = performance.now();
+
         // Reload both folders and bookmarks
         this.folders = await FolderStorage.getAll();
+        const foldersTime = performance.now();
+
         this.bookmarks = await SimpleBookmarkStorage.getAllBookmarks();
+        const bookmarksTime = performance.now();
+
         this.filterBookmarks();
-        logger.debug(`[SimpleBookmarkPanel] Refreshed: ${this.folders.length} folders, ${this.bookmarks.length} bookmarks`);
+        logger.info(`[SimpleBookmarkPanel][Perf] Refresh: ${this.folders.length} folders (${(foldersTime - refreshStart).toFixed(0)}ms), ${this.bookmarks.length} bookmarks (${(bookmarksTime - foldersTime).toFixed(0)}ms), total ${(bookmarksTime - refreshStart).toFixed(0)}ms`);
 
         this.refreshContent();
     }
@@ -2608,6 +2614,7 @@ export class SimpleBookmarkPanel {
         type: 'success' | 'error' | 'warning' | 'info';
         title?: string;
         message: string;
+        duration?: number;  // Auto-dismiss after ms (optional)
     }): Promise<void> {
         return new Promise((resolve) => {
             const configs = {
@@ -2729,6 +2736,14 @@ ${options.message}
                 }
             };
             document.addEventListener('keydown', handleEscape);
+
+            // Auto-dismiss if duration is set
+            if (options.duration && options.duration > 0) {
+                setTimeout(() => {
+                    document.removeEventListener('keydown', handleEscape);
+                    closeDialog();
+                }, options.duration);
+            }
         });
     }
 
@@ -2817,52 +2832,45 @@ ${options.message}
 
     /**
      * Execute batch delete with proper order and error handling
-     * Task 3.4.4
+     * Task 3.4.4 - Optimized with bulk operations
      */
     private async executeBatchDelete(analysis: {
         folders: Folder[];
         subfolders: Folder[];
         bookmarks: Bookmark[];
     }): Promise<void> {
-        const errors: string[] = [];
+        const perfStart = performance.now();
 
-        // Step 1: Delete all bookmarks first
-        logger.info(`[Batch Delete] Deleting ${analysis.bookmarks.length} bookmarks...`);
-        for (const bookmark of analysis.bookmarks) {
-            try {
-                await SimpleBookmarkStorage.remove(
-                    bookmark.urlWithoutProtocol,
-                    bookmark.position
+        try {
+            // Step 1: Bulk delete all bookmarks first
+            if (analysis.bookmarks.length > 0) {
+                logger.info(`[Batch Delete] Bulk removing ${analysis.bookmarks.length} bookmarks...`);
+                await SimpleBookmarkStorage.bulkRemove(
+                    analysis.bookmarks.map(b => ({ url: b.url, position: b.position }))
                 );
-            } catch (error) {
-                errors.push(`Failed to delete bookmark: ${bookmark.title}`);
-                logger.error('[Batch Delete] Bookmark error:', error);
             }
-        }
 
-        // Step 2: Delete folders (deepest first)
-        const allFolders = [...analysis.folders, ...analysis.subfolders];
-        const sortedFolders = allFolders.sort((a, b) => b.depth - a.depth);
+            // Step 2: Bulk delete folders (deepest first sorted, already filtered by caller)
+            const allFolders = [...analysis.folders, ...analysis.subfolders];
+            if (allFolders.length > 0) {
+                const sortedPaths = allFolders
+                    .sort((a, b) => b.depth - a.depth)
+                    .map(f => f.path);
 
-        logger.info(`[Batch Delete] Deleting ${sortedFolders.length} folders (deepest first)...`);
-        for (const folder of sortedFolders) {
-            try {
-                await FolderStorage.delete(folder.path);
-            } catch (error) {
-                errors.push(`Failed to delete folder: ${folder.name}`);
-                logger.error('[Batch Delete] Folder error:', error);
+                logger.info(`[Batch Delete] Bulk removing ${sortedPaths.length} folders...`);
+                await FolderStorage.bulkDelete(sortedPaths);
             }
+
+            const perfEnd = performance.now();
+            const totalDeleted = analysis.bookmarks.length + allFolders.length;
+            logger.info(`[Batch Delete] Successfully deleted ${totalDeleted} items in ${(perfEnd - perfStart).toFixed(0)}ms`);
+
+        } catch (error) {
+            logger.error('[Batch Delete] Error:', error);
+            this.showErrorSummary([`Batch delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`]);
         }
 
-        // Step 3: Show results
-        if (errors.length > 0) {
-            this.showErrorSummary(errors);
-        } else {
-            const totalDeleted = analysis.bookmarks.length + sortedFolders.length;
-            logger.info(`[Batch Delete] Successfully deleted ${totalDeleted} items`);
-        }
-
-        // Step 4: Cleanup
+        // Cleanup
         this.selectedItems.clear();
         await this.refresh();
     }
@@ -2975,6 +2983,27 @@ ${options.message}
      * Execute batch move operation
      */
     private async executeBatchMove(bookmarks: Bookmark[], targetPath: string | null): Promise<void> {
+        // Check storage quota before batch move
+        const quotaCheck = await SimpleBookmarkStorage.canSave();
+        if (!quotaCheck.canSave) {
+            await this.showNotification({
+                type: 'error',
+                title: 'Storage Full',
+                message: quotaCheck.message || 'Storage quota exceeded'
+            });
+            return;
+        }
+
+        // Show auto-dismiss warning if storage is getting full (95-98%)
+        if (quotaCheck.warningLevel === 'warning') {
+            this.showNotification({
+                type: 'warning',
+                title: 'Storage Warning',
+                message: quotaCheck.message || 'Storage is getting full',
+                duration: 3000
+            });
+        }
+
         const errors: string[] = [];
         let successCount = 0;
 
@@ -3213,13 +3242,15 @@ ${options.message}
             if (!file) return;
 
             try {
+                const handleImportStart = performance.now();
+
                 // Read file
                 const text = await file.text();
                 const data = JSON.parse(text);
 
                 // Validate data
                 const bookmarks = this.validateImportData(data);
-                logger.info(`[Import] Validated ${bookmarks.length} bookmarks`);
+                logger.info(`[Import][Perf] Validated ${bookmarks.length} bookmarks in ${(performance.now() - handleImportStart).toFixed(0)}ms`);
 
                 // Analyze import data for folder path issues (Issue 2)
                 const analysis = this.analyzeImportData(bookmarks);
@@ -3299,8 +3330,19 @@ ${options.message}
                     .filter(entry => entry.status !== 'duplicate')
                     .map(entry => entry.bookmark);
 
+                // Check if import would exceed storage quota
+                const importCheck = await SimpleBookmarkStorage.canImport(bookmarksToImport);
+                if (!importCheck.canImport) {
+                    await this.showNotification({
+                        type: 'error',
+                        title: 'Storage Full',
+                        message: importCheck.message || 'Not enough storage space for import'
+                    });
+                    return;
+                }
+
                 // Import filtered bookmarks (duplicates already excluded)
-                await this.importBookmarks(bookmarksToImport, false);
+                await this.importBookmarks(bookmarksToImport);
 
                 // Refresh panel
                 await this.refresh();
@@ -3754,43 +3796,33 @@ ${options.message}
 
     /**
      * Import bookmarks (batch save)
+     * Uses bulkSave() for optimal performance - single atomic write
      */
-    private async importBookmarks(
-        bookmarks: Bookmark[],
-        skipDuplicates: boolean
-    ): Promise<void> {
-        const promises: Promise<void>[] = [];
+    private async importBookmarks(bookmarks: Bookmark[]): Promise<void> {
+        const perfStart = performance.now();
+        logger.info(`[Import][Perf] Starting bulk import of ${bookmarks.length} bookmarks`);
 
-        for (const bookmark of bookmarks) {
-            // Skip if duplicate and skipDuplicates is true
-            if (skipDuplicates) {
-                const exists = await SimpleBookmarkStorage.isBookmarked(
-                    bookmark.url,
-                    bookmark.position
-                );
-                if (exists) {
-                    logger.debug(`[Import] Skipping duplicate: ${bookmark.url}:${bookmark.position}`);
-                    continue;
-                }
-            }
-
-            // Save bookmark with original timestamp and folder path
-            promises.push(
-                SimpleBookmarkStorage.save(
-                    bookmark.url,
-                    bookmark.position,
-                    bookmark.userMessage,
-                    bookmark.aiResponse,
-                    bookmark.title,
-                    bookmark.platform,
-                    bookmark.timestamp,  // Preserve original timestamp from JSON
-                    bookmark.folderPath  // CRITICAL: Preserve folder structure from import
-                )
-            );
+        // Check storage quota before import
+        const quotaCheck = await SimpleBookmarkStorage.canSave();
+        if (!quotaCheck.canSave) {
+            throw new Error(quotaCheck.message || 'Storage quota exceeded');
         }
 
-        await Promise.all(promises);
-        logger.info(`[Import] Imported ${promises.length} bookmarks`);
+        // Show auto-dismiss warning if storage is getting full (95-98%)
+        if (quotaCheck.warningLevel === 'warning') {
+            this.showNotification({
+                type: 'warning',
+                title: 'Storage Warning',
+                message: quotaCheck.message || 'Storage is getting full',
+                duration: 3000
+            });
+        }
+
+        // Single atomic bulk write
+        await SimpleBookmarkStorage.bulkSave(bookmarks);
+
+        const perfEnd = performance.now();
+        logger.info(`[Import][Perf] Bulk import complete: ${bookmarks.length} bookmarks in ${(perfEnd - perfStart).toFixed(0)}ms`);
     }
 
     /**
