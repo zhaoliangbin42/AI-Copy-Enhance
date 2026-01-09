@@ -5,6 +5,7 @@
 
 import { Bookmark } from './types';
 import { logger } from '../../utils/logger';
+import { StorageQueue } from './StorageQueue';
 
 /**
  * Simple bookmark storage using AITimeline's proven pattern
@@ -31,42 +32,47 @@ export class SimpleBookmarkStorage {
         timestamp?: number,
         folderPath?: string
     ): Promise<void> {
-        try {
-            const key = this.getKey(url, position);
-            const urlWithoutProtocol = url.replace(/^https?:\/\//, '');
+        const key = this.getKey(url, position);
+        const urlWithoutProtocol = url.replace(/^https?:\/\//, '');
 
-            const value: Bookmark = {
-                url,
-                urlWithoutProtocol,
-                position,
-                userMessage,
-                aiResponse,
-                timestamp: timestamp || Date.now(),
-                title: title || userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : ''),
-                platform: platform || 'ChatGPT',
-                folderPath: folderPath || 'Import'
-            };
+        const value: Bookmark = {
+            url,
+            urlWithoutProtocol,
+            position,
+            userMessage,
+            aiResponse,
+            timestamp: timestamp || Date.now(),
+            title: title || userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : ''),
+            platform: platform || 'ChatGPT',
+            folderPath: folderPath || 'Import'
+        };
 
-            await chrome.storage.local.set({ [key]: value });
-            logger.info(`[SimpleBookmarkStorage] Saved bookmark at position ${position}`);
-        } catch (error) {
-            logger.error('[SimpleBookmarkStorage] Failed to save bookmark:', error);
-            throw error;
-        }
+        await StorageQueue.getInstance().enqueue(async () => {
+            try {
+                await chrome.storage.local.set({ [key]: value });
+                logger.info(`[SimpleBookmarkStorage] Saved bookmark at position ${position}`);
+            } catch (error) {
+                logger.error('[SimpleBookmarkStorage] Failed to save bookmark:', error);
+                throw error;
+            }
+        });
     }
 
     /**
      * Remove a bookmark
      */
     static async remove(url: string, position: number): Promise<void> {
-        try {
-            const key = this.getKey(url, position);
-            await chrome.storage.local.remove(key);
-            logger.info(`[SimpleBookmarkStorage] Removed bookmark at position ${position}`);
-        } catch (error) {
-            logger.error('[SimpleBookmarkStorage] Failed to remove bookmark:', error);
-            throw error;
-        }
+        const key = this.getKey(url, position);
+
+        await StorageQueue.getInstance().enqueue(async () => {
+            try {
+                await chrome.storage.local.remove(key);
+                logger.info(`[SimpleBookmarkStorage] Removed bookmark at position ${position}`);
+            } catch (error) {
+                logger.error('[SimpleBookmarkStorage] Failed to remove bookmark:', error);
+                throw error;
+            }
+        });
     }
 
     /**
@@ -123,27 +129,30 @@ export class SimpleBookmarkStorage {
         position: number,
         updates: Partial<Omit<Bookmark, 'url' | 'urlWithoutProtocol' | 'position'>>
     ): Promise<void> {
-        try {
-            const key = this.getKey(url, position);
-            const result = await chrome.storage.local.get(key);
-            const existing = result[key] as Bookmark;
+        const key = this.getKey(url, position);
 
-            if (!existing) {
-                throw new Error(`Bookmark not found at position ${position}`);
+        await StorageQueue.getInstance().enqueue(async () => {
+            try {
+                const result = await chrome.storage.local.get(key);
+                const existing = result[key] as Bookmark;
+
+                if (!existing) {
+                    throw new Error(`Bookmark not found at position ${position}`);
+                }
+
+                // Merge updates with existing bookmark
+                const updated: Bookmark = {
+                    ...existing,
+                    ...updates
+                };
+
+                await chrome.storage.local.set({ [key]: updated });
+                logger.info(`[SimpleBookmarkStorage] Updated bookmark at position ${position}`);
+            } catch (error) {
+                logger.error('[SimpleBookmarkStorage] Failed to update bookmark:', error);
+                throw error;
             }
-
-            // Merge updates with existing bookmark
-            const updated: Bookmark = {
-                ...existing,
-                ...updates
-            };
-
-            await chrome.storage.local.set({ [key]: updated });
-            logger.info(`[SimpleBookmarkStorage] Updated bookmark at position ${position}`);
-        } catch (error) {
-            logger.error('[SimpleBookmarkStorage] Failed to update bookmark:', error);
-            throw error;
-        }
+        });
     }
 
     /**
@@ -310,22 +319,25 @@ export class SimpleBookmarkStorage {
      * @param newFolderPath New folder path
      */
     static async moveToFolder(url: string, position: number, newFolderPath: string): Promise<void> {
-        try {
-            const key = this.getKey(url, position);
-            const result = await chrome.storage.local.get(key);
-            const bookmark = result[key] as Bookmark;
+        const key = this.getKey(url, position);
 
-            if (!bookmark) {
-                throw new Error(`Bookmark not found: ${url}:${position}`);
+        await StorageQueue.getInstance().enqueue(async () => {
+            try {
+                const result = await chrome.storage.local.get(key);
+                const bookmark = result[key] as Bookmark;
+
+                if (!bookmark) {
+                    throw new Error(`Bookmark not found: ${url}:${position}`);
+                }
+
+                bookmark.folderPath = newFolderPath;
+                await chrome.storage.local.set({ [key]: bookmark });
+
+                logger.info(`[SimpleBookmarkStorage] Moved bookmark to folder: ${newFolderPath}`);
+            } catch (error) {
+                logger.error('[SimpleBookmarkStorage] Failed to move bookmark to folder:', error);
+                throw error;
             }
-
-            bookmark.folderPath = newFolderPath;
-            await chrome.storage.local.set({ [key]: bookmark });
-
-            logger.info(`[SimpleBookmarkStorage] Moved bookmark to folder: ${newFolderPath}`);
-        } catch (error) {
-            logger.error('[SimpleBookmarkStorage] Failed to move bookmark to folder:', error);
-            throw error;
-        }
+        });
     }
 }

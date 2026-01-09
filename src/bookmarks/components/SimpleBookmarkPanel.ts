@@ -15,12 +15,14 @@ import { DesignTokens } from '../../utils/design-tokens';  // T2.1.1: Import Des
 import { ReaderPanel } from '../../content/features/re-render';
 import { fromBookmarks, findBookmarkIndex } from '../datasource/BookmarkDataSource';
 
-type ImportMergeStatus = 'normal' | 'rename' | 'import';
+type ImportMergeStatus = 'normal' | 'rename' | 'import' | 'duplicate';
 
 type ImportMergeEntry = {
     bookmark: Bookmark;
     status: ImportMergeStatus;
     renameTo?: string;
+    existingTitle?: string;  // Used for duplicate status to show title comparison
+    existingFolderPath?: string;  // Used for duplicate status to show folder path
 };
 
 
@@ -3266,17 +3268,17 @@ ${options.message}
                 this.folders = await FolderStorage.getAll();
                 logger.info(`[Import] Loaded ${this.folders.length} folders after creation`);
 
-                // Detect conflicts (existing bookmarks with same url+position)
-                const conflicts = await this.detectConflicts(allBookmarks);
+                // Build merge entries (handles duplicate detection, title conflicts, and import folder redirects)
                 const mergeEntries = await this.buildImportMergeEntries(allBookmarks, importFolderSet);
                 const hasRenameConflicts = mergeEntries.some(entry => entry.status === 'rename');
                 const hasImportFolder = mergeEntries.some(entry => entry.status === 'import');
-                const shouldPrompt = conflicts.length > 0 || hasRenameConflicts || hasImportFolder;
+                const hasDuplicates = mergeEntries.some(entry => entry.status === 'duplicate');
+                const shouldPrompt = hasDuplicates || hasRenameConflicts || hasImportFolder;
 
                 if (shouldPrompt) {
                     const action = await this.showMergeDialog(mergeEntries, {
                         hasRenameConflicts,
-                        duplicateCount: conflicts.length
+                        duplicateCount: mergeEntries.filter(e => e.status === 'duplicate').length
                     });
                     if (action === 'cancel') {
                         logger.info('[Import] User cancelled import');
@@ -3292,25 +3294,34 @@ ${options.message}
                     }
                 }
 
-                // Import all bookmarks (skip duplicates)
-                await this.importBookmarks(allBookmarks, true);
+                // Filter out duplicates before import
+                const bookmarksToImport = mergeEntries
+                    .filter(entry => entry.status !== 'duplicate')
+                    .map(entry => entry.bookmark);
+
+                // Import filtered bookmarks (duplicates already excluded)
+                await this.importBookmarks(bookmarksToImport, false);
 
                 // Refresh panel
                 await this.refresh();
 
-                // Show success message with info about Import folder if used
-                let message = `Successfully imported ${bookmarks.length} bookmark(s)!`;
-                if (analysis.noFolder.length > 0 || analysis.tooDeep.length > 0) {
-                    const importCount = analysis.noFolder.length + analysis.tooDeep.length;
-                    message += `\n\n${importCount} bookmark(s) without valid folder paths were placed in "Import" folder.`;
+                // Calculate counts for success message
+                const importedCount = bookmarksToImport.length;
+                const skippedCount = mergeEntries.filter(e => e.status === 'duplicate').length;
+
+                // Show success message with detailed counts
+                let message = `Imported ${importedCount} bookmark(s)`;
+                if (skippedCount > 0) {
+                    message += `, skipped ${skippedCount} duplicate(s)`;
                 }
+                message += '.';
 
                 await this.showNotification({
                     type: 'success',
                     title: 'Import Successful',
                     message
                 });
-                logger.info(`[Import] Successfully imported ${bookmarks.length} bookmarks`);
+                logger.info(`[Import] Imported ${importedCount} bookmarks, skipped ${skippedCount} duplicates`);
             } catch (error) {
                 logger.error('[Import] Failed:', error);
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -3419,26 +3430,6 @@ ${options.message}
     }
 
     /**
-     * Detect conflicts (existing bookmarks with same url+position)
-     */
-    private async detectConflicts(bookmarks: Bookmark[]): Promise<Bookmark[]> {
-        const conflicts: Bookmark[] = [];
-
-        for (const bookmark of bookmarks) {
-            const exists = await SimpleBookmarkStorage.isBookmarked(
-                bookmark.url,
-                bookmark.position
-            );
-
-            if (exists) {
-                conflicts.push(bookmark);
-            }
-        }
-
-        return conflicts;
-    }
-
-    /**
      * Build merge entries with status + rename preview
      */
     private async buildImportMergeEntries(
@@ -3448,6 +3439,13 @@ ${options.message}
         const existingBookmarks = this.bookmarks.length > 0
             ? this.bookmarks
             : await SimpleBookmarkStorage.getAllBookmarks();
+
+        // Build a map for fast URL+position lookup (for duplicate detection)
+        const existingByKey = new Map<string, Bookmark>();
+        existingBookmarks.forEach((b) => {
+            const key = `${b.url}:${b.position}`;
+            existingByKey.set(key, b);
+        });
 
         const usedTitlesByFolder = new Map<string, Set<string>>();
         const entries: ImportMergeEntry[] = [];
@@ -3474,20 +3472,33 @@ ${options.message}
 
             let status: ImportMergeStatus = 'normal';
             let renameTo: string | undefined;
+            let existingTitle: string | undefined;
 
-            if (normalizedTitle && usedTitles.has(normalizedTitle)) {
-                status = 'rename';
-                renameTo = this.generateUniqueTitle(bookmark.title, usedTitles);
-                usedTitles.add(this.normalizeBookmarkTitle(renameTo));
-            } else if (normalizedTitle) {
-                usedTitles.add(normalizedTitle);
+            // Step 1: Check for URL+position duplicate (global, highest priority)
+            const duplicateKey = `${bookmark.url}:${bookmark.position}`;
+            const existingDuplicate = existingByKey.get(duplicateKey);
+            let existingFolderPath: string | undefined;
+            if (existingDuplicate) {
+                status = 'duplicate';
+                existingTitle = existingDuplicate.title;
+                existingFolderPath = existingDuplicate.folderPath;
+            } else {
+                // Step 2: Check for title conflict in same folder
+                if (normalizedTitle && usedTitles.has(normalizedTitle)) {
+                    status = 'rename';
+                    renameTo = this.generateUniqueTitle(bookmark.title, usedTitles);
+                    usedTitles.add(this.normalizeBookmarkTitle(renameTo));
+                } else if (normalizedTitle) {
+                    usedTitles.add(normalizedTitle);
+                }
+
+                // Step 3: Check for import folder redirect
+                if (status !== 'rename' && importFolderSet.has(bookmark)) {
+                    status = 'import';
+                }
             }
 
-            if (status !== 'rename' && importFolderSet.has(bookmark)) {
-                status = 'import';
-            }
-
-            entries.push({ bookmark, status, renameTo });
+            entries.push({ bookmark, status, renameTo, existingTitle, existingFolderPath });
         }
 
         return entries;
@@ -3587,6 +3598,13 @@ ${options.message}
                 .merge-badge-normal { background: var(--aimd-feedback-success-bg); color: var(--aimd-feedback-success-text); }
                 .merge-badge-rename { background: var(--aimd-feedback-warning-bg); color: var(--aimd-feedback-warning-text); }
                 .merge-badge-import { background: var(--aimd-feedback-info-bg); color: var(--aimd-interactive-primary-hover); }
+                .merge-badge-duplicate { background: var(--aimd-feedback-danger-bg); color: var(--aimd-feedback-danger-text); }
+                
+                .merge-item-compare { font-size: 12px; color: var(--aimd-text-secondary); margin-top: 4px; padding: 6px 8px; background: var(--aimd-bg-secondary); border-radius: var(--aimd-radius-sm); }
+                .merge-item-compare-row { display: flex; gap: 4px; margin-bottom: 2px; }
+                .merge-item-compare-row:last-child { margin-bottom: 0; }
+                .merge-item-compare-label { color: var(--aimd-text-secondary); min-width: 50px; }
+                .merge-item-compare-value { color: var(--aimd-text-primary); word-break: break-word; }
                 
                 .duplicate-dialog-hint { margin: 6px 0 0 0; color: var(--aimd-text-secondary); font-size: 13px; font-style: italic; opacity: 0.9; }
                 
@@ -3606,9 +3624,10 @@ ${options.message}
             modal.className = 'duplicate-dialog-modal';
 
             const statusLabels: Record<ImportMergeStatus, string> = {
-                normal: '正常导入',
-                rename: '重命名合并',
-                import: '合并到 import 文件夹'
+                normal: 'Normal Import',
+                rename: 'Rename & Merge',
+                import: 'Move to Import',
+                duplicate: 'Skip (Duplicate)'
             };
 
             const counts = entries.reduce(
@@ -3616,36 +3635,37 @@ ${options.message}
                     acc[entry.status] += 1;
                     return acc;
                 },
-                { normal: 0, rename: 0, import: 0 } as Record<ImportMergeStatus, number>
+                { normal: 0, rename: 0, import: 0, duplicate: 0 } as Record<ImportMergeStatus, number>
             );
 
-            const primaryLabel = options.hasRenameConflicts ? '重命名合并' : '合并';
+            const primaryLabel = options.hasRenameConflicts ? 'Rename & Merge' : 'Merge';
 
             modal.innerHTML = `
             <div class="duplicate-dialog-content">
                 <div class="duplicate-dialog-header">
                     <span class="duplicate-dialog-icon">${Icons.alertTriangle}</span>
-                    <h3 class="duplicate-dialog-title">导入确认</h3>
+                    <h3 class="duplicate-dialog-title">Import Confirmation</h3>
                 </div>
                 <div class="duplicate-dialog-body">
-                    <p class="duplicate-dialog-text">本次导入 <strong>${entries.length}</strong> 条记录。</p>
-                    <div class="merge-summary">
+                    <p class="duplicate-dialog-text">Importing <strong>${entries.length}</strong> bookmark(s).</p>
+                    <div class="merge-summary" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
                         <div class="merge-summary-item">
-                            <span class="merge-summary-label">正常导入</span>
+                            <span class="merge-summary-label">Normal</span>
                             <span class="merge-summary-value">${counts.normal}</span>
                         </div>
                         <div class="merge-summary-item">
-                            <span class="merge-summary-label">重命名合并</span>
+                            <span class="merge-summary-label">Renamed</span>
                             <span class="merge-summary-value">${counts.rename}</span>
                         </div>
                         <div class="merge-summary-item">
-                            <span class="merge-summary-label">合并到 import 文件夹</span>
+                            <span class="merge-summary-label">To Import</span>
                             <span class="merge-summary-value">${counts.import}</span>
                         </div>
+                        <div class="merge-summary-item">
+                            <span class="merge-summary-label">Skipped</span>
+                            <span class="merge-summary-value">${counts.duplicate}</span>
+                        </div>
                     </div>
-                    ${options.duplicateCount > 0 ? `
-                        <p class="duplicate-dialog-hint">检测到 ${options.duplicateCount} 个重复书签，将保留现有条目并跳过导入。</p>
-                    ` : ''}
                     <div class="merge-list-container">
                         ${entries.map((entry) => `
                             <div class="merge-list-item">
@@ -3660,7 +3680,19 @@ ${options.message}
                                     ${this.escapeHtml(entry.bookmark.folderPath || 'Import')}
                                 </div>
                                 ${entry.renameTo ? `
-                                    <div class="merge-item-rename">重命名为：${this.escapeHtml(entry.renameTo)}</div>
+                                    <div class="merge-item-rename">Renamed to: ${this.escapeHtml(entry.renameTo)}</div>
+                                ` : ''}
+                                ${entry.status === 'duplicate' && entry.existingTitle ? `
+                                    <div class="merge-item-compare">
+                                        <div class="merge-item-compare-row">
+                                            <span class="merge-item-compare-label">Existing entry:</span>
+                                            <span class="merge-item-compare-value">${this.escapeHtml((entry.existingFolderPath || 'Import') + '/' + entry.existingTitle)}</span>
+                                        </div>
+                                        <div class="merge-item-compare-row">
+                                            <span class="merge-item-compare-label">Pending import:</span>
+                                            <span class="merge-item-compare-value">${this.escapeHtml((entry.bookmark.folderPath || 'Import') + '/' + entry.bookmark.title)}</span>
+                                        </div>
+                                    </div>
                                 ` : ''}
                             </div>
                         `).join('')}
@@ -3668,7 +3700,7 @@ ${options.message}
                 </div>
             </div>
             <div class="import-summary-footer">
-                <button class="cancel-btn">取消</button>
+                <button class="cancel-btn">Cancel</button>
                 <button class="merge-btn">${primaryLabel}</button>
             </div>
         `;
