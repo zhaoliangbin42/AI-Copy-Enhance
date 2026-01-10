@@ -8,12 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Settings System**: Comprehensive settings panel with behavior and storage controls.
+  - **Behavior Settings**: Toggle code block rendering in Reader Mode and math formula click-to-copy.
+  - **Storage Settings**: Context-only save mode (500 chars: 250 front + 250 back) with confirmation dialog.
+  - **Data & Storage Management**: Visual storage usage progress bar with detailed stats and uninstallation data-loss warning.
+  - **One-Click Export**: Quick access button in settings to export all bookmarks as a backup.
+  - **Persistence**: Settings sync across devices via `chrome.storage.sync`.
+  - **UI**: Modern card-style interface with iOS-inspired toggle switches.
 - **Sponsor Section**: New donation options for "Buy Me a Coffee" and WeChat.
 - **Dialog System**: Unified `DialogManager` and `DialogHost` for accessible, Shadow DOM-based alerts, confirms, and prompts.
 - **Bookmark Import**: Duplicate detection and merge dialog for imports.
 - **Storage Warning**: Storage quota warning system (95%/98% threshold alerts).
 
 ### Changed
+- **UI**: Settings panel layout and style now strictly align with Sponsor page design language (shared spacing, tokens, behavior).
 - **UI**: Renamed bookmark panel header to "AI-MarkDone".
 - **Architecture**: Redesigned Z-Index architecture to use a rational hierarchy (1-10000) instead of `z-max`, fixing layering issues.
 - **Performance**: Significantly improved bookmark batch import speed (10-50x).
@@ -21,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **UI**: Changed import dialog interface to English.
 
 ### Fixed
+- **Scrollbar**: Fixed settings panel scrolling behavior to match Sponsor tab (scrollbar on container edge).
 - **Reader UI**: Hidden redundant bubble button within the Reader view.
 - **Bookmarks**: Fixed duplicate handling logic during bookmark import.
 - **Bookmarks**: Fixed detailed count display in import success message.

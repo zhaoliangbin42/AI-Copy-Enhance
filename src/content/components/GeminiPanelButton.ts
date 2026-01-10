@@ -50,8 +50,17 @@ export class GeminiPanelButton {
      * @returns true if injection succeeded, false otherwise
      */
     private injectButton(): boolean {
-        // Find the Gemini logo container - use more specific selector
-        const logoContainer = document.querySelector('span.bard-logo-container.logo-only');
+        // Plan A: Use robust data-test-id selector
+        // Look for the logo element using stable ID, then get its container (parent)
+        const logoElement = document.querySelector('[data-test-id="bard-logo-only"]');
+        let logoContainer = logoElement?.parentElement as HTMLElement | null | undefined;
+
+        // Fallback or direct container match if structure differs (support a/span/div)
+        if (!logoContainer) {
+            logoContainer = document.querySelector<HTMLElement>('.bard-logo-container.logo-only') ||
+                document.querySelector<HTMLElement>('.bard-logo-container');
+        }
+
         if (!logoContainer) {
             logger.debug('[GeminiPanelButton] Logo container not found');
             return false;

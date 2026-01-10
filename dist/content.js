@@ -200,6 +200,18 @@ const Icons = {
     <path d="m21 21-4.35-4.35"/>
   </svg>`,
   /**
+   * Locate icon
+   * Usage: Jump to current message
+   */
+  locate: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="2" x2="5" y1="12" y2="12"/>
+    <line x1="19" x2="22" y1="12" y2="12"/>
+    <line x1="12" x2="12" y1="2" y2="5"/>
+    <line x1="12" x2="12" y1="19" y2="22"/>
+    <circle cx="12" cy="12" r="7"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>`,
+  /**
    * Plus icon
    * Usage: Add/Create actions
    */
@@ -279,6 +291,15 @@ const Icons = {
     <line x1="12" y1="12" x2="12" y2="18"/>
     <line x1="9" y1="15" x2="12" y2="12"/>
     <line x1="15" y1="15" x2="12" y2="12"/>
+  </svg>`,
+  /**
+   * Database icon
+   * Usage: Storage, data management
+   */
+  database: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+    <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
   </svg>`,
   /**
    * Check icon
@@ -5178,6 +5199,190 @@ const extractLatexSource = (element) => {
   return getKatexErrorLatex(element);
 };
 
+const DEFAULT_SETTINGS = {
+  version: 1,
+  behavior: {
+    renderCodeInReader: true,
+    enableClickToCopy: true
+  },
+  storage: {
+    saveContextOnly: false,
+    _contextOnlyConfirmed: false
+  }
+};
+const STORAGE_KEY = "app_settings";
+class SettingsManager {
+  static instance;
+  cache = null;
+  listeners = /* @__PURE__ */ new Set();
+  initPromise = null;
+  /**
+   * Private constructor (Singleton pattern)
+   */
+  constructor() {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === "sync" && changes[STORAGE_KEY]) {
+        const newSettings = changes[STORAGE_KEY].newValue;
+        if (newSettings) {
+          this.cache = newSettings;
+          this.notifyListeners();
+          logger$1.info("[SettingsManager] Settings updated from external source");
+        }
+      }
+    });
+  }
+  /**
+   * Get singleton instance
+   */
+  static getInstance() {
+    if (!SettingsManager.instance) {
+      SettingsManager.instance = new SettingsManager();
+    }
+    return SettingsManager.instance;
+  }
+  /**
+   * Initialize settings (load from storage)
+   * This is called automatically on first access
+   */
+  async init() {
+    if (this.cache !== null) {
+      return;
+    }
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+    this.initPromise = (async () => {
+      try {
+        const result = await chrome.storage.sync.get(STORAGE_KEY);
+        const stored = result[STORAGE_KEY];
+        if (stored && stored.version === DEFAULT_SETTINGS.version) {
+          this.cache = this.mergeWithDefaults(stored);
+        } else {
+          this.cache = { ...DEFAULT_SETTINGS };
+          await this.persist();
+        }
+        logger$1.info("[SettingsManager] Initialized", this.cache);
+      } catch (error) {
+        logger$1.error("[SettingsManager] Failed to initialize", error);
+        this.cache = { ...DEFAULT_SETTINGS };
+      }
+    })();
+    await this.initPromise;
+    this.initPromise = null;
+  }
+  /**
+   * Merge stored settings with defaults (handles new settings)
+   */
+  mergeWithDefaults(stored) {
+    return {
+      version: DEFAULT_SETTINGS.version,
+      behavior: {
+        ...DEFAULT_SETTINGS.behavior,
+        ...stored.behavior
+      },
+      storage: {
+        ...DEFAULT_SETTINGS.storage,
+        ...stored.storage
+      }
+    };
+  }
+  /**
+   * Persist settings to chrome.storage.sync
+   */
+  async persist() {
+    if (!this.cache) return;
+    try {
+      await chrome.storage.sync.set({ [STORAGE_KEY]: this.cache });
+      logger$1.debug("[SettingsManager] Persisted to storage");
+    } catch (error) {
+      logger$1.error("[SettingsManager] Failed to persist", error);
+      throw error;
+    }
+  }
+  /**
+   * Notify all listeners of settings change
+   */
+  notifyListeners() {
+    if (!this.cache) return;
+    this.listeners.forEach((listener) => {
+      try {
+        listener(this.cache);
+      } catch (error) {
+        logger$1.error("[SettingsManager] Listener error", error);
+      }
+    });
+  }
+  /**
+   * Get a settings category
+   * 
+   * @param key - Settings category key
+   * @returns Settings category value
+   */
+  async get(key) {
+    await this.init();
+    return this.cache[key];
+  }
+  /**
+   * Get all settings
+   * 
+   * @returns Complete settings object
+   */
+  async getAll() {
+    await this.init();
+    return { ...this.cache };
+  }
+  /**
+   * Update a settings category
+   * 
+   * @param key - Settings category key
+   * @param value - New value for the category
+   */
+  async set(key, value) {
+    await this.init();
+    this.cache = {
+      ...this.cache,
+      [key]: value
+    };
+    await this.persist();
+    this.notifyListeners();
+    logger$1.info(`[SettingsManager] Updated ${key}`, value);
+  }
+  /**
+   * Reset all settings to defaults
+   */
+  async reset() {
+    this.cache = { ...DEFAULT_SETTINGS };
+    await this.persist();
+    this.notifyListeners();
+    logger$1.info("[SettingsManager] Reset to defaults");
+  }
+  /**
+   * Subscribe to settings changes
+   * 
+   * @param listener - Callback function to be called when settings change
+   * @returns Unsubscribe function
+   */
+  subscribe(listener) {
+    this.listeners.add(listener);
+    if (this.cache) {
+      try {
+        listener(this.cache);
+      } catch (error) {
+        logger$1.error("[SettingsManager] Initial listener call error", error);
+      }
+    }
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+  /**
+   * Get number of active listeners (for debugging)
+   */
+  getListenerCount() {
+    return this.listeners.size;
+  }
+}
+
 class MathClickHandler {
   activeElements = /* @__PURE__ */ new Set();
   // Changed from WeakSet to Set for cleanup
@@ -5190,7 +5395,12 @@ class MathClickHandler {
    * Enable click-to-copy for all math elements in a container
    * Uses MutationObserver to handle streaming updates
    */
-  enable(container) {
+  async enable(container) {
+    const settings = await SettingsManager.getInstance().get("behavior");
+    if (!settings.enableClickToCopy) {
+      logger$1.info("[MathClick] Click-to-copy disabled by settings");
+      return;
+    }
     this.processContainer(container);
     if (this.observers.has(container)) {
       return;
@@ -27266,6 +27476,9 @@ const floatingInputStyles = `
   top: 50%;
   transform: translateY(-50%);
   z-index: 5;
+  display: flex;
+  gap: var(--aimd-space-2);
+  align-items: center;
 }
 
 .aimd-trigger-btn {
@@ -28394,7 +28607,40 @@ class ReaderPanel {
       }
     });
     wrapper.appendChild(this.triggerBtn);
+    const jumpBtn = document.createElement("button");
+    jumpBtn.className = "aimd-trigger-btn";
+    jumpBtn.title = "Jump to current message";
+    jumpBtn.innerHTML = Icons.locate;
+    jumpBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.handleJumpToCurrent();
+    });
+    wrapper.appendChild(jumpBtn);
     return wrapper;
+  }
+  /**
+   * Jump to current message in the document
+   */
+  handleJumpToCurrent() {
+    const refs = getMessageRefs();
+    const element = refs[this.currentIndex]?.element;
+    if (element) {
+      logger$1.info(`[ReaderPanel] Jumping to message at index ${this.currentIndex}`);
+      this.hide();
+      element.scrollIntoView({ behavior: "auto", block: "start" });
+      const originalTransition = element.style.transition;
+      const originalBoxShadow = element.style.boxShadow;
+      element.style.transition = "box-shadow 0.5s ease";
+      element.style.boxShadow = "0 0 0 4px var(--aimd-interactive-primary, #3b82f6)";
+      setTimeout(() => {
+        element.style.boxShadow = originalBoxShadow;
+        setTimeout(() => {
+          element.style.transition = originalTransition;
+        }, 500);
+      }, 2e3);
+    } else {
+      logger$1.warn(`[ReaderPanel] Could not find element for index ${this.currentIndex}`);
+    }
   }
   /**
    * 设置触发按钮状态
@@ -28471,8 +28717,13 @@ class ReaderPanel {
     if (!html) {
       try {
         const t0 = performance.now();
-        const markdown = await resolveContent(item.content);
+        let markdown = await resolveContent(item.content);
         logger$1.debug(`[ReaderPanel] resolveContent: ${(performance.now() - t0).toFixed(2)}ms`);
+        const settings = await SettingsManager.getInstance().get("behavior");
+        if (!settings.renderCodeInReader) {
+          markdown = markdown.replace(/```[\s\S]*?```/g, "*[Code block hidden by settings]*");
+          logger$1.debug("[ReaderPanel] Code blocks filtered out");
+        }
         const t1 = performance.now();
         const result = await MarkdownRenderer.render(markdown);
         logger$1.debug(`[ReaderPanel] MarkdownRenderer.render: ${(performance.now() - t1).toFixed(2)}ms`);
@@ -28928,17 +29179,60 @@ class SimpleBookmarkStorage {
     return `bookmark:${urlWithoutProtocol}:${position}`;
   }
   /**
+   * Truncate text to context-only format (250 front + 250 back)
+   * Used when saveContextOnly setting is enabled
+   */
+  static truncateContext(text) {
+    if (text.length <= 500) {
+      return text;
+    }
+    const front = text.slice(0, 250);
+    const back = text.slice(-250);
+    return `${front} ... ${back}`;
+  }
+  /**
+   * Get current storage usage in bytes
+   * Uses chrome.storage.local.getBytesInUse API
+   */
+  static async getBytesInUse() {
+    return new Promise((resolve) => {
+      chrome.storage.local.getBytesInUse(null, (bytes) => {
+        resolve(bytes);
+      });
+    });
+  }
+  /**
+   * Format bytes to human-readable string (KB/MB)
+   * @param bytes - Number of bytes
+   * @param decimals - Number of decimal places (default: 1)
+   */
+  static formatBytes(bytes, decimals = 1) {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + " " + sizes[i];
+  }
+  /**
    * Save a bookmark
    */
   static async save(url, position, userMessage, aiResponse, title, platform, timestamp, folderPath) {
     const key = this.getKey(url, position);
     const urlWithoutProtocol = url.replace(/^https?:\/\//, "");
+    const settings = await SettingsManager.getInstance().get("storage");
+    let finalUserMessage = userMessage;
+    let finalAiResponse = aiResponse;
+    if (settings.saveContextOnly) {
+      finalUserMessage = this.truncateContext(userMessage);
+      finalAiResponse = aiResponse ? this.truncateContext(aiResponse) : void 0;
+      logger$1.debug("[SimpleBookmarkStorage] Context-only mode: truncated content");
+    }
     const value = {
       url,
       urlWithoutProtocol,
       position,
-      userMessage,
-      aiResponse,
+      userMessage: finalUserMessage,
+      aiResponse: finalAiResponse,
       timestamp: timestamp || Date.now(),
       title: title || userMessage.substring(0, 50) + (userMessage.length > 50 ? "..." : ""),
       platform: platform || "ChatGPT",
@@ -32233,6 +32527,7 @@ class SimpleBookmarkPanel {
       }, 100);
     }
     this.restoreState();
+    await this.initializeSettings();
     this.setupThemeObserver();
   }
   /**
@@ -32420,8 +32715,87 @@ class SimpleBookmarkPanel {
 
                 <div class="tab-content settings-tab">
                     <div class="settings-content">
-                        <h3>Settings</h3>
-                        <p>Settings panel coming soon...</p>
+                        <!-- Behavior Group -->
+                        <div class="settings-group">
+                            <h3 class="settings-group-title">
+                                ${Icons.settings}
+                                <span>Behavior</span>
+                            </h3>
+                            
+                            <!-- Render Code Toggle -->
+                            <div class="settings-item">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Render Code Blocks</span>
+                                    <span class="settings-item-desc">Display syntax-highlighted code in Reader Mode</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" data-setting="behavior.renderCodeInReader" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <!-- Click to Copy Toggle -->
+                            <div class="settings-item">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Click to Copy</span>
+                                    <span class="settings-item-desc">Enable click-to-copy for math formulas</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" data-setting="behavior.enableClickToCopy" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Storage Group -->
+                        <div class="settings-group">
+                            <h3 class="settings-group-title">
+                                ${Icons.folder}
+                                <span>Storage</span>
+                            </h3>
+                            
+                            <!-- Context Only Save -->
+                            <div class="settings-item">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Context-Only Save</span>
+                                    <span class="settings-item-desc">Save space by keeping only 500 chars. Full preview will be specific to the context.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" data-setting="storage.saveContextOnly">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Data & Storage Group -->
+                        <div class="settings-group">
+                            <h3 class="settings-group-title">
+                                ${Icons.database}
+                                <span>Data & Storage</span>
+                            </h3>
+                            
+                            <!-- Storage Usage Display -->
+                            <div class="settings-storage-info">
+                                <div class="storage-header">
+                                    <span class="storage-label">Storage Used</span>
+                                    <span class="storage-value" id="storage-usage-text">Calculating...</span>
+                                </div>
+                                <div class="storage-progress-track">
+                                    <div class="storage-progress-bar" id="storage-usage-bar" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Backup Warning & Export Button -->
+                            <div class="settings-backup-warning">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Back up your data</span>
+                                    <span class="settings-item-warning-text">⚠️ Uninstalling the extension will delete all bookmarks.</span>
+                                </div>
+                                <button class="secondary-btn export-backup-btn">
+                                    ${Icons.download} Export All
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -32801,7 +33175,219 @@ class SimpleBookmarkPanel {
     });
     this.bindBookmarkListeners();
     this.bindTreeEventListeners();
+    this.shadowRoot?.querySelectorAll('.settings-tab input[type="checkbox"]').forEach((toggle) => {
+      toggle.addEventListener("change", (e) => this.handleSettingChange(e), { signal });
+    });
     this.setupTreeKeyboardNavigation();
+  }
+  /**
+   * Handle setting change
+   * Integrates with SettingsManager and provides confirmation for destructive actions
+   */
+  async handleSettingChange(e) {
+    const input = e.target;
+    const setting = input.dataset.setting;
+    const value = input.checked;
+    if (!setting) return;
+    logger$1.info(`[Settings] ${setting} changed to: ${value}`);
+    if (setting === "storage.saveContextOnly" && value) {
+      const confirmed = await this.confirmContextOnlySave();
+      if (!confirmed) {
+        input.checked = false;
+        return;
+      }
+    }
+    const [category, key] = setting.split(".");
+    try {
+      const manager = SettingsManager.getInstance();
+      const currentCategory = await manager.get(category);
+      await manager.set(category, {
+        ...currentCategory,
+        [key]: value
+      });
+      logger$1.info(`[Settings] Successfully updated ${setting}`);
+    } catch (error) {
+      logger$1.error(`[Settings] Failed to update ${setting}`, error);
+      input.checked = !value;
+    }
+  }
+  /**
+   * Show confirmation dialog for Context-Only Save
+   * Returns true if user confirms
+   */
+  async confirmContextOnlySave() {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.className = "settings-confirm-overlay";
+      overlay.innerHTML = `
+                <div class="settings-confirm-dialog">
+                    <h3>Enable Context-Only Save?</h3>
+                    <p>This will save only 500 characters (250 from start + 250 from end) for <strong>new bookmarks</strong>.</p>
+                    <p><strong>Benefits:</strong> Significantly reduces storage usage</p>
+                    <p><strong>Trade-off:</strong> Full text preview will not be available in the bookmark panel</p>
+                    <div class="settings-confirm-actions">
+                        <button class="settings-confirm-cancel">Cancel</button>
+                        <button class="settings-confirm-ok">Enable</button>
+                    </div>
+                </div>
+            `;
+      const style = document.createElement("style");
+      style.textContent = `
+                .settings-confirm-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                }
+                .settings-confirm-dialog {
+                    background: white;
+                    padding: 24px;
+                    border-radius: 12px;
+                    max-width: 400px;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                }
+                .settings-confirm-dialog h3 {
+                    margin: 0 0 16px 0;
+                    font-size: 18px;
+                    color: #111827;
+                }
+                .settings-confirm-dialog p {
+                    margin: 0 0 12px 0;
+                    font-size: 14px;
+                    color: #6B7280;
+                    line-height: 1.5;
+                }
+                .settings-confirm-actions {
+                    display: flex;
+                    gap: 12px;
+                    margin-top: 20px;
+                }
+                .settings-confirm-actions button {
+                    flex: 1;
+                    padding: 10px 16px;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .settings-confirm-cancel {
+                    background: #F3F4F6;
+                    color: #374151;
+                }
+                .settings-confirm-cancel:hover {
+                    background: #E5E7EB;
+                }
+                .settings-confirm-ok {
+                    background: #2563EB;
+                    color: white;
+                }
+                .settings-confirm-ok:hover {
+                    background: #1D4ED8;
+                }
+            `;
+      overlay.appendChild(style);
+      document.body.appendChild(overlay);
+      const cleanup = () => {
+        document.body.removeChild(overlay);
+      };
+      overlay.querySelector(".settings-confirm-cancel")?.addEventListener("click", () => {
+        cleanup();
+        resolve(false);
+      });
+      overlay.querySelector(".settings-confirm-ok")?.addEventListener("click", async () => {
+        cleanup();
+        const manager = SettingsManager.getInstance();
+        const storage = await manager.get("storage");
+        await manager.set("storage", {
+          ...storage,
+          _contextOnlyConfirmed: true
+        });
+        resolve(true);
+      });
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) {
+          cleanup();
+          resolve(false);
+        }
+      });
+    });
+  }
+  /**
+   * Initialize settings UI from SettingsManager
+   * Restores toggle states from storage
+   */
+  async initializeSettings() {
+    try {
+      const manager = SettingsManager.getInstance();
+      const settings = await manager.getAll();
+      const renderCodeToggle = this.shadowRoot?.querySelector(
+        'input[data-setting="behavior.renderCodeInReader"]'
+      );
+      if (renderCodeToggle) {
+        renderCodeToggle.checked = settings.behavior.renderCodeInReader;
+      }
+      const clickToCopyToggle = this.shadowRoot?.querySelector(
+        'input[data-setting="behavior.enableClickToCopy"]'
+      );
+      if (clickToCopyToggle) {
+        clickToCopyToggle.checked = settings.behavior.enableClickToCopy;
+      }
+      const contextOnlyToggle = this.shadowRoot?.querySelector(
+        'input[data-setting="storage.saveContextOnly"]'
+      );
+      if (contextOnlyToggle) {
+        contextOnlyToggle.checked = settings.storage.saveContextOnly;
+      }
+      await this.updateStorageUsage();
+      const exportBtn = this.shadowRoot?.querySelector(".export-backup-btn");
+      if (exportBtn) {
+        exportBtn.addEventListener("click", () => this.handleExport());
+      }
+      logger$1.info("[Settings] UI initialized from storage", settings);
+    } catch (error) {
+      logger$1.error("[Settings] Failed to initialize UI", error);
+    }
+  }
+  /**
+   * Update storage usage display
+   */
+  async updateStorageUsage() {
+    try {
+      const bytes = await SimpleBookmarkStorage.getBytesInUse();
+      const formatted = SimpleBookmarkStorage.formatBytes(bytes);
+      const limitBytes = SimpleBookmarkStorage.STORAGE_LIMIT;
+      const limitFormatted = SimpleBookmarkStorage.formatBytes(limitBytes);
+      const percentage = Math.min(bytes / limitBytes * 100, 100);
+      const textEl = this.shadowRoot?.querySelector("#storage-usage-text");
+      if (textEl) {
+        textEl.textContent = `${formatted} / ${limitFormatted}`;
+      }
+      const barEl = this.shadowRoot?.querySelector("#storage-usage-bar");
+      if (barEl) {
+        barEl.style.width = `${percentage}%`;
+        barEl.classList.remove("warning", "critical");
+        if (percentage >= 98) {
+          barEl.classList.add("critical");
+        } else if (percentage >= 90) {
+          barEl.classList.add("warning");
+        }
+      }
+      logger$1.info(`[Storage] Usage: ${formatted} / ${limitFormatted} (${percentage.toFixed(1)}%)`);
+    } catch (error) {
+      logger$1.error("[Storage] Failed to calculate usage", error);
+      const textEl = this.shadowRoot?.querySelector("#storage-usage-text");
+      if (textEl) {
+        textEl.textContent = "Error calculating";
+      }
+    }
   }
   /**
    * Bind listeners for bookmark list items
@@ -35699,7 +36285,8 @@ ${options.message}
             }
 
             /* Support tab needs scroll */
-            .support-tab.active {
+            .support-tab.active,
+            .settings-tab.active {
                 overflow-y: auto;
             }
 
@@ -36140,20 +36727,202 @@ ${options.message}
 
             /* Settings content */
             .settings-content {
-                padding: var(--aimd-space-10);  /* 40px */
-                text-align: center;
+                padding: var(--aimd-space-6);
+                max-width: 600px;
+                margin: 0 auto;
             }
 
-            .settings-content h3 {
-                margin: 0 0 16px 0;
-                font-size: 18px;
+            /* Settings Groups */
+            .settings-group {
+                background: var(--aimd-bg-tertiary);
+                border: 1px solid var(--aimd-border-default);
+                border-radius: var(--aimd-radius-xl);
+                padding: var(--aimd-space-5);
+                margin-bottom: var(--aimd-space-4);
+            }
+
+            .settings-group-title {
+                display: flex;
+                align-items: center;
+                gap: var(--aimd-space-2);
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--aimd-text-primary);
+                margin: 0 0 var(--aimd-space-2) 0;
+            }
+
+            .settings-group-title svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* Settings Items */
+            .settings-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: var(--aimd-space-3) 0;
+                border-bottom: 1px solid var(--aimd-border-subtle);
+            }
+
+            .settings-item:last-child {
+                border-bottom: none;
+            }
+
+            .settings-item-info {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                flex: 1;
+                padding-right: var(--aimd-space-4);
+            }
+
+            .settings-item-label {
+                font-size: 14px;
+                font-weight: 500;
                 color: var(--aimd-text-primary);
             }
 
-            .settings-content p {
-                color: var(--aimd-text-tertiary);
-                margin: 0 0 24px 0;
+            .settings-item-desc {
+                font-size: 13px;
+                color: var(--aimd-text-secondary);
+                line-height: 1.4;
             }
+
+            /* Improved Toggle Switch (Linear/iOS Hybrid) */
+            .toggle-switch {
+                position: relative;
+                display: inline-block;
+                width: 40px; /* Slightly smaller */
+                height: 22px;
+                flex-shrink: 0;
+            }
+
+            .toggle-switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            .toggle-slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: var(--aimd-border-strong); /* Darker grey unchecked */
+                transition: .3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                border-radius: 99px;
+            }
+
+            .toggle-slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 2px;
+                bottom: 2px;
+                background-color: white;
+                transition: .3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                border-radius: 50%;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            }
+
+            .toggle-switch input:checked + .toggle-slider {
+                background-color: var(--aimd-interactive-primary);
+            }
+
+            .toggle-switch input:checked + .toggle-slider:before {
+                transform: translateX(18px);
+            }
+
+            .toggle-switch input:focus + .toggle-slider {
+                box-shadow: 0 0 0 2px var(--aimd-bg-primary), 0 0 0 4px var(--aimd-interactive-primary);
+            }
+
+            /* Storage Info Styles */
+            .settings-storage-info {
+                padding: var(--aimd-space-2) 0;
+            }
+
+            .storage-header {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: var(--aimd-space-2);
+                font-size: 13px;
+                color: var(--aimd-text-secondary);
+            }
+
+            .storage-progress-track {
+                height: 6px;
+                background: var(--aimd-border-default);
+                border-radius: var(--aimd-radius-full);
+                overflow: hidden;
+            }
+
+            .storage-progress-bar {
+                height: 100%;
+                background: var(--aimd-interactive-primary);
+                border-radius: var(--aimd-radius-full);
+                transition: width 0.5s ease;
+            }
+
+            /* Progress bar states */
+            .storage-progress-bar.warning { 
+                background: var(--aimd-color-warning); 
+            }
+            
+            .storage-progress-bar.critical { 
+                background: var(--aimd-color-danger); 
+            }
+
+            /* Backup Warning Section */
+            .settings-backup-warning {
+                margin-top: var(--aimd-space-4);
+                padding-top: var(--aimd-space-4);
+                border-top: 1px solid var(--aimd-border-subtle);
+            }
+
+            .settings-backup-warning .settings-item-info {
+                margin-bottom: var(--aimd-space-3);
+            }
+
+            .settings-backup-warning .settings-item-warning-text {
+                display: block;
+                font-size: 13px;
+                color: var(--aimd-text-warning);
+                margin-top: var(--aimd-space-1);
+            }
+
+            .export-backup-btn {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: var(--aimd-space-2);
+                padding: var(--aimd-space-3) var(--aimd-space-4);
+                background: var(--aimd-button-secondary-bg);
+                color: var(--aimd-button-secondary-text);
+                border: 1px solid var(--aimd-border-default);
+                border-radius: var(--aimd-radius-lg);
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background 0.2s, border-color 0.2s;
+            }
+
+            .export-backup-btn:hover {
+                background: var(--aimd-button-secondary-hover);
+                border-color: var(--aimd-border-strong);
+            }
+
+            .export-backup-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+            
+            /* Remove old warning styles */
 
             /* Support Content - Redesigned */
             .support-content {
@@ -38084,7 +38853,11 @@ class GeminiPanelButton {
    * @returns true if injection succeeded, false otherwise
    */
   injectButton() {
-    const logoContainer = document.querySelector("span.bard-logo-container.logo-only");
+    const logoElement = document.querySelector('[data-test-id="bard-logo-only"]');
+    let logoContainer = logoElement?.parentElement;
+    if (!logoContainer) {
+      logoContainer = document.querySelector(".bard-logo-container.logo-only") || document.querySelector(".bard-logo-container");
+    }
     if (!logoContainer) {
       logger$1.debug("[GeminiPanelButton] Logo container not found");
       return false;

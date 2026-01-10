@@ -213,6 +213,9 @@ export const floatingInputStyles = `
   top: 50%;
   transform: translateY(-50%);
   z-index: 5;
+  display: flex;
+  gap: var(--aimd-space-2);
+  align-items: center;
 }
 
 .aimd-trigger-btn {

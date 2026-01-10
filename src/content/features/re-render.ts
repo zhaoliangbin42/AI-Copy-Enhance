@@ -18,6 +18,7 @@ import { collectFromLivePage, getMessageRefs } from '../datasource/LivePageDataS
 import { eventBus } from '../utils/EventBus';
 import { MarkdownParser } from '../parsers/markdown-parser';
 import { StreamingDetector } from '../adapters/streaming-detector';
+import { SettingsManager } from '../../settings/SettingsManager';
 
 type GetMarkdownFn = (element: HTMLElement) => string;
 
@@ -573,7 +574,54 @@ export class ReaderPanel {
         });
 
         wrapper.appendChild(this.triggerBtn);
+
+        // Jump Button
+        const jumpBtn = document.createElement('button');
+        jumpBtn.className = 'aimd-trigger-btn';
+        jumpBtn.title = 'Jump to current message';
+        jumpBtn.innerHTML = Icons.locate;
+        jumpBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleJumpToCurrent();
+        });
+        wrapper.appendChild(jumpBtn);
+
         return wrapper;
+    }
+
+    /**
+     * Jump to current message in the document
+     */
+    private handleJumpToCurrent(): void {
+        const refs = getMessageRefs();
+        // Since this.items is 0-indexed and maps 1:1 to refs
+        const element = refs[this.currentIndex]?.element;
+
+        if (element) {
+            logger.info(`[ReaderPanel] Jumping to message at index ${this.currentIndex}`);
+            this.hide();
+
+            // Scroll to element
+            element.scrollIntoView({ behavior: 'auto', block: 'start' });
+
+            // Visual highlight
+            const originalTransition = element.style.transition;
+            const originalBoxShadow = element.style.boxShadow;
+
+            element.style.transition = 'box-shadow 0.5s ease';
+            // Use interactive primary token or fallback
+            element.style.boxShadow = '0 0 0 4px var(--aimd-interactive-primary, #3b82f6)';
+
+            // Remove highlight after 2 seconds
+            setTimeout(() => {
+                element.style.boxShadow = originalBoxShadow;
+                setTimeout(() => {
+                    element.style.transition = originalTransition;
+                }, 500);
+            }, 2000);
+        } else {
+            logger.warn(`[ReaderPanel] Could not find element for index ${this.currentIndex}`);
+        }
     }
 
     /**
@@ -671,8 +719,16 @@ export class ReaderPanel {
             try {
                 // 解析内容（支持懒加载）
                 const t0 = performance.now();
-                const markdown = await resolveContent(item.content);
+                let markdown = await resolveContent(item.content);
                 logger.debug(`[ReaderPanel] resolveContent: ${(performance.now() - t0).toFixed(2)}ms`);
+
+                // 检查设置：是否渲染代码块
+                const settings = await SettingsManager.getInstance().get('behavior');
+                if (!settings.renderCodeInReader) {
+                    // 过滤代码块：移除 ```...``` 块
+                    markdown = markdown.replace(/```[\s\S]*?```/g, '*[Code block hidden by settings]*');
+                    logger.debug('[ReaderPanel] Code blocks filtered out');
+                }
 
                 // 渲染 Markdown
                 const t1 = performance.now();

@@ -14,6 +14,7 @@ import { DesignTokens } from '../../utils/design-tokens';  // T2.1.1: Import Des
 import { ReaderPanel } from '../../content/features/re-render';
 import { fromBookmarks, findBookmarkIndex } from '../datasource/BookmarkDataSource';
 import { DialogManager } from '../../components/DialogManager';
+import { SettingsManager } from '../../settings/SettingsManager';
 
 type ImportMergeStatus = 'normal' | 'rename' | 'import' | 'duplicate';
 
@@ -158,6 +159,9 @@ export class SimpleBookmarkPanel {
 
         // Restore saved state (industry standard pattern)
         this.restoreState();
+
+        // Initialize settings UI from storage
+        await this.initializeSettings();
 
         // Setup theme observer for dynamic theme switching
         this.setupThemeObserver();
@@ -387,8 +391,87 @@ export class SimpleBookmarkPanel {
 
                 <div class="tab-content settings-tab">
                     <div class="settings-content">
-                        <h3>Settings</h3>
-                        <p>Settings panel coming soon...</p>
+                        <!-- Behavior Group -->
+                        <div class="settings-group">
+                            <h3 class="settings-group-title">
+                                ${Icons.settings}
+                                <span>Behavior</span>
+                            </h3>
+                            
+                            <!-- Render Code Toggle -->
+                            <div class="settings-item">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Render Code Blocks</span>
+                                    <span class="settings-item-desc">Display syntax-highlighted code in Reader Mode</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" data-setting="behavior.renderCodeInReader" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <!-- Click to Copy Toggle -->
+                            <div class="settings-item">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Click to Copy</span>
+                                    <span class="settings-item-desc">Enable click-to-copy for math formulas</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" data-setting="behavior.enableClickToCopy" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Storage Group -->
+                        <div class="settings-group">
+                            <h3 class="settings-group-title">
+                                ${Icons.folder}
+                                <span>Storage</span>
+                            </h3>
+                            
+                            <!-- Context Only Save -->
+                            <div class="settings-item">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Context-Only Save</span>
+                                    <span class="settings-item-desc">Save space by keeping only 500 chars. Full preview will be specific to the context.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" data-setting="storage.saveContextOnly">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Data & Storage Group -->
+                        <div class="settings-group">
+                            <h3 class="settings-group-title">
+                                ${Icons.database}
+                                <span>Data & Storage</span>
+                            </h3>
+                            
+                            <!-- Storage Usage Display -->
+                            <div class="settings-storage-info">
+                                <div class="storage-header">
+                                    <span class="storage-label">Storage Used</span>
+                                    <span class="storage-value" id="storage-usage-text">Calculating...</span>
+                                </div>
+                                <div class="storage-progress-track">
+                                    <div class="storage-progress-bar" id="storage-usage-bar" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Backup Warning & Export Button -->
+                            <div class="settings-backup-warning">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Back up your data</span>
+                                    <span class="settings-item-warning-text">⚠️ Uninstalling the extension will delete all bookmarks.</span>
+                                </div>
+                                <button class="secondary-btn export-backup-btn">
+                                    ${Icons.download} Export All
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -877,8 +960,262 @@ export class SimpleBookmarkPanel {
         // Bind tree view listeners
         this.bindTreeEventListeners();
 
+        // Settings toggles
+        this.shadowRoot?.querySelectorAll('.settings-tab input[type="checkbox"]').forEach(toggle => {
+            toggle.addEventListener('change', (e) => this.handleSettingChange(e), { signal });
+        });
+
         // Setup keyboard navigation for tree
         this.setupTreeKeyboardNavigation();
+    }
+
+    /**
+     * Handle setting change
+     * Integrates with SettingsManager and provides confirmation for destructive actions
+     */
+    private async handleSettingChange(e: Event): Promise<void> {
+        const input = e.target as HTMLInputElement;
+        const setting = input.dataset.setting;
+        const value = input.checked;
+
+        if (!setting) return;
+
+        logger.info(`[Settings] ${setting} changed to: ${value}`);
+
+        // Special handling for destructive action
+        if (setting === 'storage.saveContextOnly' && value) {
+            const confirmed = await this.confirmContextOnlySave();
+            if (!confirmed) {
+                input.checked = false;
+                return;
+            }
+        }
+
+        // Parse setting path (e.g., "behavior.renderCodeInReader")
+        const [category, key] = setting.split('.') as [import('../../settings/SettingsManager').SettingsCategory, string];
+
+        try {
+            const manager = SettingsManager.getInstance();
+            const currentCategory = await manager.get(category);
+
+            await manager.set(category, {
+                ...currentCategory,
+                [key]: value,
+            } as any);
+
+            logger.info(`[Settings] Successfully updated ${setting}`);
+        } catch (error) {
+            logger.error(`[Settings] Failed to update ${setting}`, error);
+            // Revert UI on error
+            input.checked = !value;
+        }
+    }
+
+    /**
+     * Show confirmation dialog for Context-Only Save
+     * Returns true if user confirms
+     */
+    private async confirmContextOnlySave(): Promise<boolean> {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'settings-confirm-overlay';
+            overlay.innerHTML = `
+                <div class="settings-confirm-dialog">
+                    <h3>Enable Context-Only Save?</h3>
+                    <p>This will save only 500 characters (250 from start + 250 from end) for <strong>new bookmarks</strong>.</p>
+                    <p><strong>Benefits:</strong> Significantly reduces storage usage</p>
+                    <p><strong>Trade-off:</strong> Full text preview will not be available in the bookmark panel</p>
+                    <div class="settings-confirm-actions">
+                        <button class="settings-confirm-cancel">Cancel</button>
+                        <button class="settings-confirm-ok">Enable</button>
+                    </div>
+                </div>
+            `;
+
+            // Add styles
+            const style = document.createElement('style');
+            style.textContent = `
+                .settings-confirm-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                }
+                .settings-confirm-dialog {
+                    background: white;
+                    padding: 24px;
+                    border-radius: 12px;
+                    max-width: 400px;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                }
+                .settings-confirm-dialog h3 {
+                    margin: 0 0 16px 0;
+                    font-size: 18px;
+                    color: #111827;
+                }
+                .settings-confirm-dialog p {
+                    margin: 0 0 12px 0;
+                    font-size: 14px;
+                    color: #6B7280;
+                    line-height: 1.5;
+                }
+                .settings-confirm-actions {
+                    display: flex;
+                    gap: 12px;
+                    margin-top: 20px;
+                }
+                .settings-confirm-actions button {
+                    flex: 1;
+                    padding: 10px 16px;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .settings-confirm-cancel {
+                    background: #F3F4F6;
+                    color: #374151;
+                }
+                .settings-confirm-cancel:hover {
+                    background: #E5E7EB;
+                }
+                .settings-confirm-ok {
+                    background: #2563EB;
+                    color: white;
+                }
+                .settings-confirm-ok:hover {
+                    background: #1D4ED8;
+                }
+            `;
+
+            overlay.appendChild(style);
+            document.body.appendChild(overlay);
+
+            const cleanup = () => {
+                document.body.removeChild(overlay);
+            };
+
+            overlay.querySelector('.settings-confirm-cancel')?.addEventListener('click', () => {
+                cleanup();
+                resolve(false);
+            });
+
+            overlay.querySelector('.settings-confirm-ok')?.addEventListener('click', async () => {
+                cleanup();
+                // Set confirmation flag
+                const manager = SettingsManager.getInstance();
+                const storage = await manager.get('storage');
+                await manager.set('storage', {
+                    ...storage,
+                    _contextOnlyConfirmed: true,
+                });
+                resolve(true);
+            });
+
+            // Close on overlay click
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    cleanup();
+                    resolve(false);
+                }
+            });
+        });
+    }
+
+    /**
+     * Initialize settings UI from SettingsManager
+     * Restores toggle states from storage
+     */
+    private async initializeSettings(): Promise<void> {
+        try {
+            const manager = SettingsManager.getInstance();
+            const settings = await manager.getAll();
+
+            // Restore behavior settings
+            const renderCodeToggle = this.shadowRoot?.querySelector(
+                'input[data-setting="behavior.renderCodeInReader"]'
+            ) as HTMLInputElement;
+            if (renderCodeToggle) {
+                renderCodeToggle.checked = settings.behavior.renderCodeInReader;
+            }
+
+            const clickToCopyToggle = this.shadowRoot?.querySelector(
+                'input[data-setting="behavior.enableClickToCopy"]'
+            ) as HTMLInputElement;
+            if (clickToCopyToggle) {
+                clickToCopyToggle.checked = settings.behavior.enableClickToCopy;
+            }
+
+            // Restore storage settings
+            const contextOnlyToggle = this.shadowRoot?.querySelector(
+                'input[data-setting="storage.saveContextOnly"]'
+            ) as HTMLInputElement;
+            if (contextOnlyToggle) {
+                contextOnlyToggle.checked = settings.storage.saveContextOnly;
+            }
+
+            // Calculate and display storage usage
+            await this.updateStorageUsage();
+
+            // Bind export backup button
+            const exportBtn = this.shadowRoot?.querySelector('.export-backup-btn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', () => this.handleExport());
+            }
+
+            logger.info('[Settings] UI initialized from storage', settings);
+        } catch (error) {
+            logger.error('[Settings] Failed to initialize UI', error);
+        }
+    }
+
+    /**
+     * Update storage usage display
+     */
+    private async updateStorageUsage(): Promise<void> {
+        try {
+            const bytes = await SimpleBookmarkStorage.getBytesInUse();
+            const formatted = SimpleBookmarkStorage.formatBytes(bytes);
+            const limitBytes = SimpleBookmarkStorage.STORAGE_LIMIT;
+            const limitFormatted = SimpleBookmarkStorage.formatBytes(limitBytes);
+            const percentage = Math.min((bytes / limitBytes) * 100, 100);
+
+            // Update text
+            const textEl = this.shadowRoot?.querySelector('#storage-usage-text');
+            if (textEl) {
+                textEl.textContent = `${formatted} / ${limitFormatted}`;
+            }
+
+            // Update progress bar
+            const barEl = this.shadowRoot?.querySelector('#storage-usage-bar') as HTMLElement;
+            if (barEl) {
+                barEl.style.width = `${percentage}%`;
+
+                // Apply color classes based on usage
+                barEl.classList.remove('warning', 'critical');
+                if (percentage >= 98) {
+                    barEl.classList.add('critical');
+                } else if (percentage >= 90) {
+                    barEl.classList.add('warning');
+                }
+            }
+
+            logger.info(`[Storage] Usage: ${formatted} / ${limitFormatted} (${percentage.toFixed(1)}%)`);
+        } catch (error) {
+            logger.error('[Storage] Failed to calculate usage', error);
+            const textEl = this.shadowRoot?.querySelector('#storage-usage-text');
+            if (textEl) {
+                textEl.textContent = 'Error calculating';
+            }
+        }
     }
 
     /**
@@ -4463,7 +4800,8 @@ ${options.message}
             }
 
             /* Support tab needs scroll */
-            .support-tab.active {
+            .support-tab.active,
+            .settings-tab.active {
                 overflow-y: auto;
             }
 
@@ -4904,20 +5242,202 @@ ${options.message}
 
             /* Settings content */
             .settings-content {
-                padding: var(--aimd-space-10);  /* 40px */
-                text-align: center;
+                padding: var(--aimd-space-6);
+                max-width: 600px;
+                margin: 0 auto;
             }
 
-            .settings-content h3 {
-                margin: 0 0 16px 0;
-                font-size: 18px;
+            /* Settings Groups */
+            .settings-group {
+                background: var(--aimd-bg-tertiary);
+                border: 1px solid var(--aimd-border-default);
+                border-radius: var(--aimd-radius-xl);
+                padding: var(--aimd-space-5);
+                margin-bottom: var(--aimd-space-4);
+            }
+
+            .settings-group-title {
+                display: flex;
+                align-items: center;
+                gap: var(--aimd-space-2);
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--aimd-text-primary);
+                margin: 0 0 var(--aimd-space-2) 0;
+            }
+
+            .settings-group-title svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* Settings Items */
+            .settings-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: var(--aimd-space-3) 0;
+                border-bottom: 1px solid var(--aimd-border-subtle);
+            }
+
+            .settings-item:last-child {
+                border-bottom: none;
+            }
+
+            .settings-item-info {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                flex: 1;
+                padding-right: var(--aimd-space-4);
+            }
+
+            .settings-item-label {
+                font-size: 14px;
+                font-weight: 500;
                 color: var(--aimd-text-primary);
             }
 
-            .settings-content p {
-                color: var(--aimd-text-tertiary);
-                margin: 0 0 24px 0;
+            .settings-item-desc {
+                font-size: 13px;
+                color: var(--aimd-text-secondary);
+                line-height: 1.4;
             }
+
+            /* Improved Toggle Switch (Linear/iOS Hybrid) */
+            .toggle-switch {
+                position: relative;
+                display: inline-block;
+                width: 40px; /* Slightly smaller */
+                height: 22px;
+                flex-shrink: 0;
+            }
+
+            .toggle-switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            .toggle-slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: var(--aimd-border-strong); /* Darker grey unchecked */
+                transition: .3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                border-radius: 99px;
+            }
+
+            .toggle-slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 2px;
+                bottom: 2px;
+                background-color: white;
+                transition: .3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                border-radius: 50%;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            }
+
+            .toggle-switch input:checked + .toggle-slider {
+                background-color: var(--aimd-interactive-primary);
+            }
+
+            .toggle-switch input:checked + .toggle-slider:before {
+                transform: translateX(18px);
+            }
+
+            .toggle-switch input:focus + .toggle-slider {
+                box-shadow: 0 0 0 2px var(--aimd-bg-primary), 0 0 0 4px var(--aimd-interactive-primary);
+            }
+
+            /* Storage Info Styles */
+            .settings-storage-info {
+                padding: var(--aimd-space-2) 0;
+            }
+
+            .storage-header {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: var(--aimd-space-2);
+                font-size: 13px;
+                color: var(--aimd-text-secondary);
+            }
+
+            .storage-progress-track {
+                height: 6px;
+                background: var(--aimd-border-default);
+                border-radius: var(--aimd-radius-full);
+                overflow: hidden;
+            }
+
+            .storage-progress-bar {
+                height: 100%;
+                background: var(--aimd-interactive-primary);
+                border-radius: var(--aimd-radius-full);
+                transition: width 0.5s ease;
+            }
+
+            /* Progress bar states */
+            .storage-progress-bar.warning { 
+                background: var(--aimd-color-warning); 
+            }
+            
+            .storage-progress-bar.critical { 
+                background: var(--aimd-color-danger); 
+            }
+
+            /* Backup Warning Section */
+            .settings-backup-warning {
+                margin-top: var(--aimd-space-4);
+                padding-top: var(--aimd-space-4);
+                border-top: 1px solid var(--aimd-border-subtle);
+            }
+
+            .settings-backup-warning .settings-item-info {
+                margin-bottom: var(--aimd-space-3);
+            }
+
+            .settings-backup-warning .settings-item-warning-text {
+                display: block;
+                font-size: 13px;
+                color: var(--aimd-text-warning);
+                margin-top: var(--aimd-space-1);
+            }
+
+            .export-backup-btn {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: var(--aimd-space-2);
+                padding: var(--aimd-space-3) var(--aimd-space-4);
+                background: var(--aimd-button-secondary-bg);
+                color: var(--aimd-button-secondary-text);
+                border: 1px solid var(--aimd-border-default);
+                border-radius: var(--aimd-radius-lg);
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background 0.2s, border-color 0.2s;
+            }
+
+            .export-backup-btn:hover {
+                background: var(--aimd-button-secondary-hover);
+                border-color: var(--aimd-border-strong);
+            }
+
+            .export-backup-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+            
+            /* Remove old warning styles */
 
             /* Support Content - Redesigned */
             .support-content {

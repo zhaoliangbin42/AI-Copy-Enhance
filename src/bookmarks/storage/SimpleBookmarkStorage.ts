@@ -6,6 +6,7 @@
 import { Bookmark } from './types';
 import { logger } from '../../utils/logger';
 import { StorageQueue } from './StorageQueue';
+import { SettingsManager } from '../../settings/SettingsManager';
 
 /**
  * Simple bookmark storage using AITimeline's proven pattern
@@ -25,6 +26,47 @@ export class SimpleBookmarkStorage {
     }
 
     /**
+     * Truncate text to context-only format (250 front + 250 back)
+     * Used when saveContextOnly setting is enabled
+     */
+    private static truncateContext(text: string): string {
+        if (text.length <= 500) {
+            return text;
+        }
+
+        const front = text.slice(0, 250);
+        const back = text.slice(-250);
+        return `${front} ... ${back}`;
+    }
+
+    /**
+     * Get current storage usage in bytes
+     * Uses chrome.storage.local.getBytesInUse API
+     */
+    static async getBytesInUse(): Promise<number> {
+        return new Promise((resolve) => {
+            chrome.storage.local.getBytesInUse(null, (bytes) => {
+                resolve(bytes);
+            });
+        });
+    }
+
+    /**
+     * Format bytes to human-readable string (KB/MB)
+     * @param bytes - Number of bytes
+     * @param decimals - Number of decimal places (default: 1)
+     */
+    static formatBytes(bytes: number, decimals = 1): string {
+        if (bytes === 0) return '0 B';
+
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
+    }
+
+    /**
      * Save a bookmark
      */
     static async save(
@@ -40,12 +82,23 @@ export class SimpleBookmarkStorage {
         const key = this.getKey(url, position);
         const urlWithoutProtocol = url.replace(/^https?:\/\//, '');
 
+        // Check settings: should we save context only?
+        const settings = await SettingsManager.getInstance().get('storage');
+        let finalUserMessage = userMessage;
+        let finalAiResponse = aiResponse;
+
+        if (settings.saveContextOnly) {
+            finalUserMessage = this.truncateContext(userMessage);
+            finalAiResponse = aiResponse ? this.truncateContext(aiResponse) : undefined;
+            logger.debug('[SimpleBookmarkStorage] Context-only mode: truncated content');
+        }
+
         const value: Bookmark = {
             url,
             urlWithoutProtocol,
             position,
-            userMessage,
-            aiResponse,
+            userMessage: finalUserMessage,
+            aiResponse: finalAiResponse,
             timestamp: timestamp || Date.now(),
             title: title || userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : ''),
             platform: platform || 'ChatGPT',
