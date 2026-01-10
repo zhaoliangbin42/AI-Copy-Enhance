@@ -15,7 +15,7 @@ export const readerPanelStyles = `
   right: 0;
   bottom: 0;
   background: var(--aimd-bg-overlay-heavy);
-  z-index: var(--aimd-z-max);
+  z-index: var(--aimd-z-panel);
   backdrop-filter: blur(3px);
 }
 
@@ -38,7 +38,7 @@ export const readerPanelStyles = `
   
   display: flex;
   flex-direction: column;
-  z-index: var(--aimd-z-max);
+  z-index: var(--aimd-z-panel);
   overflow: hidden;
   animation: modalFadeIn 0.2s ease;
   
@@ -150,6 +150,19 @@ export const readerPanelStyles = `
   flex-shrink: 0;
   flex-wrap: wrap;
   max-width: 100%;
+  
+  /* For absolute positioning of trigger button */
+  position: relative;
+}
+
+/* Dedicated Container for Dots - Structural Isolation */
+.aicopy-pagination-dots-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dot-gap, 8px);
+  /* Ensure it takes up space naturally between nav buttons */
+  flex-shrink: 0;
 }
 
 /* Individual Dot - GPU optimized */

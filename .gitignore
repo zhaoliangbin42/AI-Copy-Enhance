@@ -3,23 +3,21 @@ node_modules/
 
 # Build output
 coverage/
+dist/
+deployment.zip
+*.crx
+*.pem
 
-# Local
+# Local & Environment
 local/
+.env
+.env.*
 
 # Debug files
 Debug/
 mocks/
+.tmp*
 tests/
-
-# Files for Agent
-memory/
-private/
-prompts/
-docs/
-.agent/
-*.private.md
-*-internal.md
 
 # Logs
 *.log
@@ -38,21 +36,12 @@ yarn-error.log*
 
 # Package files
 *.zip
-*.crx
-*.pem
-
 *.cjs
 
 # Temporary files
 .cache/
 .temp/
 tmp/
-.tmp*
-
-# Others
-ARCHITECTURE.md
-bugs.md
-todo.md
 
 # Tooling artifacts
 vite.config.ts.timestamp-*.mjs
@@ -62,3 +51,6 @@ vite.config.ts.timestamp-*.mjs
 *.bak*
 *.backup
 src/utils/* copy.ts
+
+# Note: .agent/ rules and workflows should be tracked. 
+# GEMINI.md and Agents.md should be tracked if they are project docs.

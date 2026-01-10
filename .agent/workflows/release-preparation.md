@@ -1,0 +1,196 @@
+---
+description: 发版准备工作流 - 从扫描到发布的完整SOP
+---
+
+# 发版准备工作流
+
+> 触发命令: `/release`
+
+---
+
+## 🚨 Critical Rules (红线规则)
+
+> [!CAUTION]
+> 发版前必须遵守的规则。
+
+| 规则 | 原因 |
+|:-----|:-----|
+| **必须扫描 debug 代码** | console.log/TODO/FIXME 不应进入发布版 |
+| **必须同步版本号** | package.json 和 manifest.json 必须一致 |
+| **必须 build 成功** | 编译失败不可发版 |
+| **必须更新 CHANGELOG** | 记录版本变更内容 |
+| **禁止 git checkout 回滚** | 用户明确禁止 |
+
+---
+
+## Phase 1: 预发布扫描 (Pre-flight Scan)
+
+### 1.1 Debug 代码扫描
+
+```bash
+// turbo
+echo "=== 扫描 console.log ==="
+grep -rn "console\.log" src/ --include="*.ts" | head -20
+
+// turbo
+echo "=== 扫描 TODO ==="
+grep -rn "TODO" src/ --include="*.ts" | head -10
+
+// turbo
+echo "=== 扫描 FIXME ==="
+grep -rn "FIXME" src/ --include="*.ts" | head -10
+
+// turbo
+echo "=== 扫描 debugger ==="
+grep -rn "debugger" src/ --include="*.ts"
+```
+
+### 1.2 版本号检查
+
+```bash
+// turbo
+echo "=== package.json 版本 ==="
+grep '"version"' package.json
+
+// turbo
+echo "=== manifest.json 版本 ==="
+grep '"version"' manifest.json
+```
+
+---
+
+## Phase 2: 用户确认 (Manual Stop)
+
+> [!IMPORTANT]
+> **必须停止**，使用 `notify_user` 请求用户确认。
+
+```
+请用户确认以下信息：
+
+1. **目标版本号**: (例如 2.3.0)
+2. **Commit Message**: (例如 "Release v2.3.0: Add Reader Panel improvements")
+3. **Logger 级别**: 是否切换为 WARN? (生产环境建议 WARN)
+4. **扫描结果处理**: 上面扫描到的 console.log/TODO 是否需要先处理?
+```
+
+---
+
+## Phase 3: 版本更新 (Updates)
+
+### 3.1 更新 package.json
+
+```typescript
+// 修改 version 字段为用户指定版本
+{
+  "version": "X.Y.Z"
+}
+```
+
+### 3.2 更新 manifest.json
+
+```typescript
+// 修改 version 字段，必须与 package.json 一致
+{
+  "version": "X.Y.Z"
+}
+```
+
+### 3.3 更新 Logger 级别 (如需要)
+
+```typescript
+// src/utils/logger.ts
+// 将 DEFAULT_LEVEL 改为 WARN
+const DEFAULT_LEVEL = LogLevel.WARN;
+```
+
+### 3.4 更新 CHANGELOG.md
+1. **替换标题**: 将 `## [Unreleased]` 直接替换为 `## [X.Y.Z] - YYYY-MM-DD`。
+2. **检查内容**: 确保所有新功能和修复都已包含在内。
+3. **保留格式**: 保持 Keep a Changelog 格式。
+
+---
+
+## Phase 4: 构建验证 (Build)
+
+```bash
+// turbo
+npm run build
+```
+
+> [!WARNING]
+> Build 失败时**禁止继续**。必须先修复问题。
+
+---
+
+## Phase 5: Git 提交与合并 (Commit & Merge)
+
+### 5.1 提交到当前分支
+
+```bash
+git add .
+git commit -m "chore: release preparation v{VERSION}"
+```
+
+### 5.2 合并到 main 分支
+
+```bash
+// 切换到 main
+git checkout main
+
+// 合并开发分支
+git merge {current_branch}
+```
+
+### 5.3 修正提交信息 (Amend)
+
+> [!IMPORTANT]
+> 这是关键步骤。我们将使用 `--amend` 来创建一个干净的 Release Commit。
+
+```bash
+// 修改最近一次提交信息
+git commit --amend
+```
+
+**Commit Message 格式**:
+```
+Release v{VERSION}: {USER_CUSTOM_MESSAGE}
+
+- {Brief summary of major changes}
+```
+
+---
+
+## Phase 6: 发布 (Publish)
+
+### 6.1 推送代码
+
+```bash
+git push origin main
+```
+
+### 6.2 创建 Tag
+
+```bash
+git tag v{VERSION}
+git push origin v{VERSION}
+```
+
+### 6.3 Chrome Web Store 发布
+
+1. 打包 `dist/` 目录为 `deployment.zip`
+2. 上传到 Chrome Developer Dashboard
+3. 提交审核
+
+---
+
+## ✅ 发版检查清单
+
+- [ ] **Phase 1**: Debug 代码已扫描并处理
+- [ ] **Phase 2**: 用户已确认版本号和 commit message
+- [ ] **Phase 3**: package.json 版本已更新
+- [ ] **Phase 3**: manifest.json 版本已更新 (与 package.json 一致)
+- [ ] **Phase 3**: Logger 级别已调整 (如需要)
+- [ ] **Phase 3**: CHANGELOG.md 已更新
+- [ ] **Phase 4**: `npm run build` 成功
+- [ ] **Phase 5**: Git commit 已创建
+- [ ] **Phase 6**: 用户已通知后续步骤

@@ -10,9 +10,20 @@ import { DeepResearchHandler } from './features/deep-research-handler';
 import { logger, LogLevel } from '../utils/logger';
 import { SimpleBookmarkStorage } from '../bookmarks/storage/SimpleBookmarkStorage';
 import { BookmarkSaveModal } from '../bookmarks/components/BookmarkSaveModal';
+import { simpleBookmarkPanel } from '../bookmarks/components/SimpleBookmarkPanel';
 import { pageHeaderIcon } from './components/PageHeaderIcon';
 import { geminiPanelButton } from './components/GeminiPanelButton';
 import { ThemeManager, Theme } from '../utils/ThemeManager';
+import { eventBus } from './utils/EventBus';
+
+/**
+ * Listen for messages from background script
+ */
+chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
+    if (request.action === 'openBookmarkPanel') {
+        simpleBookmarkPanel.toggle();
+    }
+});
 
 /**
  * Main content script controller
@@ -373,6 +384,16 @@ class ContentScript {
         }
 
         logger.info('=== handleNewMessage END ===');
+
+        // Emit event for pagination update
+        const adapter2 = adapterRegistry.getAdapter();
+        if (adapter2) {
+            const messageSelector = adapter2.getMessageSelector();
+            const allMessages = document.querySelectorAll(messageSelector);
+            eventBus.emit('message:new', { count: allMessages.length });
+            // ✅ Emit completion event for ReaderPanel trigger button state
+            eventBus.emit('message:complete', { count: allMessages.length });
+        }
     }
     /**
      * Get Markdown from message element

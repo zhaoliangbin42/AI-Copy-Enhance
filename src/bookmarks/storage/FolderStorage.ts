@@ -350,6 +350,42 @@ export class FolderStorage {
     }
 
     /**
+     * Bulk delete multiple folders in single atomic operation
+     * NOTE: This bypasses empty-check validation - caller must ensure folders are empty
+     * 
+     * @param paths - Array of folder paths to delete
+     * @returns Number of folders deleted
+     */
+    static async bulkDelete(paths: string[]): Promise<number> {
+        if (!paths || paths.length === 0) {
+            return 0;
+        }
+
+        const perfStart = performance.now();
+        const keys = paths.map(p => this.getStorageKey(p));
+
+        try {
+            // Remove folder data
+            await chrome.storage.local.remove(keys);
+
+            // Update index (remove all paths)
+            const index = await this.getIndex();
+            const updatedIndex = index.filter(p => !paths.includes(p));
+            await chrome.storage.local.set({ [this.FOLDER_INDEX_KEY]: updatedIndex });
+
+            const perfEnd = performance.now();
+            logger.info(`Bulk deleted ${paths.length} folders in ${(perfEnd - perfStart).toFixed(0)}ms`);
+            return paths.length;
+        } catch (error) {
+            logger.error('Bulk delete folders failed:', error);
+            throw new FolderOperationError(
+                `Failed to bulk delete folders: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                'bulkDelete'
+            );
+        }
+    }
+
+    /**
      * Move folder (recursive path update)
      * 
      * Validation:

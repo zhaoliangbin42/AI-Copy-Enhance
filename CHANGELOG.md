@@ -5,6 +5,57 @@ All notable changes to AI-MarkDone will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-01-10
+
+### Added
+- **Settings System**: Comprehensive settings panel with behavior and storage controls.
+  - **Behavior Settings**: Toggle code block rendering in Reader Mode and math formula click-to-copy.
+  - **Storage Settings**: Context-only save mode (500 chars: 250 front + 250 back) with confirmation dialog.
+  - **Data & Storage Management**: Visual storage usage progress bar with detailed stats and uninstallation data-loss warning.
+  - **One-Click Export**: Quick access button in settings to export all bookmarks as a backup.
+  - **Persistence**: Settings sync across devices via `chrome.storage.sync`.
+  - **UI**: Modern card-style interface with iOS-inspired toggle switches.
+- **Sponsor Section**: New donation options for "Buy Me a Coffee" and WeChat.
+- **Dialog System**: Unified `DialogManager` and `DialogHost` for accessible, Shadow DOM-based alerts, confirms, and prompts.
+- **Bookmark Import**: Duplicate detection and merge dialog for imports.
+- **Storage Warning**: Storage quota warning system (95%/98% threshold alerts).
+
+### Changed
+- **UI**: Settings panel layout and style now strictly align with Sponsor page design language (shared spacing, tokens, behavior).
+- **UI**: Renamed bookmark panel header to "AI-MarkDone".
+- **Architecture**: Redesigned Z-Index architecture to use a rational hierarchy (1-10000) instead of `z-max`, fixing layering issues.
+- **Performance**: Significantly improved bookmark batch import speed (10-50x).
+- **Performance**: Significantly improved bookmark batch delete speed (25-75x).
+- **UI**: Changed import dialog interface to English.
+
+### Fixed
+- **Scrollbar**: Fixed settings panel scrolling behavior to match Sponsor tab (scrollbar on container edge).
+- **Reader UI**: Hidden redundant bubble button within the Reader view.
+- **Bookmarks**: Fixed duplicate handling logic during bookmark import.
+- **Bookmarks**: Fixed detailed count display in import success message.
+- **Storage**: Corrected storage limit constant (5MB → 10MB).
+
+## [2.2.0] - 2026-01-08
+
+### Added
+- **StreamingDetector**: Cross-platform streaming completion detection (`src/content/adapters/streaming-detector.ts`)
+- **FloatingInput Size Memory**: Window size persists within session
+- **Reader Panel Navigation Fix**: Arrow states update correctly after new messages
+
+### Changed
+- **GEMINI.md 3.0**: Streamlined following Claude Code best practices
+- **Documentation Architecture**: Established "Documentation as Contract" system
+
+### Fixed
+- Trigger button state sync issue
+- Last message content not refreshing on re-entry
+
+## [2.1.0] - 2026-01-04
+
+### Added
+- Reader Mode for focused reading
+- Bookmark management system
+
 ## [0.5.0] - 2025-12-08
 
 ### 🎉 Initial Release
@@ -64,7 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## Roadmap
 
 ### Planned for v0.6
 - Keyboard shortcuts (Cmd+C override)

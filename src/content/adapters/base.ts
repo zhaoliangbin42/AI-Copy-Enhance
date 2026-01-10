@@ -85,6 +85,40 @@ export abstract class SiteAdapter {
         return false;  // Default: no filtering
     }
 
+    // ========================================
+    // Message Sending Support (Phase 3)
+    // ========================================
+
+    /**
+     * Get CSS selector for the native input element
+     * Used to locate the platform's text input for synchronization
+     */
+    abstract getInputSelector(): string;
+
+    /**
+     * Get CSS selector for the native send button
+     * Used to trigger message submission
+     */
+    abstract getSendButtonSelector(): string;
+
+    /**
+     * Get the native input element instance
+     * @returns The input element or null if not found
+     */
+    getInputElement(): HTMLElement | null {
+        const selector = this.getInputSelector();
+        return document.querySelector(selector);
+    }
+
+    /**
+     * Get the native send button element instance
+     * @returns The send button or null if not found
+     */
+    getSendButton(): HTMLElement | null {
+        const selector = this.getSendButtonSelector();
+        return document.querySelector(selector);
+    }
+
     /**
      * Get platform-specific icon (SVG string)
      */

@@ -188,6 +188,37 @@ export class DotPaginationController {
     }
 
     /**
+     * Get total items count
+     */
+    getTotalItems(): number {
+        return this.config.totalItems;
+    }
+
+    /**
+     * Update total items and add new dots incrementally
+     * Used for dynamic pagination updates (e.g., new messages)
+     * Note: Only adds new dots, does not re-render to preserve other UI elements
+     */
+    updateTotalItems(newTotal: number): void {
+        if (newTotal === this.config.totalItems || newTotal < 1) {
+            return;
+        }
+
+        console.log(`[DotPaginationController] updateTotalItems: ${this.config.totalItems} -> ${newTotal}`);
+
+
+        this.config.totalItems = newTotal;
+
+        // Check if index adjustment is needed before render
+        if (this.config.currentIndex >= newTotal) {
+            this.config.currentIndex = newTotal - 1;
+        }
+
+        // Dedicated container allows full re-render safely
+        this.render();
+    }
+
+    /**
      * Cleanup
      */
     destroy(): void {

@@ -1,4 +1,3 @@
-
 import { SimpleBookmarkStorage } from '../storage/SimpleBookmarkStorage';
 import { Bookmark, Folder, FolderTreeNode } from '../storage/types';
 import { logger } from '../../utils/logger';
@@ -14,13 +13,17 @@ import { ThemeManager } from '../../utils/ThemeManager';
 import { DesignTokens } from '../../utils/design-tokens';  // T2.1.1: Import DesignTokens class
 import { ReaderPanel } from '../../content/features/re-render';
 import { fromBookmarks, findBookmarkIndex } from '../datasource/BookmarkDataSource';
+import { DialogManager } from '../../components/DialogManager';
+import { SettingsManager } from '../../settings/SettingsManager';
 
-type ImportMergeStatus = 'normal' | 'rename' | 'import';
+type ImportMergeStatus = 'normal' | 'rename' | 'import' | 'duplicate';
 
 type ImportMergeEntry = {
     bookmark: Bookmark;
     status: ImportMergeStatus;
     renameTo?: string;
+    existingTitle?: string;  // Used for duplicate status to show title comparison
+    existingFolderPath?: string;  // Used for duplicate status to show folder path
 };
 
 
@@ -62,7 +65,7 @@ export class SimpleBookmarkPanel {
     private themeUnsubscribe: (() => void) | null = null;
 
     // ReaderPanel 实例（用于书签预览）
-    private readerPanel: ReaderPanel = new ReaderPanel();
+    private readerPanel: ReaderPanel = new ReaderPanel({ hideTriggerButton: true });
 
     /**
      * Show the bookmark panel
@@ -103,7 +106,7 @@ export class SimpleBookmarkPanel {
         this.overlay.style.left = '0';
         this.overlay.style.right = '0';
         this.overlay.style.bottom = '0';
-        this.overlay.style.zIndex = 'var(--aimd-z-max)'; // Maximum z-index
+        this.overlay.style.zIndex = 'var(--aimd-z-panel)'; // Panel layer
         this.overlay.style.display = 'flex';
         this.overlay.style.alignItems = 'center';
         this.overlay.style.justifyContent = 'center';
@@ -156,6 +159,9 @@ export class SimpleBookmarkPanel {
 
         // Restore saved state (industry standard pattern)
         this.restoreState();
+
+        // Initialize settings UI from storage
+        await this.initializeSettings();
 
         // Setup theme observer for dynamic theme switching
         this.setupThemeObserver();
@@ -329,13 +335,13 @@ export class SimpleBookmarkPanel {
                 </button>
                 <button class="tab-btn" data-tab="support">
                     <span class="tab-icon">${Icons.coffee}</span>
-                    <span class="tab-label">Support on GitHub</span>
+                    <span class="tab-label">Sponsor</span>
                 </button>
             </div>
 
             <div class="main">
                 <div class="header">
-                    <h2>${Icons.bookmark} Bookmarks (${this.bookmarks.length})</h2>
+                    <h2>${Icons.bookmark} AI-MarkDone (${this.bookmarks.length})</h2>
                     <button class="close-btn" aria-label="Close">×</button>
                 </div>
 
@@ -385,18 +391,121 @@ export class SimpleBookmarkPanel {
 
                 <div class="tab-content settings-tab">
                     <div class="settings-content">
-                        <h3>Settings</h3>
-                        <p>Settings panel coming soon...</p>
+                        <!-- Behavior Group -->
+                        <div class="settings-group">
+                            <h3 class="settings-group-title">
+                                ${Icons.settings}
+                                <span>Behavior</span>
+                            </h3>
+                            
+                            <!-- Render Code Toggle -->
+                            <div class="settings-item">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Render Code Blocks</span>
+                                    <span class="settings-item-desc">Display syntax-highlighted code in Reader Mode</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" data-setting="behavior.renderCodeInReader" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <!-- Click to Copy Toggle -->
+                            <div class="settings-item">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Click to Copy</span>
+                                    <span class="settings-item-desc">Enable click-to-copy for math formulas</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" data-setting="behavior.enableClickToCopy" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Storage Group -->
+                        <div class="settings-group">
+                            <h3 class="settings-group-title">
+                                ${Icons.folder}
+                                <span>Storage</span>
+                            </h3>
+                            
+                            <!-- Context Only Save -->
+                            <div class="settings-item">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Context-Only Save</span>
+                                    <span class="settings-item-desc">Save space by keeping only 500 chars. Full preview will be specific to the context.</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" data-setting="storage.saveContextOnly">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Data & Storage Group -->
+                        <div class="settings-group">
+                            <h3 class="settings-group-title">
+                                ${Icons.database}
+                                <span>Data & Storage</span>
+                            </h3>
+                            
+                            <!-- Storage Usage Display -->
+                            <div class="settings-storage-info">
+                                <div class="storage-header">
+                                    <span class="storage-label">Storage Used</span>
+                                    <span class="storage-value" id="storage-usage-text">Calculating...</span>
+                                </div>
+                                <div class="storage-progress-track">
+                                    <div class="storage-progress-bar" id="storage-usage-bar" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Backup Warning & Export Button -->
+                            <div class="settings-backup-warning">
+                                <div class="settings-item-info">
+                                    <span class="settings-item-label">Back up your data</span>
+                                    <span class="settings-item-warning-text">⚠️ Uninstalling the extension will delete all bookmarks.</span>
+                                </div>
+                                <button class="secondary-btn export-backup-btn">
+                                    ${Icons.download} Export All
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="tab-content support-tab">
                     <div class="support-content">
-                        <h3>${Icons.coffee} Support on GitHub</h3>
-                        <p>If this extension helps you, please support it on GitHub.</p>
-                        <a href="https://github.com/zhaoliangbin42/AI-MarkDone" target="_blank" rel="noopener noreferrer" class="support-btn">
-                            Open GitHub
-                        </a>
+                        <!-- Open Source Section -->
+                        <div class="support-section">
+                            <h3>Support Development</h3>
+                            <p>AI-MarkDone is open source. Star us on GitHub.</p>
+                            <a href="https://github.com/zhaoliangbin42/AI-MarkDone" target="_blank" rel="noopener noreferrer" class="primary-btn">
+                                ${Icons.github}
+                                Star on GitHub
+                            </a>
+                        </div>
+
+                        <!-- Donation Section -->
+                        <div class="support-section">
+                            <h3>If this project helps you</h3>
+                            <p>Support the developer with a coffee ☕️</p>
+                            <div class="qr-cards-row">
+                                <div class="qr-card">
+                                    <a href="https://www.buymeacoffee.com/zhaoliangbin" target="_blank" rel="noopener noreferrer" class="qr-card-label-link">Buy Me a Coffee</a>
+                                    <div class="qr-image-wrapper">
+                                        <img src="${chrome.runtime.getURL('icons/bmc_qr.png')}" alt="Buy Me A Coffee" class="qr-image">
+                                    </div>
+                                </div>
+                                <div class="qr-card">
+                                    <span class="qr-card-label">微信赞赏码</span>
+                                    <div class="qr-image-wrapper">
+                                        <img src="${chrome.runtime.getURL('icons/wechat_qr.png')}" alt="WeChat Reward" class="qr-image">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -613,11 +722,17 @@ export class SimpleBookmarkPanel {
      * Refresh panel content
      */
     async refresh(): Promise<void> {
+        const refreshStart = performance.now();
+
         // Reload both folders and bookmarks
         this.folders = await FolderStorage.getAll();
+        const foldersTime = performance.now();
+
         this.bookmarks = await SimpleBookmarkStorage.getAllBookmarks();
+        const bookmarksTime = performance.now();
+
         this.filterBookmarks();
-        logger.debug(`[SimpleBookmarkPanel] Refreshed: ${this.folders.length} folders, ${this.bookmarks.length} bookmarks`);
+        logger.info(`[SimpleBookmarkPanel][Perf] Refresh: ${this.folders.length} folders (${(foldersTime - refreshStart).toFixed(0)}ms), ${this.bookmarks.length} bookmarks (${(bookmarksTime - foldersTime).toFixed(0)}ms), total ${(bookmarksTime - refreshStart).toFixed(0)}ms`);
 
         this.refreshContent();
     }
@@ -635,7 +750,7 @@ export class SimpleBookmarkPanel {
 
             const header = this.shadowRoot.querySelector('h2');
             if (header) {
-                header.innerHTML = `${Icons.bookmark} Bookmarks (${this.bookmarks.length})`;
+                header.innerHTML = `${Icons.bookmark} AI-MarkDone (${this.bookmarks.length})`;
             }
 
             // Update batch actions bar state
@@ -845,8 +960,262 @@ export class SimpleBookmarkPanel {
         // Bind tree view listeners
         this.bindTreeEventListeners();
 
+        // Settings toggles
+        this.shadowRoot?.querySelectorAll('.settings-tab input[type="checkbox"]').forEach(toggle => {
+            toggle.addEventListener('change', (e) => this.handleSettingChange(e), { signal });
+        });
+
         // Setup keyboard navigation for tree
         this.setupTreeKeyboardNavigation();
+    }
+
+    /**
+     * Handle setting change
+     * Integrates with SettingsManager and provides confirmation for destructive actions
+     */
+    private async handleSettingChange(e: Event): Promise<void> {
+        const input = e.target as HTMLInputElement;
+        const setting = input.dataset.setting;
+        const value = input.checked;
+
+        if (!setting) return;
+
+        logger.info(`[Settings] ${setting} changed to: ${value}`);
+
+        // Special handling for destructive action
+        if (setting === 'storage.saveContextOnly' && value) {
+            const confirmed = await this.confirmContextOnlySave();
+            if (!confirmed) {
+                input.checked = false;
+                return;
+            }
+        }
+
+        // Parse setting path (e.g., "behavior.renderCodeInReader")
+        const [category, key] = setting.split('.') as [import('../../settings/SettingsManager').SettingsCategory, string];
+
+        try {
+            const manager = SettingsManager.getInstance();
+            const currentCategory = await manager.get(category);
+
+            await manager.set(category, {
+                ...currentCategory,
+                [key]: value,
+            } as any);
+
+            logger.info(`[Settings] Successfully updated ${setting}`);
+        } catch (error) {
+            logger.error(`[Settings] Failed to update ${setting}`, error);
+            // Revert UI on error
+            input.checked = !value;
+        }
+    }
+
+    /**
+     * Show confirmation dialog for Context-Only Save
+     * Returns true if user confirms
+     */
+    private async confirmContextOnlySave(): Promise<boolean> {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'settings-confirm-overlay';
+            overlay.innerHTML = `
+                <div class="settings-confirm-dialog">
+                    <h3>Enable Context-Only Save?</h3>
+                    <p>This will save only 500 characters (250 from start + 250 from end) for <strong>new bookmarks</strong>.</p>
+                    <p><strong>Benefits:</strong> Significantly reduces storage usage</p>
+                    <p><strong>Trade-off:</strong> Full text preview will not be available in the bookmark panel</p>
+                    <div class="settings-confirm-actions">
+                        <button class="settings-confirm-cancel">Cancel</button>
+                        <button class="settings-confirm-ok">Enable</button>
+                    </div>
+                </div>
+            `;
+
+            // Add styles
+            const style = document.createElement('style');
+            style.textContent = `
+                .settings-confirm-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                }
+                .settings-confirm-dialog {
+                    background: white;
+                    padding: 24px;
+                    border-radius: 12px;
+                    max-width: 400px;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                }
+                .settings-confirm-dialog h3 {
+                    margin: 0 0 16px 0;
+                    font-size: 18px;
+                    color: #111827;
+                }
+                .settings-confirm-dialog p {
+                    margin: 0 0 12px 0;
+                    font-size: 14px;
+                    color: #6B7280;
+                    line-height: 1.5;
+                }
+                .settings-confirm-actions {
+                    display: flex;
+                    gap: 12px;
+                    margin-top: 20px;
+                }
+                .settings-confirm-actions button {
+                    flex: 1;
+                    padding: 10px 16px;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .settings-confirm-cancel {
+                    background: #F3F4F6;
+                    color: #374151;
+                }
+                .settings-confirm-cancel:hover {
+                    background: #E5E7EB;
+                }
+                .settings-confirm-ok {
+                    background: #2563EB;
+                    color: white;
+                }
+                .settings-confirm-ok:hover {
+                    background: #1D4ED8;
+                }
+            `;
+
+            overlay.appendChild(style);
+            document.body.appendChild(overlay);
+
+            const cleanup = () => {
+                document.body.removeChild(overlay);
+            };
+
+            overlay.querySelector('.settings-confirm-cancel')?.addEventListener('click', () => {
+                cleanup();
+                resolve(false);
+            });
+
+            overlay.querySelector('.settings-confirm-ok')?.addEventListener('click', async () => {
+                cleanup();
+                // Set confirmation flag
+                const manager = SettingsManager.getInstance();
+                const storage = await manager.get('storage');
+                await manager.set('storage', {
+                    ...storage,
+                    _contextOnlyConfirmed: true,
+                });
+                resolve(true);
+            });
+
+            // Close on overlay click
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    cleanup();
+                    resolve(false);
+                }
+            });
+        });
+    }
+
+    /**
+     * Initialize settings UI from SettingsManager
+     * Restores toggle states from storage
+     */
+    private async initializeSettings(): Promise<void> {
+        try {
+            const manager = SettingsManager.getInstance();
+            const settings = await manager.getAll();
+
+            // Restore behavior settings
+            const renderCodeToggle = this.shadowRoot?.querySelector(
+                'input[data-setting="behavior.renderCodeInReader"]'
+            ) as HTMLInputElement;
+            if (renderCodeToggle) {
+                renderCodeToggle.checked = settings.behavior.renderCodeInReader;
+            }
+
+            const clickToCopyToggle = this.shadowRoot?.querySelector(
+                'input[data-setting="behavior.enableClickToCopy"]'
+            ) as HTMLInputElement;
+            if (clickToCopyToggle) {
+                clickToCopyToggle.checked = settings.behavior.enableClickToCopy;
+            }
+
+            // Restore storage settings
+            const contextOnlyToggle = this.shadowRoot?.querySelector(
+                'input[data-setting="storage.saveContextOnly"]'
+            ) as HTMLInputElement;
+            if (contextOnlyToggle) {
+                contextOnlyToggle.checked = settings.storage.saveContextOnly;
+            }
+
+            // Calculate and display storage usage
+            await this.updateStorageUsage();
+
+            // Bind export backup button
+            const exportBtn = this.shadowRoot?.querySelector('.export-backup-btn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', () => this.handleExport());
+            }
+
+            logger.info('[Settings] UI initialized from storage', settings);
+        } catch (error) {
+            logger.error('[Settings] Failed to initialize UI', error);
+        }
+    }
+
+    /**
+     * Update storage usage display
+     */
+    private async updateStorageUsage(): Promise<void> {
+        try {
+            const bytes = await SimpleBookmarkStorage.getBytesInUse();
+            const formatted = SimpleBookmarkStorage.formatBytes(bytes);
+            const limitBytes = SimpleBookmarkStorage.STORAGE_LIMIT;
+            const limitFormatted = SimpleBookmarkStorage.formatBytes(limitBytes);
+            const percentage = Math.min((bytes / limitBytes) * 100, 100);
+
+            // Update text
+            const textEl = this.shadowRoot?.querySelector('#storage-usage-text');
+            if (textEl) {
+                textEl.textContent = `${formatted} / ${limitFormatted}`;
+            }
+
+            // Update progress bar
+            const barEl = this.shadowRoot?.querySelector('#storage-usage-bar') as HTMLElement;
+            if (barEl) {
+                barEl.style.width = `${percentage}%`;
+
+                // Apply color classes based on usage
+                barEl.classList.remove('warning', 'critical');
+                if (percentage >= 98) {
+                    barEl.classList.add('critical');
+                } else if (percentage >= 90) {
+                    barEl.classList.add('warning');
+                }
+            }
+
+            logger.info(`[Storage] Usage: ${formatted} / ${limitFormatted} (${percentage.toFixed(1)}%)`);
+        } catch (error) {
+            logger.error('[Storage] Failed to calculate usage', error);
+            const textEl = this.shadowRoot?.querySelector('#storage-usage-text');
+            if (textEl) {
+                textEl.textContent = 'Error calculating';
+            }
+        }
     }
 
     /**
@@ -1548,20 +1917,27 @@ export class SimpleBookmarkPanel {
      * Task 2.1.1
      */
     private async showCreateFolderInput(parentPath: string | null): Promise<void> {
-        // For root level creation, we'll use a temporary placeholder in the tree
-        // For now, use prompt as a quick implementation
-        // TODO: Implement inline creation in tree view
-        const name = prompt('Enter folder name:');
+        const name = await DialogManager.prompt({
+            title: parentPath ? 'New Subfolder' : 'New Folder',
+            message: parentPath ? `Creating subfolder in: ${parentPath}` : undefined,
+            placeholder: 'Enter folder name',
+            validation: (value) => {
+                const validation = PathUtils.getFolderNameValidation(value);
+                if (!validation.isValid) {
+                    return {
+                        valid: false,
+                        error: this.getFolderNameErrorMessage(validation.errors)
+                    };
+                }
+                return { valid: true };
+            }
+        });
+
         if (!name) return;
+
+        // Re-validate to get normalized name
         const validation = PathUtils.getFolderNameValidation(name);
-        if (!validation.isValid) {
-            await this.showNotification({
-                type: 'error',
-                title: 'Invalid Folder Name',
-                message: this.getFolderNameErrorMessage(validation.errors)
-            });
-            return;
-        }
+        if (!validation.isValid) return; // Should not happen due to dialog validation
 
         this.handleCreateFolder(parentPath, validation.normalized);
     }
@@ -2300,10 +2676,13 @@ export class SimpleBookmarkPanel {
         if (!bookmark) return;
 
         // Show confirmation dialog
-        const confirmed = confirm(
-            `Delete bookmark "${bookmark.title || bookmark.userMessage.substring(0, 50)}"?\n\n` +
-            `Tip: You can export your bookmarks first to create a backup.`
-        );
+        const confirmed = await DialogManager.confirm({
+            title: 'Delete Bookmark',
+            message: `Delete bookmark "${bookmark.title || bookmark.userMessage.substring(0, 50)}"?\n\nTip: You can export your bookmarks first to create a backup.`,
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            danger: true
+        });
 
         if (!confirmed) return;
 
@@ -2606,6 +2985,7 @@ export class SimpleBookmarkPanel {
         type: 'success' | 'error' | 'warning' | 'info';
         title?: string;
         message: string;
+        duration?: number;  // Auto-dismiss after ms (optional)
     }): Promise<void> {
         return new Promise((resolve) => {
             const configs = {
@@ -2727,6 +3107,14 @@ ${options.message}
                 }
             };
             document.addEventListener('keydown', handleEscape);
+
+            // Auto-dismiss if duration is set
+            if (options.duration && options.duration > 0) {
+                setTimeout(() => {
+                    document.removeEventListener('keydown', handleEscape);
+                    closeDialog();
+                }, options.duration);
+            }
         });
     }
 
@@ -2815,52 +3203,45 @@ ${options.message}
 
     /**
      * Execute batch delete with proper order and error handling
-     * Task 3.4.4
+     * Task 3.4.4 - Optimized with bulk operations
      */
     private async executeBatchDelete(analysis: {
         folders: Folder[];
         subfolders: Folder[];
         bookmarks: Bookmark[];
     }): Promise<void> {
-        const errors: string[] = [];
+        const perfStart = performance.now();
 
-        // Step 1: Delete all bookmarks first
-        logger.info(`[Batch Delete] Deleting ${analysis.bookmarks.length} bookmarks...`);
-        for (const bookmark of analysis.bookmarks) {
-            try {
-                await SimpleBookmarkStorage.remove(
-                    bookmark.urlWithoutProtocol,
-                    bookmark.position
+        try {
+            // Step 1: Bulk delete all bookmarks first
+            if (analysis.bookmarks.length > 0) {
+                logger.info(`[Batch Delete] Bulk removing ${analysis.bookmarks.length} bookmarks...`);
+                await SimpleBookmarkStorage.bulkRemove(
+                    analysis.bookmarks.map(b => ({ url: b.url, position: b.position }))
                 );
-            } catch (error) {
-                errors.push(`Failed to delete bookmark: ${bookmark.title}`);
-                logger.error('[Batch Delete] Bookmark error:', error);
             }
-        }
 
-        // Step 2: Delete folders (deepest first)
-        const allFolders = [...analysis.folders, ...analysis.subfolders];
-        const sortedFolders = allFolders.sort((a, b) => b.depth - a.depth);
+            // Step 2: Bulk delete folders (deepest first sorted, already filtered by caller)
+            const allFolders = [...analysis.folders, ...analysis.subfolders];
+            if (allFolders.length > 0) {
+                const sortedPaths = allFolders
+                    .sort((a, b) => b.depth - a.depth)
+                    .map(f => f.path);
 
-        logger.info(`[Batch Delete] Deleting ${sortedFolders.length} folders (deepest first)...`);
-        for (const folder of sortedFolders) {
-            try {
-                await FolderStorage.delete(folder.path);
-            } catch (error) {
-                errors.push(`Failed to delete folder: ${folder.name}`);
-                logger.error('[Batch Delete] Folder error:', error);
+                logger.info(`[Batch Delete] Bulk removing ${sortedPaths.length} folders...`);
+                await FolderStorage.bulkDelete(sortedPaths);
             }
+
+            const perfEnd = performance.now();
+            const totalDeleted = analysis.bookmarks.length + allFolders.length;
+            logger.info(`[Batch Delete] Successfully deleted ${totalDeleted} items in ${(perfEnd - perfStart).toFixed(0)}ms`);
+
+        } catch (error) {
+            logger.error('[Batch Delete] Error:', error);
+            this.showErrorSummary([`Batch delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`]);
         }
 
-        // Step 3: Show results
-        if (errors.length > 0) {
-            this.showErrorSummary(errors);
-        } else {
-            const totalDeleted = analysis.bookmarks.length + sortedFolders.length;
-            logger.info(`[Batch Delete] Successfully deleted ${totalDeleted} items`);
-        }
-
-        // Step 4: Cleanup
+        // Cleanup
         this.selectedItems.clear();
         await this.refresh();
     }
@@ -2973,6 +3354,27 @@ ${options.message}
      * Execute batch move operation
      */
     private async executeBatchMove(bookmarks: Bookmark[], targetPath: string | null): Promise<void> {
+        // Check storage quota before batch move
+        const quotaCheck = await SimpleBookmarkStorage.canSave();
+        if (!quotaCheck.canSave) {
+            await this.showNotification({
+                type: 'error',
+                title: 'Storage Full',
+                message: quotaCheck.message || 'Storage quota exceeded'
+            });
+            return;
+        }
+
+        // Show auto-dismiss warning if storage is getting full (95-98%)
+        if (quotaCheck.warningLevel === 'warning') {
+            this.showNotification({
+                type: 'warning',
+                title: 'Storage Warning',
+                message: quotaCheck.message || 'Storage is getting full',
+                duration: 3000
+            });
+        }
+
         const errors: string[] = [];
         let successCount = 0;
 
@@ -3211,13 +3613,15 @@ ${options.message}
             if (!file) return;
 
             try {
+                const handleImportStart = performance.now();
+
                 // Read file
                 const text = await file.text();
                 const data = JSON.parse(text);
 
                 // Validate data
                 const bookmarks = this.validateImportData(data);
-                logger.info(`[Import] Validated ${bookmarks.length} bookmarks`);
+                logger.info(`[Import][Perf] Validated ${bookmarks.length} bookmarks in ${(performance.now() - handleImportStart).toFixed(0)}ms`);
 
                 // Analyze import data for folder path issues (Issue 2)
                 const analysis = this.analyzeImportData(bookmarks);
@@ -3266,17 +3670,17 @@ ${options.message}
                 this.folders = await FolderStorage.getAll();
                 logger.info(`[Import] Loaded ${this.folders.length} folders after creation`);
 
-                // Detect conflicts (existing bookmarks with same url+position)
-                const conflicts = await this.detectConflicts(allBookmarks);
+                // Build merge entries (handles duplicate detection, title conflicts, and import folder redirects)
                 const mergeEntries = await this.buildImportMergeEntries(allBookmarks, importFolderSet);
                 const hasRenameConflicts = mergeEntries.some(entry => entry.status === 'rename');
                 const hasImportFolder = mergeEntries.some(entry => entry.status === 'import');
-                const shouldPrompt = conflicts.length > 0 || hasRenameConflicts || hasImportFolder;
+                const hasDuplicates = mergeEntries.some(entry => entry.status === 'duplicate');
+                const shouldPrompt = hasDuplicates || hasRenameConflicts || hasImportFolder;
 
                 if (shouldPrompt) {
                     const action = await this.showMergeDialog(mergeEntries, {
                         hasRenameConflicts,
-                        duplicateCount: conflicts.length
+                        duplicateCount: mergeEntries.filter(e => e.status === 'duplicate').length
                     });
                     if (action === 'cancel') {
                         logger.info('[Import] User cancelled import');
@@ -3292,25 +3696,45 @@ ${options.message}
                     }
                 }
 
-                // Import all bookmarks (skip duplicates)
-                await this.importBookmarks(allBookmarks, true);
+                // Filter out duplicates before import
+                const bookmarksToImport = mergeEntries
+                    .filter(entry => entry.status !== 'duplicate')
+                    .map(entry => entry.bookmark);
+
+                // Check if import would exceed storage quota
+                const importCheck = await SimpleBookmarkStorage.canImport(bookmarksToImport);
+                if (!importCheck.canImport) {
+                    await this.showNotification({
+                        type: 'error',
+                        title: 'Storage Full',
+                        message: importCheck.message || 'Not enough storage space for import'
+                    });
+                    return;
+                }
+
+                // Import filtered bookmarks (duplicates already excluded)
+                await this.importBookmarks(bookmarksToImport);
 
                 // Refresh panel
                 await this.refresh();
 
-                // Show success message with info about Import folder if used
-                let message = `Successfully imported ${bookmarks.length} bookmark(s)!`;
-                if (analysis.noFolder.length > 0 || analysis.tooDeep.length > 0) {
-                    const importCount = analysis.noFolder.length + analysis.tooDeep.length;
-                    message += `\n\n${importCount} bookmark(s) without valid folder paths were placed in "Import" folder.`;
+                // Calculate counts for success message
+                const importedCount = bookmarksToImport.length;
+                const skippedCount = mergeEntries.filter(e => e.status === 'duplicate').length;
+
+                // Show success message with detailed counts
+                let message = `Imported ${importedCount} bookmark(s)`;
+                if (skippedCount > 0) {
+                    message += `, skipped ${skippedCount} duplicate(s)`;
                 }
+                message += '.';
 
                 await this.showNotification({
                     type: 'success',
                     title: 'Import Successful',
                     message
                 });
-                logger.info(`[Import] Successfully imported ${bookmarks.length} bookmarks`);
+                logger.info(`[Import] Imported ${importedCount} bookmarks, skipped ${skippedCount} duplicates`);
             } catch (error) {
                 logger.error('[Import] Failed:', error);
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -3419,26 +3843,6 @@ ${options.message}
     }
 
     /**
-     * Detect conflicts (existing bookmarks with same url+position)
-     */
-    private async detectConflicts(bookmarks: Bookmark[]): Promise<Bookmark[]> {
-        const conflicts: Bookmark[] = [];
-
-        for (const bookmark of bookmarks) {
-            const exists = await SimpleBookmarkStorage.isBookmarked(
-                bookmark.url,
-                bookmark.position
-            );
-
-            if (exists) {
-                conflicts.push(bookmark);
-            }
-        }
-
-        return conflicts;
-    }
-
-    /**
      * Build merge entries with status + rename preview
      */
     private async buildImportMergeEntries(
@@ -3448,6 +3852,13 @@ ${options.message}
         const existingBookmarks = this.bookmarks.length > 0
             ? this.bookmarks
             : await SimpleBookmarkStorage.getAllBookmarks();
+
+        // Build a map for fast URL+position lookup (for duplicate detection)
+        const existingByKey = new Map<string, Bookmark>();
+        existingBookmarks.forEach((b) => {
+            const key = `${b.url}:${b.position}`;
+            existingByKey.set(key, b);
+        });
 
         const usedTitlesByFolder = new Map<string, Set<string>>();
         const entries: ImportMergeEntry[] = [];
@@ -3474,20 +3885,33 @@ ${options.message}
 
             let status: ImportMergeStatus = 'normal';
             let renameTo: string | undefined;
+            let existingTitle: string | undefined;
 
-            if (normalizedTitle && usedTitles.has(normalizedTitle)) {
-                status = 'rename';
-                renameTo = this.generateUniqueTitle(bookmark.title, usedTitles);
-                usedTitles.add(this.normalizeBookmarkTitle(renameTo));
-            } else if (normalizedTitle) {
-                usedTitles.add(normalizedTitle);
+            // Step 1: Check for URL+position duplicate (global, highest priority)
+            const duplicateKey = `${bookmark.url}:${bookmark.position}`;
+            const existingDuplicate = existingByKey.get(duplicateKey);
+            let existingFolderPath: string | undefined;
+            if (existingDuplicate) {
+                status = 'duplicate';
+                existingTitle = existingDuplicate.title;
+                existingFolderPath = existingDuplicate.folderPath;
+            } else {
+                // Step 2: Check for title conflict in same folder
+                if (normalizedTitle && usedTitles.has(normalizedTitle)) {
+                    status = 'rename';
+                    renameTo = this.generateUniqueTitle(bookmark.title, usedTitles);
+                    usedTitles.add(this.normalizeBookmarkTitle(renameTo));
+                } else if (normalizedTitle) {
+                    usedTitles.add(normalizedTitle);
+                }
+
+                // Step 3: Check for import folder redirect
+                if (status !== 'rename' && importFolderSet.has(bookmark)) {
+                    status = 'import';
+                }
             }
 
-            if (status !== 'rename' && importFolderSet.has(bookmark)) {
-                status = 'import';
-            }
-
-            entries.push({ bookmark, status, renameTo });
+            entries.push({ bookmark, status, renameTo, existingTitle, existingFolderPath });
         }
 
         return entries;
@@ -3587,6 +4011,13 @@ ${options.message}
                 .merge-badge-normal { background: var(--aimd-feedback-success-bg); color: var(--aimd-feedback-success-text); }
                 .merge-badge-rename { background: var(--aimd-feedback-warning-bg); color: var(--aimd-feedback-warning-text); }
                 .merge-badge-import { background: var(--aimd-feedback-info-bg); color: var(--aimd-interactive-primary-hover); }
+                .merge-badge-duplicate { background: var(--aimd-feedback-danger-bg); color: var(--aimd-feedback-danger-text); }
+                
+                .merge-item-compare { font-size: 12px; color: var(--aimd-text-secondary); margin-top: 4px; padding: 6px 8px; background: var(--aimd-bg-secondary); border-radius: var(--aimd-radius-sm); }
+                .merge-item-compare-row { display: flex; gap: 4px; margin-bottom: 2px; }
+                .merge-item-compare-row:last-child { margin-bottom: 0; }
+                .merge-item-compare-label { color: var(--aimd-text-secondary); min-width: 50px; }
+                .merge-item-compare-value { color: var(--aimd-text-primary); word-break: break-word; }
                 
                 .duplicate-dialog-hint { margin: 6px 0 0 0; color: var(--aimd-text-secondary); font-size: 13px; font-style: italic; opacity: 0.9; }
                 
@@ -3606,9 +4037,10 @@ ${options.message}
             modal.className = 'duplicate-dialog-modal';
 
             const statusLabels: Record<ImportMergeStatus, string> = {
-                normal: '正常导入',
-                rename: '重命名合并',
-                import: '合并到 import 文件夹'
+                normal: 'Normal Import',
+                rename: 'Rename & Merge',
+                import: 'Move to Import',
+                duplicate: 'Skip (Duplicate)'
             };
 
             const counts = entries.reduce(
@@ -3616,36 +4048,37 @@ ${options.message}
                     acc[entry.status] += 1;
                     return acc;
                 },
-                { normal: 0, rename: 0, import: 0 } as Record<ImportMergeStatus, number>
+                { normal: 0, rename: 0, import: 0, duplicate: 0 } as Record<ImportMergeStatus, number>
             );
 
-            const primaryLabel = options.hasRenameConflicts ? '重命名合并' : '合并';
+            const primaryLabel = options.hasRenameConflicts ? 'Rename & Merge' : 'Merge';
 
             modal.innerHTML = `
             <div class="duplicate-dialog-content">
                 <div class="duplicate-dialog-header">
                     <span class="duplicate-dialog-icon">${Icons.alertTriangle}</span>
-                    <h3 class="duplicate-dialog-title">导入确认</h3>
+                    <h3 class="duplicate-dialog-title">Import Confirmation</h3>
                 </div>
                 <div class="duplicate-dialog-body">
-                    <p class="duplicate-dialog-text">本次导入 <strong>${entries.length}</strong> 条记录。</p>
-                    <div class="merge-summary">
+                    <p class="duplicate-dialog-text">Importing <strong>${entries.length}</strong> bookmark(s).</p>
+                    <div class="merge-summary" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
                         <div class="merge-summary-item">
-                            <span class="merge-summary-label">正常导入</span>
+                            <span class="merge-summary-label">Normal</span>
                             <span class="merge-summary-value">${counts.normal}</span>
                         </div>
                         <div class="merge-summary-item">
-                            <span class="merge-summary-label">重命名合并</span>
+                            <span class="merge-summary-label">Renamed</span>
                             <span class="merge-summary-value">${counts.rename}</span>
                         </div>
                         <div class="merge-summary-item">
-                            <span class="merge-summary-label">合并到 import 文件夹</span>
+                            <span class="merge-summary-label">To Import</span>
                             <span class="merge-summary-value">${counts.import}</span>
                         </div>
+                        <div class="merge-summary-item">
+                            <span class="merge-summary-label">Skipped</span>
+                            <span class="merge-summary-value">${counts.duplicate}</span>
+                        </div>
                     </div>
-                    ${options.duplicateCount > 0 ? `
-                        <p class="duplicate-dialog-hint">检测到 ${options.duplicateCount} 个重复书签，将保留现有条目并跳过导入。</p>
-                    ` : ''}
                     <div class="merge-list-container">
                         ${entries.map((entry) => `
                             <div class="merge-list-item">
@@ -3660,7 +4093,19 @@ ${options.message}
                                     ${this.escapeHtml(entry.bookmark.folderPath || 'Import')}
                                 </div>
                                 ${entry.renameTo ? `
-                                    <div class="merge-item-rename">重命名为：${this.escapeHtml(entry.renameTo)}</div>
+                                    <div class="merge-item-rename">Renamed to: ${this.escapeHtml(entry.renameTo)}</div>
+                                ` : ''}
+                                ${entry.status === 'duplicate' && entry.existingTitle ? `
+                                    <div class="merge-item-compare">
+                                        <div class="merge-item-compare-row">
+                                            <span class="merge-item-compare-label">Existing entry:</span>
+                                            <span class="merge-item-compare-value">${this.escapeHtml((entry.existingFolderPath || 'Import') + '/' + entry.existingTitle)}</span>
+                                        </div>
+                                        <div class="merge-item-compare-row">
+                                            <span class="merge-item-compare-label">Pending import:</span>
+                                            <span class="merge-item-compare-value">${this.escapeHtml((entry.bookmark.folderPath || 'Import') + '/' + entry.bookmark.title)}</span>
+                                        </div>
+                                    </div>
                                 ` : ''}
                             </div>
                         `).join('')}
@@ -3668,7 +4113,7 @@ ${options.message}
                 </div>
             </div>
             <div class="import-summary-footer">
-                <button class="cancel-btn">取消</button>
+                <button class="cancel-btn">Cancel</button>
                 <button class="merge-btn">${primaryLabel}</button>
             </div>
         `;
@@ -3722,43 +4167,33 @@ ${options.message}
 
     /**
      * Import bookmarks (batch save)
+     * Uses bulkSave() for optimal performance - single atomic write
      */
-    private async importBookmarks(
-        bookmarks: Bookmark[],
-        skipDuplicates: boolean
-    ): Promise<void> {
-        const promises: Promise<void>[] = [];
+    private async importBookmarks(bookmarks: Bookmark[]): Promise<void> {
+        const perfStart = performance.now();
+        logger.info(`[Import][Perf] Starting bulk import of ${bookmarks.length} bookmarks`);
 
-        for (const bookmark of bookmarks) {
-            // Skip if duplicate and skipDuplicates is true
-            if (skipDuplicates) {
-                const exists = await SimpleBookmarkStorage.isBookmarked(
-                    bookmark.url,
-                    bookmark.position
-                );
-                if (exists) {
-                    logger.debug(`[Import] Skipping duplicate: ${bookmark.url}:${bookmark.position}`);
-                    continue;
-                }
-            }
-
-            // Save bookmark with original timestamp and folder path
-            promises.push(
-                SimpleBookmarkStorage.save(
-                    bookmark.url,
-                    bookmark.position,
-                    bookmark.userMessage,
-                    bookmark.aiResponse,
-                    bookmark.title,
-                    bookmark.platform,
-                    bookmark.timestamp,  // Preserve original timestamp from JSON
-                    bookmark.folderPath  // CRITICAL: Preserve folder structure from import
-                )
-            );
+        // Check storage quota before import
+        const quotaCheck = await SimpleBookmarkStorage.canSave();
+        if (!quotaCheck.canSave) {
+            throw new Error(quotaCheck.message || 'Storage quota exceeded');
         }
 
-        await Promise.all(promises);
-        logger.info(`[Import] Imported ${promises.length} bookmarks`);
+        // Show auto-dismiss warning if storage is getting full (95-98%)
+        if (quotaCheck.warningLevel === 'warning') {
+            this.showNotification({
+                type: 'warning',
+                title: 'Storage Warning',
+                message: quotaCheck.message || 'Storage is getting full',
+                duration: 3000
+            });
+        }
+
+        // Single atomic bulk write
+        await SimpleBookmarkStorage.bulkSave(bookmarks);
+
+        const perfEnd = performance.now();
+        logger.info(`[Import][Perf] Bulk import complete: ${bookmarks.length} bookmarks in ${(perfEnd - perfStart).toFixed(0)}ms`);
     }
 
     /**
@@ -4364,6 +4799,12 @@ ${options.message}
                 display: flex;
             }
 
+            /* Support tab needs scroll */
+            .support-tab.active,
+            .settings-tab.active {
+                overflow-y: auto;
+            }
+
             /* Toolbar */
             .toolbar {
                 padding: var(--aimd-space-3) var(--aimd-space-6);  /* 12px 24px */
@@ -4800,40 +5241,345 @@ ${options.message}
             }
 
             /* Settings content */
-            .settings-content,
-            .support-content {
-                padding: var(--aimd-space-10);  /* 40px */
-                text-align: center;
+            .settings-content {
+                padding: var(--aimd-space-6);
+                max-width: 600px;
+                margin: 0 auto;
             }
 
-            .settings-content h3,
-            .support-content h3 {
-                margin: 0 0 16px 0;
-                font-size: 18px;
+            /* Settings Groups */
+            .settings-group {
+                background: var(--aimd-bg-tertiary);
+                border: 1px solid var(--aimd-border-default);
+                border-radius: var(--aimd-radius-xl);
+                padding: var(--aimd-space-5);
+                margin-bottom: var(--aimd-space-4);
+            }
+
+            .settings-group-title {
+                display: flex;
+                align-items: center;
+                gap: var(--aimd-space-2);
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--aimd-text-primary);
+                margin: 0 0 var(--aimd-space-2) 0;
+            }
+
+            .settings-group-title svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* Settings Items */
+            .settings-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: var(--aimd-space-3) 0;
+                border-bottom: 1px solid var(--aimd-border-subtle);
+            }
+
+            .settings-item:last-child {
+                border-bottom: none;
+            }
+
+            .settings-item-info {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                flex: 1;
+                padding-right: var(--aimd-space-4);
+            }
+
+            .settings-item-label {
+                font-size: 14px;
+                font-weight: 500;
                 color: var(--aimd-text-primary);
             }
 
-            .settings-content p,
-            .support-content p {
-                color: var(--aimd-text-tertiary);
-                margin: 0 0 24px 0;
+            .settings-item-desc {
+                font-size: 13px;
+                color: var(--aimd-text-secondary);
+                line-height: 1.4;
             }
-            /* Support button */
+
+            /* Improved Toggle Switch (Linear/iOS Hybrid) */
+            .toggle-switch {
+                position: relative;
+                display: inline-block;
+                width: 40px; /* Slightly smaller */
+                height: 22px;
+                flex-shrink: 0;
+            }
+
+            .toggle-switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            .toggle-slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: var(--aimd-border-strong); /* Darker grey unchecked */
+                transition: .3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                border-radius: 99px;
+            }
+
+            .toggle-slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 2px;
+                bottom: 2px;
+                background-color: white;
+                transition: .3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                border-radius: 50%;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            }
+
+            .toggle-switch input:checked + .toggle-slider {
+                background-color: var(--aimd-interactive-primary);
+            }
+
+            .toggle-switch input:checked + .toggle-slider:before {
+                transform: translateX(18px);
+            }
+
+            .toggle-switch input:focus + .toggle-slider {
+                box-shadow: 0 0 0 2px var(--aimd-bg-primary), 0 0 0 4px var(--aimd-interactive-primary);
+            }
+
+            /* Storage Info Styles */
+            .settings-storage-info {
+                padding: var(--aimd-space-2) 0;
+            }
+
+            .storage-header {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: var(--aimd-space-2);
+                font-size: 13px;
+                color: var(--aimd-text-secondary);
+            }
+
+            .storage-progress-track {
+                height: 6px;
+                background: var(--aimd-border-default);
+                border-radius: var(--aimd-radius-full);
+                overflow: hidden;
+            }
+
+            .storage-progress-bar {
+                height: 100%;
+                background: var(--aimd-interactive-primary);
+                border-radius: var(--aimd-radius-full);
+                transition: width 0.5s ease;
+            }
+
+            /* Progress bar states */
+            .storage-progress-bar.warning { 
+                background: var(--aimd-color-warning); 
+            }
+            
+            .storage-progress-bar.critical { 
+                background: var(--aimd-color-danger); 
+            }
+
+            /* Backup Warning Section */
+            .settings-backup-warning {
+                margin-top: var(--aimd-space-4);
+                padding-top: var(--aimd-space-4);
+                border-top: 1px solid var(--aimd-border-subtle);
+            }
+
+            .settings-backup-warning .settings-item-info {
+                margin-bottom: var(--aimd-space-3);
+            }
+
+            .settings-backup-warning .settings-item-warning-text {
+                display: block;
+                font-size: 13px;
+                color: var(--aimd-text-warning);
+                margin-top: var(--aimd-space-1);
+            }
+
+            .export-backup-btn {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: var(--aimd-space-2);
+                padding: var(--aimd-space-3) var(--aimd-space-4);
+                background: var(--aimd-button-secondary-bg);
+                color: var(--aimd-button-secondary-text);
+                border: 1px solid var(--aimd-border-default);
+                border-radius: var(--aimd-radius-lg);
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background 0.2s, border-color 0.2s;
+            }
+
+            .export-backup-btn:hover {
+                background: var(--aimd-button-secondary-hover);
+                border-color: var(--aimd-border-strong);
+            }
+
+            .export-backup-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+            
+            /* Remove old warning styles */
+
+            /* Support Content - Redesigned */
+            .support-content {
+                padding: var(--aimd-space-6);
+                max-width: 480px;
+                margin: 0 auto;
+                display: flex;
+                flex-direction: column;
+                gap: var(--aimd-space-6);
+            }
+
+            .support-section {
+                text-align: center;
+                padding: var(--aimd-space-5);
+                background: var(--aimd-bg-tertiary);
+                border-radius: var(--aimd-radius-xl);
+                border: 1px solid var(--aimd-border-default);
+            }
+
+            .support-section h3 {
+                margin: 0 0 var(--aimd-space-2) 0;
+                font-size: 16px;
+                color: var(--aimd-text-primary);
+                font-weight: 600;
+            }
+
+            .support-section p {
+                margin: 0 0 var(--aimd-space-4) 0;
+                color: var(--aimd-text-secondary);
+                font-size: 13px;
+            }
+
+            /* Primary Button (GitHub) */
+            .primary-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: var(--aimd-space-2);
+                padding: var(--aimd-space-3) var(--aimd-space-5);
+                background: var(--aimd-button-primary-bg);
+                color: var(--aimd-button-primary-text);
+                border: none;
+                border-radius: var(--aimd-radius-lg);
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                text-decoration: none;
+                transition: background 0.2s, box-shadow 0.2s;
+                box-shadow: var(--aimd-shadow-sm);
+            }
+
+            .primary-btn:hover {
+                background: var(--aimd-button-primary-hover);
+                box-shadow: var(--aimd-shadow-md);
+            }
+
+            .primary-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* QR Code Cards Container */
+            .qr-cards-row {
+                display: flex;
+                justify-content: center;
+                gap: var(--aimd-space-6);
+                flex-wrap: wrap;
+            }
+
+            .qr-card {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: var(--aimd-space-2);
+            }
+
+            .qr-card-label,
+            .qr-card-label-link {
+                font-size: 12px;
+                color: var(--aimd-text-tertiary);
+                margin-bottom: var(--aimd-space-1);
+                text-decoration: none;
+                transition: color 0.2s;
+            }
+
+            .qr-card-label-link:hover {
+                text-decoration: underline;
+                color: var(--aimd-text-link);
+            }
+
+            .qr-image-wrapper {
+                padding: var(--aimd-space-3);
+                background: white;
+                border-radius: var(--aimd-radius-lg);
+                box-shadow: var(--aimd-shadow-sm);
+            }
+
+            .qr-image {
+                width: 120px;
+                height: 120px;
+                display: block;
+                border-radius: var(--aimd-radius-md);
+            }
+
+            .support-link {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: var(--aimd-space-2) var(--aimd-space-3);
+                background: var(--aimd-interactive-hover);
+                color: var(--aimd-text-link);
+                text-decoration: none;
+                font-size: 11px;
+                border: 1px solid var(--aimd-border-default);
+                border-radius: var(--aimd-radius-lg);
+                transition: all 0.2s ease;
+                margin-top: var(--aimd-space-3);
+                max-width: 160px;
+                text-align: center;
+                line-height: 1.3;
+            }
+
+            .support-link:hover {
+                background: var(--aimd-interactive-selected);
+                border-color: var(--aimd-text-link);
+            }
+
+            /* Support button (legacy, keep for compatibility) */
             .support-btn {
                 display: inline-block;
                 padding: var(--aimd-space-3) var(--aimd-space-6);
                 background: var(--aimd-button-primary-bg);
                 color: var(--aimd-button-primary-text);
                 text-decoration: none;
-                border-radius: var(--aimd-radius-lg);  /* Material Design 8px */
+                border-radius: var(--aimd-radius-lg);
                 font-weight: var(--aimd-font-medium);
                 transition: all var(--aimd-duration-base);
-                box-shadow: var(--aimd-shadow-sm);  /* Material Design elevation */
+                box-shadow: var(--aimd-shadow-sm);
             }
 
             .support-btn:hover {
                 background: var(--aimd-button-primary-hover);
-                box-shadow: var(--aimd-shadow-md);  /* Material Design hover elevation */
+                box-shadow: var(--aimd-shadow-md);
                 transform: translateY(-1px);
             }
 

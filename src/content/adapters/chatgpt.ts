@@ -269,6 +269,21 @@ export class ChatGPTAdapter extends SiteAdapter {
         return false;
     }
 
+    // ========================================
+    // Message Sending Support
+    // ========================================
+
+    getInputSelector(): string {
+        // ChatGPT uses a contenteditable div or textarea for input
+        // The main prompt input has id="prompt-textarea" or is in composer
+        return '#prompt-textarea, div[contenteditable="true"].ProseMirror';
+    }
+
+    getSendButtonSelector(): string {
+        // ChatGPT send button - look for data-testid or aria attributes
+        return 'button[data-testid="send-button"], button[aria-label="Send prompt"]';
+    }
+
     getIcon(): string {
         return Icons.chatgpt;
     }

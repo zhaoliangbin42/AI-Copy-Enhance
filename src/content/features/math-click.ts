@@ -1,6 +1,7 @@
 import { copyToClipboard } from '../../utils/dom-utils';
 import { logger } from '../../utils/logger';
 import { extractLatexSource } from '../parsers/latex-extractor';
+import { SettingsManager } from '../../settings/SettingsManager';
 
 /**
  * Click-to-copy math handler
@@ -22,7 +23,14 @@ export class MathClickHandler {
      * Enable click-to-copy for all math elements in a container
      * Uses MutationObserver to handle streaming updates
      */
-    enable(container: HTMLElement): void {
+    async enable(container: HTMLElement): Promise<void> {
+        // Check settings: is click-to-copy enabled?
+        const settings = await SettingsManager.getInstance().get('behavior');
+        if (!settings.enableClickToCopy) {
+            logger.info('[MathClick] Click-to-copy disabled by settings');
+            return;
+        }
+
         // Process existing math elements
         this.processContainer(container);
 

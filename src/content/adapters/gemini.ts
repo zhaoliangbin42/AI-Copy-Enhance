@@ -266,6 +266,20 @@ export class GeminiAdapter extends SiteAdapter {
         return false;
     }
 
+    // ========================================
+    // Message Sending Support
+    // ========================================
+
+    getInputSelector(): string {
+        // Gemini uses rich-textarea with Quill editor inside
+        return 'rich-textarea .ql-editor[contenteditable="true"]';
+    }
+
+    getSendButtonSelector(): string {
+        // Gemini send button with mat-icon-button class
+        return 'button.send-button, button[aria-label*="Send"]';
+    }
+
     getIcon(): string {
         return Icons.gemini;
     }
