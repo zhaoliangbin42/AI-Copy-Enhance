@@ -16,6 +16,7 @@
 import { dialogStyles } from './dialogs/dialog.css';
 import { DesignTokens } from '../utils/design-tokens';
 import { ThemeManager } from '../utils/ThemeManager';
+import { setupKeyboardIsolation } from '../utils/dom-utils';
 
 /**
  * Alert dialog options
@@ -387,6 +388,12 @@ export class DialogHost {
             }
         }, { signal });
 
+        // ✅ CRITICAL FIX: Comprehensive keyboard event blocking
+        // Prevents external pages (Claude.ai, ChatGPT, Gemini) from stealing focus
+        // and interrupting IME composition during input.
+        // Fixes reported input lag issue when creating folders.
+        this.blockPageKeyboardEvents(signal);
+
         // ESC key handler
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -403,6 +410,16 @@ export class DialogHost {
             this.closeDialog();
             this.resolvePromise?.(null);
         }, { signal });
+    }
+
+    /**
+     * Setup keyboard isolation on dialog input
+     * Uses shared utility to prevent host page from stealing focus
+     */
+    private blockPageKeyboardEvents(_signal: AbortSignal | undefined): void {
+        const inputEl = this.shadowRoot?.querySelector('#dialog-input') as HTMLInputElement;
+        if (!inputEl) return;
+        setupKeyboardIsolation(inputEl, { componentName: 'DialogHost' });
     }
 
     /**

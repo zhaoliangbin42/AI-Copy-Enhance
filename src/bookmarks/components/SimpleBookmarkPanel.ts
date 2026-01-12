@@ -15,6 +15,7 @@ import { ReaderPanel } from '../../content/features/re-render';
 import { fromBookmarks, findBookmarkIndex } from '../datasource/BookmarkDataSource';
 import { DialogManager } from '../../components/DialogManager';
 import { SettingsManager } from '../../settings/SettingsManager';
+import { setupKeyboardIsolation } from '../../utils/dom-utils';
 
 type ImportMergeStatus = 'normal' | 'rename' | 'import' | 'duplicate';
 
@@ -784,6 +785,9 @@ export class SimpleBookmarkPanel {
                 this.filterBookmarks();
                 this.refreshContent();
             }, { signal });
+
+            // Keyboard isolation to prevent Claude.ai from stealing focus
+            setupKeyboardIsolation(searchInput, { componentName: 'SimpleBookmarkPanel' });
         }
 
         // 自定义平台选择器

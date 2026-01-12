@@ -7,6 +7,7 @@ import { Icons } from '../../assets/icons';
 import { DesignTokens } from '../../utils/design-tokens';
 import { ThemeManager } from '../../utils/ThemeManager';
 import { DialogManager } from '../../components/DialogManager';
+import { setupKeyboardIsolation } from '../../utils/dom-utils';
 
 /**
  * Unified Bookmark Save Modal - Shadow DOM Version
@@ -254,6 +255,10 @@ export class BookmarkSaveModal {
         this.saveButtonElement = this.modal.querySelector('.save-modal-btn-save') as HTMLButtonElement;
         this.errorDivElement = this.modal.querySelector('.title-error');
 
+        // ✅ CRITICAL: Setup keyboard isolation AFTER titleInputElement is assigned
+        // (Previous bug: was called in setupEvents before this assignment)
+        this.blockPageKeyboardEvents(this.abortController?.signal);
+
         // Focus title input and trigger validation
         setTimeout(() => {
             if (this.titleInputElement) {
@@ -439,9 +444,39 @@ export class BookmarkSaveModal {
         const titleInput = modal.querySelector('.title-input') as HTMLInputElement;
         titleInput?.addEventListener('input', (e) => this.handleTitleInput(e), { signal });
 
+        // ✅ CRITICAL FIX: Comprehensive keyboard event blocking
+        // Prevents external pages (Claude.ai, ChatGPT, Gemini) from stealing focus
+        // and interrupting IME composition during input.
+        // 
+        // Best Practice References:
+        // - focus-trap library: Uses capture phase to intercept events early
+        // - ARIA Modal Pattern: Blocks all interaction outside modal
+        // - Web.dev Modal Guidelines: Prevent background keyboard navigation
+        // NOTE: Keyboard isolation is now called in show() after titleInputElement assignment
+
+        // Prevent external page from stealing focus by blocking focusin events at document level
+        document.addEventListener('focusin', (e) => {
+            // If focus moved to element outside our modal, prevent it
+            if (this.modal && !this.modal.contains(e.target as Node) && this.container?.contains(e.target as Node) === false) {
+                e.stopImmediatePropagation();
+            }
+        }, { signal, capture: true });
+
         // New Folder button
         const newFolderBtn = modal.querySelector('.new-folder-btn');
         newFolderBtn?.addEventListener('click', () => this.showCreateRootFolderInput(), { signal });
+    }
+
+    /**
+     * Setup keyboard isolation on title input element
+     * Uses shared utility to prevent host page from stealing focus
+     */
+    private blockPageKeyboardEvents(_signal: AbortSignal | undefined): void {
+        if (!this.titleInputElement) {
+            logger.warn('[AI-MarkDone][BookmarkSaveModal] No title input element for keyboard isolation');
+            return;
+        }
+        setupKeyboardIsolation(this.titleInputElement, { componentName: 'BookmarkSaveModal' });
     }
 
     /**

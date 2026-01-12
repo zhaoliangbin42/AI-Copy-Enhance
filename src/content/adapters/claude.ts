@@ -274,6 +274,25 @@ export class ClaudeAdapter extends SiteAdapter {
     }
 
     /**
+     * Claude-specific focus protection strategy
+     * 
+     * Claude.ai aggressively steals focus using programmatic focus() calls
+     * on its contenteditable chat input element via requestAnimationFrame.
+     * 
+     * Solution: Use HTML inert attribute to make the entire page non-interactive
+     * while the modal is open. This is more efficient than event blocking
+     * and completely prevents focus stealing at the browser level.
+     */
+    getFocusProtectionStrategy() {
+        return {
+            blockFocusEvents: false,        // Not needed with inert
+            blockKeyboardEvents: false,     // Not needed with inert
+            restoreFocusOnSteal: false,     // Not needed with inert
+            useInertAttribute: true         // Use browser-native inert attribute
+        };
+    }
+
+    /**
      * Claude-specific toolbar injection
      *
      * Use default implementation from base class which injects BEFORE the action bar.

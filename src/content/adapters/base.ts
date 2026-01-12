@@ -1,4 +1,45 @@
 /**
+ * Focus protection strategy for modal dialogs
+ * Allows platforms to customize how focus stealing is prevented
+ */
+export interface FocusProtectionStrategy {
+    /**
+     * Block focus events to prevent programmatic focus() calls
+     * Required for platforms like Claude.ai that use element.focus()
+     */
+    blockFocusEvents: boolean;
+
+    /**
+     * Block keyboard events to prevent keyboard-triggered focus changes
+     * Required for all platforms
+     */
+    blockKeyboardEvents: boolean;
+
+    /**
+     * Automatically restore focus when stolen
+     * Useful for aggressive platforms
+     */
+    restoreFocusOnSteal: boolean;
+
+    /**
+     * Use HTML inert attribute for focus protection (preferred)
+     * 
+     * When enabled, makes the entire page inert except the modal.
+     * This prevents ALL focus stealing at the browser level.
+     * 
+     * Advantages:
+     * - No event listeners needed
+     * - Zero CPU overhead
+     * - Complete protection
+     * - Browser-native solution
+     * 
+     * Requires: Chrome 102+, Safari 15.5+, Firefox 112+
+     * Fallback: Event blocking for older browsers
+     */
+    useInertAttribute?: boolean;
+}
+
+/**
  * Base adapter interface for LLM platforms
  * Defines common methods that each platform must implement
  */
@@ -133,6 +174,37 @@ export abstract class SiteAdapter {
      * Get platform-specific icon (SVG string)
      */
     abstract getIcon(): string;
+
+    /**
+     * Get platform-specific focus protection strategy
+     * 
+     * Some platforms (e.g., Claude.ai) aggressively steal focus from modal inputs
+     * using programmatic focus() calls or keyboard event listeners.
+     * 
+     * This method allows adapters to provide custom focus protection logic
+     * that will be applied when modals are open.
+     * 
+     * @returns Focus protection strategy or null for default behavior
+     * 
+     * @example
+     * // Claude.ai: Block both keyboard and focus events
+     * getFocusProtectionStrategy() {
+     *     return {
+     *         blockFocusEvents: true,
+     *         blockKeyboardEvents: true,
+     *         restoreFocusOnSteal: true
+     *     };
+     * }
+     * 
+     * @example
+     * // ChatGPT/Gemini: Only block keyboard events (default)
+     * getFocusProtectionStrategy() {
+     *     return null;  // Use default strategy
+     * }
+     */
+    getFocusProtectionStrategy(): FocusProtectionStrategy | null {
+        return null;  // Default: basic keyboard event blocking only
+    }
 
     /**
      * Inject toolbar wrapper into the page
