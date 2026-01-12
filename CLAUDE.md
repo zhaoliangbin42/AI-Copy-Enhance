@@ -208,12 +208,12 @@ eventBus.emit('message:complete', { count: allMessages.length });
 
 | 文档 | 用途 |
 |:----|:----|
-| [ADAPTER_CONTRACT.md](docs/antigravity/platform/ADAPTER_CONTRACT.md) | 平台适配器接口定义 |
+| [platform-adaptation.md](.agent/workflows/platform-adaptation.md) | **Platform Integration Manual** (SOP & Contract) |
 | [CAPABILITY_MATRIX.md](docs/antigravity/platform/CAPABILITY_MATRIX.md) | 平台功能支持矩阵 |
 
 ### 其他关键文档
 
-- **ADAPTER_CONTRACT.md** - 平台适配器接口定义
+- **platform-adaptation.md** - 平台适配手册 (SOP & Contract)
 - **CAPABILITY_MATRIX.md** - 平台功能支持矩阵
 - **GEMINI.md** - AI agent 开发标准
 - **.github/copilot-instructions.md** - 详细架构指南

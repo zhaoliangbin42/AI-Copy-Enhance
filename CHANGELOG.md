@@ -5,6 +5,18 @@ All notable changes to AI-MarkDone will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Claude Support**: Full support for `claude.ai`, including:
+  - **Toolbar Injection**: Toolbar now appears on Claude messages with Markdown handling.
+  - **Reader Mode**: Dedicated reader view for focused reading of Claude conversations.
+  - **Bookmarks**: Save and manage bookmarks directly from Claude chat history.
+  - **Message Extraction**: Accurate parsing of Claude's message structure and artifacts.
+
+### Fixed
+- **Theme System**: Fixed theme detection regression to ensure toolbar colors match the platform theme (Dark/Light).
+
 ## [2.5.0] - 2026-01-10
 
 ### Added

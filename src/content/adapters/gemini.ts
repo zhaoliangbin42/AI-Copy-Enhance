@@ -300,6 +300,30 @@ export class GeminiAdapter extends SiteAdapter {
                 const body = document.body;
                 return body?.classList.contains('dark-theme') ||
                     body?.classList.contains('light-theme');
+            },
+            detectFallback: () => {
+                // Fallback: Check background luminance
+                // Useful for early loading when classes might not be present
+                const body = document.body;
+                if (!body) return null;
+
+                try {
+                    const bg = getComputedStyle(body).backgroundColor;
+                    const match = bg.match(/\d+/g);
+
+                    if (!match || match.length < 3) return null;
+
+                    const r = parseInt(match[0], 10);
+                    const g = parseInt(match[1], 10);
+                    const b = parseInt(match[2], 10);
+
+                    // Calculate relative luminance
+                    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+                    return luminance < 0.5 ? 'dark' : null;
+                } catch {
+                    return null;
+                }
             }
         };
     }

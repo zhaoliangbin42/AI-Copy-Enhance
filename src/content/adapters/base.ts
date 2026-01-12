@@ -63,6 +63,12 @@ export interface ThemeDetector {
      * Check if platform has explicit theme (not relying on system preference)
      */
     hasExplicitTheme(): boolean;
+
+    /**
+     * Optional fallback detection when primary detection fails
+     * Useful for early loading states (e.g. checking background luminance)
+     */
+    detectFallback?(): 'dark' | 'light' | null;
 }
 
 /**

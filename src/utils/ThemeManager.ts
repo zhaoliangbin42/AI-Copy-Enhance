@@ -20,6 +20,8 @@
  */
 
 import { logger } from './logger';
+import type { SiteAdapter } from '../content/adapters/base';
+import { adapterRegistry } from '../content/adapters/registry';
 
 export type Theme = 'light' | 'dark';
 
@@ -59,7 +61,7 @@ export class ThemeManager {
         this.applyTheme(this.currentTheme);
         logger.info(`[ThemeManager] Initialized with theme: ${this.currentTheme}`);
 
-        // 2. Watch for DOM changes (ChatGPT/Gemini/Claude theme switches)
+        // 2. Watch for DOM changes
         this.startObserver();
 
         // 3. Watch for system preference changes (fallback)
@@ -69,119 +71,70 @@ export class ThemeManager {
     }
 
     /**
+     * Helper to get current site adapter
+     */
+    private getAdapter(): SiteAdapter | null {
+        return adapterRegistry.getAdapter();
+    }
+
+    /**
      * Detect current theme from host website
+     * 1. Check Adapter (Primary Detect)
+     * 2. Check Generic data-theme
+     * 3. Check Adapter (Fallback Detect - e.g. luminance)
+     * 4. Check System Preference (Final Fallback)
      */
     private detectHostTheme(): Theme {
-        const html = document.documentElement;
-        const body = document.body;
+        const adapter = this.getAdapter();
 
-        // Method 1: ChatGPT - html.dark class
-        if (html.classList.contains('dark')) {
-            logger.debug('[ThemeManager] Detected via html.dark (ChatGPT)');
-            return 'dark';
-        }
-        if (html.classList.contains('light')) {
-            logger.debug('[ThemeManager] Detected via html.light (ChatGPT)');
-            return 'light';
-        }
-
-        // Method 2: Gemini - body.dark-theme class
-        if (body?.classList.contains('dark-theme')) {
-            logger.debug('[ThemeManager] Detected via body.dark-theme (Gemini)');
-            return 'dark';
-        }
-        if (body?.classList.contains('light-theme')) {
-            logger.debug('[ThemeManager] Detected via body.light-theme (Gemini)');
-            return 'light';
+        // 1. Adapter Primary Detection
+        if (adapter) {
+            const detector = adapter.getThemeDetector();
+            const detected = detector.detect();
+            if (detected) {
+                logger.debug(`[ThemeManager] Detected via adapter (${adapter.constructor.name}): ${detected}`);
+                return detected;
+            }
         }
 
-        // Method 3: Generic data-theme attribute
-        const htmlTheme = html.getAttribute('data-theme') || html.dataset.theme;
-        if (htmlTheme === 'dark') {
-            logger.debug('[ThemeManager] Detected via html[data-theme]');
-            return 'dark';
-        }
-        if (htmlTheme === 'light') {
-            logger.debug('[ThemeManager] Detected via html[data-theme]');
-            return 'light';
+        // 2. Generic fallback: data-theme attribute
+        // This is checked BEFORE adapter fallback (luminance) because explicit attribute > heuristic
+        const htmlTheme = document.documentElement.getAttribute('data-theme');
+        if (htmlTheme === 'dark' || htmlTheme === 'light') {
+            logger.debug(`[ThemeManager] Detected via data-theme: ${htmlTheme}`);
+            return htmlTheme;
         }
 
-        const bodyTheme = body?.getAttribute('data-theme') || body?.dataset.theme;
-        if (bodyTheme === 'dark') {
-            logger.debug('[ThemeManager] Detected via body[data-theme]');
-            return 'dark';
-        }
-        if (bodyTheme === 'light') {
-            logger.debug('[ThemeManager] Detected via body[data-theme]');
-            return 'light';
-        }
-
-        // Method 4: Claude - data-mode attribute
-        const htmlMode = html.getAttribute('data-mode');
-        if (htmlMode === 'dark') {
-            logger.debug('[ThemeManager] Detected via html[data-mode] (Claude)');
-            return 'dark';
-        }
-        if (htmlMode === 'light') {
-            logger.debug('[ThemeManager] Detected via html[data-mode] (Claude)');
-            return 'light';
+        // 3. Adapter Fallback Detection (e.g. background luminance)
+        if (adapter) {
+            const detector = adapter.getThemeDetector();
+            if (detector.detectFallback) {
+                const fallback = detector.detectFallback();
+                if (fallback) {
+                    logger.debug(`[ThemeManager] Detected via adapter fallback: ${fallback}`);
+                    return fallback;
+                }
+            }
         }
 
-        // Method 5: Background luminance heuristic (Gemini fallback)
-        if (this.isBackgroundDark(body)) {
-            logger.debug('[ThemeManager] Detected via background luminance');
-            return 'dark';
-        }
-
-        // Method 6: System preference fallback
+        // 4. System preference fallback
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         logger.debug(`[ThemeManager] Fallback to system preference: ${prefersDark ? 'dark' : 'light'}`);
         return prefersDark ? 'dark' : 'light';
     }
 
     /**
-     * Check if an element has a dark background using luminance calculation
-     */
-    private isBackgroundDark(el: HTMLElement | null): boolean {
-        if (!el) return false;
-
-        try {
-            const bg = getComputedStyle(el).backgroundColor;
-            const match = bg.match(/\d+/g);
-
-            if (!match || match.length < 3) return false;
-
-            const r = parseInt(match[0], 10);
-            const g = parseInt(match[1], 10);
-            const b = parseInt(match[2], 10);
-
-            // Calculate relative luminance
-            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-            return luminance < 0.5;
-        } catch {
-            return false;
-        }
-    }
-
-
-    /**
      * Check if host has explicit theme (not just system preference)
      */
     private hasHostTheme(): boolean {
-        const html = document.documentElement;
-        const body = document.body;
+        const adapter = this.getAdapter();
+        if (adapter) {
+            return adapter.getThemeDetector().hasExplicitTheme();
+        }
 
-        return (
-            html.classList.contains('dark') ||
-            html.classList.contains('light') ||
-            body?.classList.contains('dark-theme') ||
-            body?.classList.contains('light-theme') ||
-            !!html.getAttribute('data-theme') ||
-            !!body?.getAttribute('data-theme') ||
-            !!html.getAttribute('data-mode') ||
-            !!body?.getAttribute('data-mode')
-        );
+        // Generic fallback check
+        const html = document.documentElement;
+        return !!html.getAttribute('data-theme');
     }
 
     /**
@@ -199,32 +152,32 @@ export class ThemeManager {
             this.observer.disconnect();
         }
 
-        this.observer = new MutationObserver((mutations) => {
-            // Check if any mutation is theme-related
-            const hasRelevantChange = mutations.some(mutation => {
-                if (mutation.type !== 'attributes') return false;
+        this.observer = new MutationObserver(() => {
+            this.checkThemeChange();
+        });
 
-                const attr = mutation.attributeName;
-                return attr === 'class' || attr === 'data-theme' || attr === 'data-mode' || attr === 'style';
+        const adapter = this.getAdapter();
+
+        if (adapter) {
+            // Use adapter's specific observation targets
+            const targets = adapter.getThemeDetector().getObserveTargets();
+            targets.forEach(({ element, attributes }) => {
+                const el = element === 'html' ? document.documentElement : document.body;
+                if (el) {
+                    this.observer!.observe(el, {
+                        attributes: true,
+                        attributeFilter: attributes
+                    });
+                    logger.debug(`[ThemeManager] Observing ${element} for: ${attributes.join(', ')}`);
+                }
             });
-
-            if (hasRelevantChange) {
-                this.checkThemeChange();
-            }
-        });
-
-        // Observe html element
-        this.observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['class', 'data-theme', 'data-mode', 'style']
-        });
-
-        // Observe body element (for Gemini)
-        if (document.body) {
-            this.observer.observe(document.body, {
+        } else {
+            // Generic fallback observation
+            this.observer.observe(document.documentElement, {
                 attributes: true,
-                attributeFilter: ['class', 'data-theme', 'data-mode', 'style']
+                attributeFilter: ['class', 'data-theme', 'style']
             });
+            logger.debug('[ThemeManager] Using generic fallback observation');
         }
     }
 
