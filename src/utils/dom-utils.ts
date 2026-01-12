@@ -4,22 +4,22 @@
  * @param wait Wait time in milliseconds
  */
 export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
+    func: T,
+    wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: number | null = null;
+    let timeout: number | null = null;
 
-  return function(this: any, ...args: Parameters<T>) {
-    const context = this;
+    return function (this: any, ...args: Parameters<T>) {
+        const context = this;
 
-    if (timeout !== null) {
-      clearTimeout(timeout);
-    }
+        if (timeout !== null) {
+            clearTimeout(timeout);
+        }
 
-    timeout = window.setTimeout(() => {
-      func.apply(context, args);
-    }, wait);
-  };
+        timeout = window.setTimeout(() => {
+            func.apply(context, args);
+        }, wait);
+    };
 }
 
 /**
@@ -28,22 +28,22 @@ export function debounce<T extends (...args: any[]) => any>(
  * @param limit Time limit in milliseconds
  */
 export function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  limit: number
+    func: T,
+    limit: number
 ): (...args: Parameters<T>) => void {
-  let inThrottle: boolean = false;
+    let inThrottle: boolean = false;
 
-  return function(this: any, ...args: Parameters<T>) {
-    const context = this;
+    return function (this: any, ...args: Parameters<T>) {
+        const context = this;
 
-    if (!inThrottle) {
-      func.apply(context, args);
-      inThrottle = true;
-      setTimeout(() => {
-        inThrottle = false;
-      }, limit);
-    }
-  };
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => {
+                inThrottle = false;
+            }, limit);
+        }
+    };
 }
 
 /**
@@ -52,41 +52,41 @@ export function throttle<T extends (...args: any[]) => any>(
  * @param timeout Maximum wait time in milliseconds
  */
 export function waitForElement(
-  selector: string,
-  timeout: number = 5000
+    selector: string,
+    timeout: number = 5000
 ): Promise<Element | null> {
-  return new Promise((resolve) => {
-    const element = document.querySelector(selector);
-    if (element) {
-      resolve(element);
-      return;
-    }
+    return new Promise((resolve) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            resolve(element);
+            return;
+        }
 
-    const observer = new MutationObserver(() => {
-      const element = document.querySelector(selector);
-      if (element) {
-        observer.disconnect();
-        resolve(element);
-      }
+        const observer = new MutationObserver(() => {
+            const element = document.querySelector(selector);
+            if (element) {
+                observer.disconnect();
+                resolve(element);
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        setTimeout(() => {
+            observer.disconnect();
+            resolve(null);
+        }, timeout);
     });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    setTimeout(() => {
-      observer.disconnect();
-      resolve(null);
-    }, timeout);
-  });
 }
 
 /**
  * Generate unique ID
  */
 export function generateId(): string {
-  return `aicopy-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `aicopy-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /**
@@ -94,51 +94,97 @@ export function generateId(): string {
  * @param text Text to copy
  */
 export async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch (error) {
-    console.error('Failed to copy to clipboard:', error);
-    // Fallback method
     try {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      const success = document.execCommand('copy');
-      document.body.removeChild(textarea);
-      return success;
-    } catch (fallbackError) {
-      console.error('Fallback copy failed:', fallbackError);
-      return false;
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+        // Fallback method
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            const success = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return success;
+        } catch (fallbackError) {
+            console.error('Fallback copy failed:', fallbackError);
+            return false;
+        }
     }
-  }
 }
 
 /**
  * Check if element is visible
  */
 export function isElementVisible(element: HTMLElement): boolean {
-  return !!(
-    element.offsetWidth ||
-    element.offsetHeight ||
-    element.getClientRects().length
-  );
+    return !!(
+        element.offsetWidth ||
+        element.offsetHeight ||
+        element.getClientRects().length
+    );
 }
 
 /**
  * Safe query selector that handles complex selectors
  */
 export function safeQuerySelector(
-  parent: Element | Document,
-  selector: string
+    parent: Element | Document,
+    selector: string
 ): Element | null {
-  try {
-    return parent.querySelector(selector);
-  } catch (error) {
-    console.error('Invalid selector:', selector, error);
-    return null;
-  }
+    try {
+        return parent.querySelector(selector);
+    } catch (error) {
+        console.error('Invalid selector:', selector, error);
+        return null;
+    }
+}
+
+/**
+ * Setup keyboard/mouse event isolation on an input element
+ * 
+ * Prevents host pages (Claude.ai, ChatGPT, Gemini) from:
+ * - Stealing focus via requestAnimationFrame loops
+ * - Intercepting keyboard events
+ * - Interfering with IME composition
+ * 
+ * Uses capture phase to intercept events before they reach page listeners.
+ * 
+ * @param element - The input or textarea element to protect
+ * @param options - Configuration options
+ */
+export function setupKeyboardIsolation(
+    element: HTMLInputElement | HTMLTextAreaElement,
+    options: {
+        /** Allow Tab key for accessibility navigation (default: true) */
+        allowTab?: boolean;
+        /** Component name for logging */
+        componentName?: string;
+    } = {}
+): void {
+    const { allowTab = true } = options;
+
+    const stopKeyboard = (e: KeyboardEvent) => {
+        if (allowTab && e.key === 'Tab') return;
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    };
+
+    const stopMouse = (e: Event) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    };
+
+    // Keyboard events - capture phase
+    element.addEventListener('keydown', stopKeyboard as EventListener, true);
+    element.addEventListener('keyup', stopKeyboard as EventListener, true);
+    element.addEventListener('keypress', stopKeyboard as EventListener, true);
+
+    // Mouse/focus events - capture phase
+    element.addEventListener('mousedown', stopMouse, true);
+    element.addEventListener('click', stopMouse, true);
+    element.addEventListener('focus', stopMouse, true);
 }

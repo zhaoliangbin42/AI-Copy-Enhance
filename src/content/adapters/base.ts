@@ -1,4 +1,77 @@
 /**
+ * Focus protection strategy for modal dialogs
+ * Allows platforms to customize how focus stealing is prevented
+ */
+export interface FocusProtectionStrategy {
+    /**
+     * Block focus events to prevent programmatic focus() calls
+     * Required for platforms like Claude.ai that use element.focus()
+     */
+    blockFocusEvents: boolean;
+
+    /**
+     * Block keyboard events to prevent keyboard-triggered focus changes
+     * Required for all platforms
+     */
+    blockKeyboardEvents: boolean;
+
+    /**
+     * Automatically restore focus when stolen
+     * Useful for aggressive platforms
+     */
+    restoreFocusOnSteal: boolean;
+
+    /**
+     * Use HTML inert attribute for focus protection (preferred)
+     * 
+     * When enabled, makes the entire page inert except the modal.
+     * This prevents ALL focus stealing at the browser level.
+     * 
+     * Advantages:
+     * - No event listeners needed
+     * - Zero CPU overhead
+     * - Complete protection
+     * - Browser-native solution
+     * 
+     * Requires: Chrome 102+, Safari 15.5+, Firefox 112+
+     * Fallback: Event blocking for older browsers
+     */
+    useInertAttribute?: boolean;
+}
+
+/**
+ * Theme detection configuration for a platform
+ * Allows each platform to define its own theme detection logic
+ */
+export interface ThemeDetector {
+    /**
+     * Detect current theme from DOM
+     * @returns 'dark' | 'light' | null (null = fallback to system preference)
+     */
+    detect(): 'dark' | 'light' | null;
+
+    /**
+     * Get elements and attributes to observe for theme changes
+     * @returns Array of observation targets
+     */
+    getObserveTargets(): Array<{
+        element: 'html' | 'body';
+        attributes: string[];
+    }>;
+
+    /**
+     * Check if platform has explicit theme (not relying on system preference)
+     */
+    hasExplicitTheme(): boolean;
+
+    /**
+     * Optional fallback detection when primary detection fails
+     * Useful for early loading states (e.g. checking background luminance)
+     */
+    detectFallback?(): 'dark' | 'light' | null;
+}
+
+/**
  * Base adapter interface for LLM platforms
  * Defines common methods that each platform must implement
  */
@@ -85,6 +158,16 @@ export abstract class SiteAdapter {
         return false;  // Default: no filtering
     }
 
+    /**
+     * Get placeholder text for noise nodes (e.g., Artifacts)
+     * If returns a string, the node will be replaced with a placeholder instead of removed
+     * @param node - DOM node to get placeholder for
+     * @returns Placeholder text or undefined to remove the node
+     */
+    getArtifactPlaceholder(_node: HTMLElement): string | undefined {
+        return undefined;  // Default: remove without placeholder
+    }
+
     // ========================================
     // Message Sending Support (Phase 3)
     // ========================================
@@ -123,4 +206,80 @@ export abstract class SiteAdapter {
      * Get platform-specific icon (SVG string)
      */
     abstract getIcon(): string;
+
+    /**
+     * Get platform-specific focus protection strategy
+     * 
+     * Some platforms (e.g., Claude.ai) aggressively steal focus from modal inputs
+     * using programmatic focus() calls or keyboard event listeners.
+     * 
+     * This method allows adapters to provide custom focus protection logic
+     * that will be applied when modals are open.
+     * 
+     * @returns Focus protection strategy or null for default behavior
+     * 
+     * @example
+     * // Claude.ai: Block both keyboard and focus events
+     * getFocusProtectionStrategy() {
+     *     return {
+     *         blockFocusEvents: true,
+     *         blockKeyboardEvents: true,
+     *         restoreFocusOnSteal: true
+     *     };
+     * }
+     * 
+     * @example
+     * // ChatGPT/Gemini: Only block keyboard events (default)
+     * getFocusProtectionStrategy() {
+     *     return null;  // Use default strategy
+     * }
+     */
+    getFocusProtectionStrategy(): FocusProtectionStrategy | null {
+        return null;  // Default: basic keyboard event blocking only
+    }
+
+    /**
+     * Inject toolbar wrapper into the page
+     * Platform-specific implementation to handle different DOM structures.
+     *
+     * Default implementation: inject wrapper before the action bar.
+     * Override this for platforms with special requirements (e.g., Claude).
+     *
+     * @param messageElement - The message element container from getMessageSelector()
+     * @param toolbarWrapper - The toolbar wrapper element to inject
+     * @returns true if injection successful, false otherwise
+     *
+     * @example
+     * // Default implementation (used by ChatGPT, Gemini)
+     * const actionBar = messageElement.querySelector(this.getActionBarSelector());
+     * if (!actionBar || !actionBar.parentElement) return false;
+     * actionBar.parentElement.insertBefore(toolbarWrapper, actionBar);
+     * return true;
+     *
+     * @example
+     * // Claude: Inject AFTER message content instead of before action bar
+     * const content = messageElement.querySelector(this.getActionBarSelector());
+     * if (!content || !content.parentElement) return false;
+     * // Insert after content...
+     * return true;
+     */
+    injectToolbar(messageElement: HTMLElement, toolbarWrapper: HTMLElement): boolean {
+        const actionBar = messageElement.querySelector(this.getActionBarSelector());
+        if (!actionBar || !actionBar.parentElement) {
+            return false;
+        }
+        actionBar.parentElement.insertBefore(toolbarWrapper, actionBar);
+        return true;
+    }
+
+    /**
+     * Get platform-specific theme detector
+     * 
+     * Each platform has its own way of indicating dark/light theme.
+     * This method returns a ThemeDetector that knows how to detect
+     * and observe theme changes for this platform.
+     * 
+     * @returns ThemeDetector for this platform
+     */
+    abstract getThemeDetector(): ThemeDetector;
 }

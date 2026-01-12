@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "AI-MarkDone",
+    "name": "AI-MarkDone | 给大模型添加沉浸式阅读模式、书签、LaTex公式复制",
     "version": "2.5.0",
-    "description": "AI-MarkDone: ChatGPT & Gemini enhancement - One-click Markdown copy, formatted preview, word count, perfect math formula support.",
+    "description": "为 ChatGPT 和 Gemini 提供沉浸式阅读模式、书签管理、LaTeX 公式一键复制、Markdown 导出等功能，提升大模型使用体验。",
     "permissions": [
         "clipboardWrite",
         "storage"
@@ -10,14 +10,16 @@
     "host_permissions": [
         "https://chatgpt.com/*",
         "https://chat.openai.com/*",
-        "https://gemini.google.com/*"
+        "https://gemini.google.com/*",
+        "https://claude.ai/*"
     ],
     "content_scripts": [
         {
             "matches": [
                 "https://chatgpt.com/*",
                 "https://chat.openai.com/*",
-                "https://gemini.google.com/*"
+                "https://gemini.google.com/*",
+                "https://claude.ai/*"
             ],
             "js": [
                 "content.js"

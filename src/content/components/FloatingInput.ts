@@ -13,6 +13,7 @@
 
 import { Icons } from '../../assets/icons';
 import { logger } from '../../utils/logger';
+import { setupKeyboardIsolation } from '../../utils/dom-utils';
 
 export interface FloatingInputOptions {
     /** Callback when user clicks send button */
@@ -214,7 +215,7 @@ export class FloatingInput {
         this.textarea.placeholder = 'Type your message...';
 
         // Event isolation: prevent host page from intercepting keyboard events
-        this.setupKeyboardIsolation(this.textarea);
+        setupKeyboardIsolation(this.textarea, { componentName: 'FloatingInput' });
 
         this.textarea.addEventListener('input', (e) => {
             e.stopPropagation();
@@ -295,37 +296,6 @@ export class FloatingInput {
         }, 100);
     }
 
-    /**
-     * Setup keyboard event isolation to prevent host page interference
-     * Based on proven pattern from SimpleBookmarkPanel
-     */
-    private setupKeyboardIsolation(textarea: HTMLTextAreaElement): void {
-        // Stop keyboard events from bubbling to host page
-        const stopKeyboard = (e: KeyboardEvent) => {
-            // Allow Tab for focus navigation (accessibility)
-            if (e.key === 'Tab') return;
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-        };
-
-        textarea.addEventListener('keydown', stopKeyboard, true);
-        textarea.addEventListener('keyup', (e) => {
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-        }, true);
-        textarea.addEventListener('keypress', (e) => {
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-        }, true);
-
-        // Stop mouse events from bubbling
-        const stopMouse = (e: Event) => {
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-        };
-        textarea.addEventListener('mousedown', stopMouse, true);
-        textarea.addEventListener('click', stopMouse, true);
-    }
 
     /**
      * Setup resize handle drag behavior

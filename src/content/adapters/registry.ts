@@ -1,6 +1,7 @@
 import { SiteAdapter } from './base';
 import { ChatGPTAdapter } from './chatgpt';
 import { GeminiAdapter } from './gemini';
+import { ClaudeAdapter } from './claude';
 
 /**
  * Adapter registry for managing multiple platform adapters
@@ -13,6 +14,7 @@ class AdapterRegistry {
         // Register all available adapters
         this.register(new ChatGPTAdapter());
         this.register(new GeminiAdapter());
+        this.register(new ClaudeAdapter());
     }
 
     /**
@@ -45,6 +47,14 @@ class AdapterRegistry {
      */
     isSupported(url: string = window.location.href): boolean {
         return this.getAdapter(url) !== null;
+    }
+
+    /**
+     * Get all registered adapters
+     * Used for fallback theme detection when current adapter is unknown
+     */
+    getAllAdapters(): SiteAdapter[] {
+        return [...this.adapters];
     }
 }
 

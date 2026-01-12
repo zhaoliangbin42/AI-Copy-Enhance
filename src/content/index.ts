@@ -553,6 +553,18 @@ class ContentScript {
                 return '';
             }
 
+            // Claude.ai: Use adapter's extractUserPrompt method
+            if (adapter.matches(window.location.href) && window.location.href.includes('claude.ai')) {
+                logger.debug('[getUserMessage] Claude mode');
+                const userPrompt = adapter.extractUserPrompt(messageElement);
+                if (userPrompt) {
+                    logger.debug(`[getUserMessage] Extracted Claude user message: ${userPrompt.substring(0, 50)}`);
+                    return userPrompt;
+                }
+                logger.error('[getUserMessage] Failed to extract Claude user message');
+                return '';
+            }
+
             if ('isGemini' in adapter && typeof adapter.isGemini === 'function' && adapter.isGemini()) {
                 // Gemini: Find user prompts
                 logger.debug('[getUserMessage] Gemini mode');

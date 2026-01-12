@@ -11,7 +11,7 @@
 |:-----|:---|
 | **项目名称** | AI-MarkDone |
 | **类型** | Chrome 浏览器扩展 (Manifest V3) |
-| **目标平台** | ChatGPT, Gemini |
+| **目标平台** | ChatGPT, Gemini, Claude |
 | **技术栈** | TypeScript, Vite, Shadow DOM |
 | **核心功能** | 公式复制、Markdown 复制、实时预览、字数统计、书签管理 |
 
@@ -39,9 +39,11 @@
 |:-----|:-------|:-----|
 | `/develop` | [development.md](.agent/workflows/development.md) | 新功能开发 |
 | `/bugfix` | [bug-fix.md](.agent/workflows/bug-fix.md) | Bug 修复 |
+| `/changelog-maintenance` | [changelog-maintenance.md](.agent/workflows/changelog-maintenance.md) | Changelog 维护 SOP |
 | `/review` | [code-review.md](.agent/workflows/code-review.md) | 代码审查 |
 | `/style` | [style-modification.md](.agent/workflows/style-modification.md) | 样式修改 |
 | `/release` | [release-preparation.md](.agent/workflows/release-preparation.md) | 发版准备 |
+| `/adapt` | [platform-adaptation.md](.agent/workflows/platform-adaptation.md) | 新平台适配 |
 
 ---
 
@@ -60,13 +62,13 @@
 ```
 src/
 ├── content/          # Content Script 主入口
-│   ├── adapters/     # 平台适配器 (ChatGPT/Gemini)
+│   ├── adapters/     # 平台适配器 (ChatGPT/Gemini/Claude)
 │   ├── features/     # 功能模块
 │   └── parsers/      # Markdown 解析器
 ├── bookmarks/        # 书签功能模块
 ├── renderer/         # Markdown 渲染器
 ├── styles/           # 样式与 Token
-└── utils/            # 全局工具函数
+└── utils/            # 全局工具函数 + ThemeManager
 ```
 
 ---
@@ -75,13 +77,13 @@ src/
 
 | 文档 | 用途 |
 |:----|:----|
-| [ADAPTER_CONTRACT.md](docs/antigravity/platform/ADAPTER_CONTRACT.md) | 平台适配器接口定义 |
 | [CAPABILITY_MATRIX.md](docs/antigravity/platform/CAPABILITY_MATRIX.md) | 平台功能支持矩阵 |
+| [platform-adaptation.md](.agent/workflows/platform-adaptation.md) | **Platform Integration Manual** (SOP & Contract) |
 
 ---
 
 ## ✅ 提交前检查
 
 - [ ] `npm run build` 成功
-- [ ] 接口变更已更新 `ADAPTER_CONTRACT.md`
+- [ ] 接口变更已更新 `PLATFORM_ADAPTATION_GUIDE.md`
 - [ ] `CHANGELOG.md` 已更新（见 [changelog.md](.agent/rules/changelog.md)） **(Must be in English / 必须使用英文)**

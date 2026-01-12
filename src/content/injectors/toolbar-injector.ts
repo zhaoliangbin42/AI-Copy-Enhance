@@ -46,13 +46,19 @@ export class ToolbarInjector {
         }
 
         // Create wrapper and insert (hidden)
-        const isGemini = messageElement.tagName.toLowerCase() === 'model-response';
-        const wrapper = this.createWrapper(toolbar, isGemini);
+        const wrapper = this.createWrapper(toolbar);
 
         // 🔑 Key: Insert hidden
         wrapper.style.display = 'none';
 
-        actionBar.parentElement.insertBefore(wrapper, actionBar);
+        // Use adapter's injectToolbar method for platform-specific injection logic
+        // This delegates the injection strategy to each platform adapter
+        const injected = this.adapter.injectToolbar(messageElement, wrapper);
+
+        if (!injected) {
+            logger.warn('[toolbar] ❌ Adapter failed to inject toolbar');
+            return false;
+        }
 
         // Update state
         this.messageStates.set(messageElement, ToolbarState.INJECTED);
@@ -121,18 +127,16 @@ export class ToolbarInjector {
         }
     }
 
-    private createWrapper(toolbar: HTMLElement, isGemini: boolean): HTMLElement {
+    private createWrapper(toolbar: HTMLElement): HTMLElement {
         const wrapper = document.createElement('div');
         wrapper.className = 'aicopy-toolbar-wrapper';
 
-        if (isGemini) {
-            // Gemini: match official toolbar padding (60px left)
-            wrapper.style.cssText = 'margin-bottom: 8px; padding-left: 60px;';
-        } else {
-            // ChatGPT: no extra padding
-            wrapper.style.cssText = 'margin-bottom: 0px; margin-top: 10px;';
-        }
-
+        wrapper.style.position = 'relative';
+        // Set margin-left: auto on toolbar container for right alignment
+        toolbar.style.position = 'absolute';
+        toolbar.style.right = '0';
+        toolbar.style.zIndex = 'var(--aimd-z-base)';
+        
         wrapper.appendChild(toolbar);
         return wrapper;
     }

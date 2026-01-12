@@ -1,4 +1,4 @@
-import { SiteAdapter } from './base';
+import { SiteAdapter, ThemeDetector } from './base';
 import { logger } from '../../utils/logger';
 import { Icons } from '../../assets/icons';
 
@@ -286,5 +286,24 @@ export class ChatGPTAdapter extends SiteAdapter {
 
     getIcon(): string {
         return Icons.chatgpt;
+    }
+
+    getThemeDetector(): ThemeDetector {
+        return {
+            detect: () => {
+                const html = document.documentElement;
+                if (html.classList.contains('dark')) return 'dark';
+                if (html.classList.contains('light')) return 'light';
+                return null;
+            },
+            getObserveTargets: () => [{
+                element: 'html',
+                attributes: ['class']
+            }],
+            hasExplicitTheme: () => {
+                const html = document.documentElement;
+                return html.classList.contains('dark') || html.classList.contains('light');
+            }
+        };
     }
 }
