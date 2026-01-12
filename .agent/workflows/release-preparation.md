@@ -124,62 +124,59 @@ npm run build
 
 ## Phase 5: Git 提交与合并 (Commit & Merge)
 
-### 5.1 提交到当前分支
-
+### 5.1 提交预发布工作
+在当前开发分支提交版本号、日志等更新：
 ```bash
 git add .
-git commit -m "chore: release preparation v{VERSION}"
+git commit -m "chore: prepare release v{VERSION}"
 ```
 
 ### 5.2 合并到 main 分支
-
+切换至 `main` 并使用 `--no-ff` 进行合并，以保留清晰的发布节点：
 ```bash
 // 切换到 main
 git checkout main
 
-// 合并开发分支
-git merge {current_branch}
+// 合并开发分支 (推荐包含核心特性文案)
+git merge {current_branch} --no-ff -m "release: v{VERSION} 🚀 {SUMMARY_OF_FEATURES}"
 ```
 
-### 5.3 修正提交信息 (Amend)
-
-> [!IMPORTANT]
-> 这是关键步骤。我们将使用 `--amend` 来创建一个干净的 Release Commit。
-
+### 5.3 打标签 (Tagging)
+合并完成后立即在 `main` 分支打上版本标签：
 ```bash
-// 修改最近一次提交信息
-git commit --amend
-```
-
-**Commit Message 格式**:
-```
-Release v{VERSION}: {USER_CUSTOM_MESSAGE}
-
-- {Brief summary of major changes}
+git tag v{VERSION}
 ```
 
 ---
 
-## Phase 6: 发布 (Publish)
+## Phase 6: 发布产物与推送 (Publishing)
 
-### 6.1 推送代码
-
+### 6.1 生成发布包
+将构建好的 `dist/` 目录打包，用于预览版分发或商店上传：
 ```bash
-git push origin main
+zip -r deployment.zip dist/
 ```
 
-### 6.2 创建 Tag
-
+### 6.2 推送至远程仓库
 ```bash
-git tag v{VERSION}
-git push origin v{VERSION}
+git push origin main --tags
 ```
 
-### 6.3 Chrome Web Store 发布
+### 6.3 GitHub Release SOP
+1. **Push**: 确保代码和标签已推送到远程。
+2. **Draft**: 在 GitHub 项目页点击 **Releases** -> **Draft a new release**。
+3. **Choose Tag**: 选择刚打好的 `v{VERSION}`。
+4. **Content**: 
+   - **Title**: `AI-MarkDone v{VERSION}: {CORE_THEME}`
+   - **Description**: 粘贴 `CHANGELOG.md` 中对应版本的内容。
+5. **Assets**: 拖入 `deployment.zip`。
+6. **Publish**: 点击发布。
 
-1. 打包 `dist/` 目录为 `deployment.zip`
-2. 上传到 Chrome Developer Dashboard
-3. 提交审核
+---
+
+## Phase 7: Chrome Web Store (Final Scan)
+1. 使用 `deployment.zip` 上传到 Chrome Developer Dashboard。
+2. 提交审核。
 
 ---
 

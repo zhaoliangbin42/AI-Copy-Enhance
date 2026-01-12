@@ -6,7 +6,8 @@
 const SUPPORTED_HOSTS = [
     'chatgpt.com',
     'chat.openai.com',
-    'gemini.google.com'
+    'gemini.google.com',
+    'claude.ai'
 ];
 // IMPORTANT: When adding a new host, also update src/popup/popup.html to include a link to the platform.
 

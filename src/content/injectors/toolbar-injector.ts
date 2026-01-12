@@ -52,7 +52,14 @@ export class ToolbarInjector {
         // 🔑 Key: Insert hidden
         wrapper.style.display = 'none';
 
-        actionBar.parentElement.insertBefore(wrapper, actionBar);
+        // Use adapter's injectToolbar method for platform-specific injection logic
+        // This delegates the injection strategy to each platform adapter
+        const injected = this.adapter.injectToolbar(messageElement, wrapper);
+
+        if (!injected) {
+            logger.warn('[toolbar] ❌ Adapter failed to inject toolbar');
+            return false;
+        }
 
         // Update state
         this.messageStates.set(messageElement, ToolbarState.INJECTED);

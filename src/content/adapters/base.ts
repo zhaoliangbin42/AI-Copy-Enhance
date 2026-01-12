@@ -123,4 +123,38 @@ export abstract class SiteAdapter {
      * Get platform-specific icon (SVG string)
      */
     abstract getIcon(): string;
+
+    /**
+     * Inject toolbar wrapper into the page
+     * Platform-specific implementation to handle different DOM structures.
+     *
+     * Default implementation: inject wrapper before the action bar.
+     * Override this for platforms with special requirements (e.g., Claude).
+     *
+     * @param messageElement - The message element container from getMessageSelector()
+     * @param toolbarWrapper - The toolbar wrapper element to inject
+     * @returns true if injection successful, false otherwise
+     *
+     * @example
+     * // Default implementation (used by ChatGPT, Gemini)
+     * const actionBar = messageElement.querySelector(this.getActionBarSelector());
+     * if (!actionBar || !actionBar.parentElement) return false;
+     * actionBar.parentElement.insertBefore(toolbarWrapper, actionBar);
+     * return true;
+     *
+     * @example
+     * // Claude: Inject AFTER message content instead of before action bar
+     * const content = messageElement.querySelector(this.getActionBarSelector());
+     * if (!content || !content.parentElement) return false;
+     * // Insert after content...
+     * return true;
+     */
+    injectToolbar(messageElement: HTMLElement, toolbarWrapper: HTMLElement): boolean {
+        const actionBar = messageElement.querySelector(this.getActionBarSelector());
+        if (!actionBar || !actionBar.parentElement) {
+            return false;
+        }
+        actionBar.parentElement.insertBefore(toolbarWrapper, actionBar);
+        return true;
+    }
 }

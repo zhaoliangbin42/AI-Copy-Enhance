@@ -89,7 +89,7 @@ Secure, verified, and auto-updated.
 
 ### 📦 Manual Installation (Developer Mode)
 
-1. Download the latest ZIP file from [GitHub Releases](././releases).
+1. Download the latest ZIP file from [GitHub Releases](https://github.com/zhaoliangbin42/AI-MarkDone/releases).
 2. Unzip the file.
 3. Open Chrome and go to `chrome://extensions/`.
 4. Enable **Developer mode** in the top right corner.
