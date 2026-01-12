@@ -1,4 +1,4 @@
-import { SiteAdapter } from './base';
+import { SiteAdapter, ThemeDetector } from './base';
 import { logger } from '../../utils/logger';
 import { Icons } from '../../assets/icons';
 
@@ -312,5 +312,24 @@ export class ClaudeAdapter extends SiteAdapter {
         }
         actionBar.parentElement.insertBefore(toolbarWrapper, actionBar);
         return true;
+    }
+
+    getThemeDetector(): ThemeDetector {
+        return {
+            detect: () => {
+                const html = document.documentElement;
+                const mode = html.getAttribute('data-mode');
+                if (mode === 'dark') return 'dark';
+                if (mode === 'light') return 'light';
+                return null;
+            },
+            getObserveTargets: () => [{
+                element: 'html',
+                attributes: ['data-mode']
+            }],
+            hasExplicitTheme: () => {
+                return !!document.documentElement.getAttribute('data-mode');
+            }
+        };
     }
 }

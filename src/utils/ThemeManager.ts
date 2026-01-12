@@ -1,15 +1,13 @@
 /**
  * ThemeManager - Unified Theme Detection and Synchronization
  * 
- * Detects host website themes (ChatGPT, Gemini) and synchronizes
+ * Uses platform adapters to detect host website themes and synchronizes
  * with our design token system via data-aimd-theme attribute.
  * 
- * Detection Priority:
- * 1. ChatGPT: html.dark class
- * 2. Gemini: body.dark-theme class  
- * 3. Generic: data-theme attribute
- * 4. Background luminance heuristic
- * 5. System preference fallback
+ * Architecture:
+ * - ThemeDetector interface defined in adapters/base.ts
+ * - Each adapter (ChatGPT, Gemini, Claude) implements getThemeDetector()
+ * - ThemeManager uses the current adapter's detector for theme detection
  * 
  * @example
  * // Initialize at app startup
@@ -61,7 +59,7 @@ export class ThemeManager {
         this.applyTheme(this.currentTheme);
         logger.info(`[ThemeManager] Initialized with theme: ${this.currentTheme}`);
 
-        // 2. Watch for DOM changes (ChatGPT/Gemini theme switches)
+        // 2. Watch for DOM changes (ChatGPT/Gemini/Claude theme switches)
         this.startObserver();
 
         // 3. Watch for system preference changes (fallback)
@@ -118,13 +116,24 @@ export class ThemeManager {
             return 'light';
         }
 
-        // Method 4: Background luminance heuristic (Gemini fallback)
+        // Method 4: Claude - data-mode attribute
+        const htmlMode = html.getAttribute('data-mode');
+        if (htmlMode === 'dark') {
+            logger.debug('[ThemeManager] Detected via html[data-mode] (Claude)');
+            return 'dark';
+        }
+        if (htmlMode === 'light') {
+            logger.debug('[ThemeManager] Detected via html[data-mode] (Claude)');
+            return 'light';
+        }
+
+        // Method 5: Background luminance heuristic (Gemini fallback)
         if (this.isBackgroundDark(body)) {
             logger.debug('[ThemeManager] Detected via background luminance');
             return 'dark';
         }
 
-        // Method 5: System preference fallback
+        // Method 6: System preference fallback
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         logger.debug(`[ThemeManager] Fallback to system preference: ${prefersDark ? 'dark' : 'light'}`);
         return prefersDark ? 'dark' : 'light';
@@ -155,6 +164,7 @@ export class ThemeManager {
         }
     }
 
+
     /**
      * Check if host has explicit theme (not just system preference)
      */
@@ -168,7 +178,9 @@ export class ThemeManager {
             body?.classList.contains('dark-theme') ||
             body?.classList.contains('light-theme') ||
             !!html.getAttribute('data-theme') ||
-            !!body?.getAttribute('data-theme')
+            !!body?.getAttribute('data-theme') ||
+            !!html.getAttribute('data-mode') ||
+            !!body?.getAttribute('data-mode')
         );
     }
 
@@ -193,7 +205,7 @@ export class ThemeManager {
                 if (mutation.type !== 'attributes') return false;
 
                 const attr = mutation.attributeName;
-                return attr === 'class' || attr === 'data-theme' || attr === 'style';
+                return attr === 'class' || attr === 'data-theme' || attr === 'data-mode' || attr === 'style';
             });
 
             if (hasRelevantChange) {
@@ -204,14 +216,14 @@ export class ThemeManager {
         // Observe html element
         this.observer.observe(document.documentElement, {
             attributes: true,
-            attributeFilter: ['class', 'data-theme', 'style']
+            attributeFilter: ['class', 'data-theme', 'data-mode', 'style']
         });
 
         // Observe body element (for Gemini)
         if (document.body) {
             this.observer.observe(document.body, {
                 attributes: true,
-                attributeFilter: ['class', 'data-theme', 'style']
+                attributeFilter: ['class', 'data-theme', 'data-mode', 'style']
             });
         }
     }
@@ -236,13 +248,16 @@ export class ThemeManager {
      * Check if theme has changed and notify listeners
      */
     private checkThemeChange(): void {
+        const oldTheme = this.currentTheme;
         const newTheme = this.detectHostTheme();
+
+        logger.debug(`[ThemeManager] checkThemeChange: ${oldTheme} -> ${newTheme}`);
 
         if (newTheme !== this.currentTheme) {
             this.currentTheme = newTheme;
             this.applyTheme(newTheme);
             this.notifyListeners(newTheme);
-            logger.info(`[ThemeManager] Theme changed to: ${newTheme}`);
+            logger.info(`[ThemeManager] 🎨 Theme changed: ${oldTheme} -> ${newTheme}`);
         }
     }
 

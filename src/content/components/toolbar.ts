@@ -43,6 +43,11 @@ export class Toolbar {
         this.injectStyles();
         this.setTheme(ThemeManager.getInstance().isDarkMode());
 
+        // Subscribe to theme changes for hot-switching
+        ThemeManager.getInstance().subscribe((theme) => {
+            this.setTheme(theme === 'dark');
+        });
+
         // Create UI
         this.createUI();
     }

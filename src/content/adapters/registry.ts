@@ -48,6 +48,14 @@ class AdapterRegistry {
     isSupported(url: string = window.location.href): boolean {
         return this.getAdapter(url) !== null;
     }
+
+    /**
+     * Get all registered adapters
+     * Used for fallback theme detection when current adapter is unknown
+     */
+    getAllAdapters(): SiteAdapter[] {
+        return [...this.adapters];
+    }
 }
 
 // Export singleton instance

@@ -40,6 +40,32 @@ export interface FocusProtectionStrategy {
 }
 
 /**
+ * Theme detection configuration for a platform
+ * Allows each platform to define its own theme detection logic
+ */
+export interface ThemeDetector {
+    /**
+     * Detect current theme from DOM
+     * @returns 'dark' | 'light' | null (null = fallback to system preference)
+     */
+    detect(): 'dark' | 'light' | null;
+
+    /**
+     * Get elements and attributes to observe for theme changes
+     * @returns Array of observation targets
+     */
+    getObserveTargets(): Array<{
+        element: 'html' | 'body';
+        attributes: string[];
+    }>;
+
+    /**
+     * Check if platform has explicit theme (not relying on system preference)
+     */
+    hasExplicitTheme(): boolean;
+}
+
+/**
  * Base adapter interface for LLM platforms
  * Defines common methods that each platform must implement
  */
@@ -239,4 +265,15 @@ export abstract class SiteAdapter {
         actionBar.parentElement.insertBefore(toolbarWrapper, actionBar);
         return true;
     }
+
+    /**
+     * Get platform-specific theme detector
+     * 
+     * Each platform has its own way of indicating dark/light theme.
+     * This method returns a ThemeDetector that knows how to detect
+     * and observe theme changes for this platform.
+     * 
+     * @returns ThemeDetector for this platform
+     */
+    abstract getThemeDetector(): ThemeDetector;
 }

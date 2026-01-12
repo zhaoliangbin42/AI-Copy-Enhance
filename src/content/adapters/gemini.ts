@@ -1,4 +1,4 @@
-import { SiteAdapter } from './base';
+import { SiteAdapter, ThemeDetector } from './base';
 import { logger } from '../../utils/logger';
 import { Icons } from '../../assets/icons';
 
@@ -282,5 +282,25 @@ export class GeminiAdapter extends SiteAdapter {
 
     getIcon(): string {
         return Icons.gemini;
+    }
+
+    getThemeDetector(): ThemeDetector {
+        return {
+            detect: () => {
+                const body = document.body;
+                if (body?.classList.contains('dark-theme')) return 'dark';
+                if (body?.classList.contains('light-theme')) return 'light';
+                return null;
+            },
+            getObserveTargets: () => [{
+                element: 'body',
+                attributes: ['class']
+            }],
+            hasExplicitTheme: () => {
+                const body = document.body;
+                return body?.classList.contains('dark-theme') ||
+                    body?.classList.contains('light-theme');
+            }
+        };
     }
 }
