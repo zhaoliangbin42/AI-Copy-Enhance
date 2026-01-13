@@ -89,6 +89,7 @@ src/
 |:----|:----|
 | [CAPABILITY_MATRIX.md](docs/antigravity/platform/CAPABILITY_MATRIX.md) | 平台功能支持矩阵 |
 | [platform-adaptation.md](.agent/workflows/platform-adaptation.md) | Platform Integration Manual |
+| [ALGORITHM_NOTES.md](docs/ALGORITHM_NOTES.md) | 算法复盘笔记（仅用户明确要求时编写） |
 
 ---
 

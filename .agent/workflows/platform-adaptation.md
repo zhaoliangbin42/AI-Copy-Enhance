@@ -263,6 +263,37 @@ npm run build
 
 ---
 
+## ⚠️ 常见陷阱与解决方案
+
+### 1. React 输入框同步问题 (State Desynchronization)
+**现象**：直接修改 `input.value` 后，React 内部状态未更新，导致输入内容被重置、重复或无法发送。
+**解决方案**：使用 `Object.getOwnPropertyDescriptor` 绕过 React 的 setter 劫持，手动触发 `input` 事件。
+
+```typescript
+function setReactValue(input: HTMLInputElement, value: string) {
+    const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype, 
+        'value'
+    )?.set;
+    if (setter) {
+        setter.call(input, value);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+```
+
+### 2. 抗变脆弱性 (Anti-Fragile Selectors)
+**现象**：使用 `.bf38813a` 或 `.css-1x2y3z` 等构建哈希类名，导致平台重新构建后插件失效。
+**解决方案**：
+- **语义拓扑锚定**：找到页面中不可或缺的原生元素（如 `input[type="file"]`），基于它进行相对查找。
+- **降级策略**：同时保留语义查找和(稳定的)类名查找作为后备。
+
+### 3. DOM 标准化 (DOM Normalization)
+**现象**：平台使用非标准 HTML 结构（如 Deepseek 将代码块包裹在 `div` 而非 `pre > code`）。
+**解决方案**：在 Adapter 中实现 `normalizeDOM` 钩子，将异构 DOM 转换为标准 Markdown 解析器可识别的结构。
+
+---
+
 ## 🔗 参考文档
 
 | 文档 | 用途 |

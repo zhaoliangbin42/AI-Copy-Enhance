@@ -13,9 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Reader Mode**: Dedicated reader view for focused reading of Claude conversations.
   - **Bookmarks**: Save and manage bookmarks directly from Claude chat history.
   - **Message Extraction**: Accurate parsing of Claude's message structure and artifacts.
+- **Deepseek Support**: Full support for `chat.deepseek.com` (Deepseek-V3), including:
+  - **Fluid Input**: Synchronized floating input box for seamless typing.
+  - **Code Block Formatting**: Normalization of Deepseek's code blocks for standard rendering.
+  - **Reliable Sending**: Robust "Anti-Fragile" send button detection logic.
 
 ### Fixed
 - **Theme System**: Fixed theme detection regression to ensure toolbar colors match the platform theme (Dark/Light).
+- **ChatGPT Formula Extraction**: Fixed inline formulas that failed to render correctly, restoring underscores that were incorrectly converted to italics.
+- **Block Math Formatting**: Normalized block math output to remove extra blank lines between `$$` delimiters.
+- **Reader Formula Rendering**: Fixed long block formulas not rendering in Reader mode due to chunk splitting during Markdown processing.
 
 ## [2.5.0] - 2026-01-10
 

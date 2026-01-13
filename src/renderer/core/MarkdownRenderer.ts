@@ -175,7 +175,7 @@ export class MarkdownRenderer {
             console.log(`[AI-MarkDone][Renderer]     preprocessFormulas: ${(performance.now() - t0).toFixed(2)}ms`);
 
             const t1 = performance.now();
-            const chunks = this.chunkMarkdown(processed, 5000);
+            const chunks = this.chunkMarkdown(processed, 20000);
             console.log(`[AI-MarkDone][Renderer]     chunkMarkdown: ${(performance.now() - t1).toFixed(2)}ms, chunks: ${chunks.length}`);
 
             let result = '';

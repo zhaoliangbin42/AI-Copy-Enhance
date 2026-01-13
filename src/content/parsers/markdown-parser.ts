@@ -1,6 +1,7 @@
 import { logger } from '../../utils/logger';
 import { createMarkdownParser } from '../../parser-example';
 import { adapterRegistry } from '../adapters/registry';
+import { enhanceUnrenderedMath } from './math-extractor';
 
 /**
  * MarkdownParser - Uses new v3 high-performance parser
@@ -31,6 +32,12 @@ export class MarkdownParser {
         if (adapter) {
             adapter.normalizeDOM(clone);
             logger.debug('[MarkdownParser] Normalized DOM structure');
+
+            // Step 1.6: Enhance unrendered math (ChatGPT only)
+            // Repairs inline formulas where Markdown converted underscores to <em> tags
+            if (adapter.getPlatformName() === 'ChatGPT') {
+                enhanceUnrenderedMath(clone);
+            }
         }
 
         // Step 2: Process noise nodes (replace with placeholders or remove)
