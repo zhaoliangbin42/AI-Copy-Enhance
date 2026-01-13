@@ -13,6 +13,7 @@ import type { IPlatformAdapter } from './IPlatformAdapter';
 import { ChatGPTAdapter } from './ChatGPTAdapter';
 import { GeminiAdapter } from './GeminiAdapter';
 import { ClaudeAdapter } from './ClaudeAdapter';
+import { DeepseekAdapter } from './DeepseekAdapter';
 
 interface AdapterRegistration {
     /** URL patterns to match (substring match) */
@@ -53,6 +54,12 @@ class ParserAdapterRegistry {
         this.register({
             patterns: ['claude.ai'],
             create: () => new ClaudeAdapter(),
+        });
+
+        // Deepseek
+        this.register({
+            patterns: ['chat.deepseek.com'],
+            create: () => new DeepseekAdapter(),
         });
     }
 

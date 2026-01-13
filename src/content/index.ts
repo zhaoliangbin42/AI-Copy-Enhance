@@ -472,11 +472,9 @@ class ContentScript {
                         return;
                     }
 
-                    // Detect platform
+                    // Detect platform using adapter's getPlatformName()
                     const adapter = adapterRegistry.getAdapter();
-                    const platform: 'ChatGPT' | 'Gemini' =
-                        (adapter && 'isGemini' in adapter && typeof adapter.isGemini === 'function' && adapter.isGemini())
-                            ? 'Gemini' : 'ChatGPT';
+                    const platform = adapter?.getPlatformName() || 'ChatGPT';
 
                     // Get AI response markdown (use parsed markdown, not plain text)
                     const aiResponse = this.getMarkdown(messageElement);
@@ -543,7 +541,10 @@ class ContentScript {
 
     /**
      * Get user message text from message element
-     * Based on real-world testing with ChatGPT and Gemini HTML
+     * 
+     * Strategy: Use adapter.extractUserPrompt() as the primary method.
+     * Each adapter implements its own DOM traversal logic.
+     * Falls back to legacy platform-specific logic if adapter returns null.
      */
     private getUserMessage(messageElement: HTMLElement): string {
         try {
@@ -553,33 +554,23 @@ class ContentScript {
                 return '';
             }
 
-            // Claude.ai: Use adapter's extractUserPrompt method
-            if (adapter.matches(window.location.href) && window.location.href.includes('claude.ai')) {
-                logger.debug('[getUserMessage] Claude mode');
-                const userPrompt = adapter.extractUserPrompt(messageElement);
-                if (userPrompt) {
-                    logger.debug(`[getUserMessage] Extracted Claude user message: ${userPrompt.substring(0, 50)}`);
-                    return userPrompt;
-                }
-                logger.error('[getUserMessage] Failed to extract Claude user message');
-                return '';
+            // Primary: Use adapter's extractUserPrompt method (works for all platforms)
+            const userPrompt = adapter.extractUserPrompt(messageElement);
+            if (userPrompt) {
+                logger.debug(`[getUserMessage] Extracted via adapter: ${userPrompt.substring(0, 50)}`);
+                return userPrompt;
             }
 
+            // Fallback: Legacy platform-specific logic for Gemini and ChatGPT
             if ('isGemini' in adapter && typeof adapter.isGemini === 'function' && adapter.isGemini()) {
-                // Gemini: Find user prompts
-                logger.debug('[getUserMessage] Gemini mode');
+                logger.debug('[getUserMessage] Gemini fallback mode');
 
-                // Try different selectors for Gemini
                 let userPrompts = Array.from(document.querySelectorAll('[data-test-id="user-query"]'));
                 if (userPrompts.length === 0) {
-                    // Fallback: try other possible selectors
                     userPrompts = Array.from(document.querySelectorAll('user-query, .user-query'));
-                    logger.debug(`[getUserMessage] Fallback selector found ${userPrompts.length} prompts`);
                 }
 
                 const aiResponses = Array.from(document.querySelectorAll('model-response'));
-
-                logger.debug(`[getUserMessage] Found ${userPrompts.length} user prompts, ${aiResponses.length} AI responses`);
 
                 if (userPrompts.length === 0) {
                     logger.error('[getUserMessage] No user prompts found in Gemini');
@@ -587,70 +578,36 @@ class ContentScript {
                 }
 
                 const currentAiIndex = aiResponses.indexOf(messageElement);
-                if (currentAiIndex < 0) {
-                    logger.error('[getUserMessage] Current AI response not found in list');
-                    return '';
-                }
-                if (currentAiIndex >= userPrompts.length) {
-                    logger.error(`[getUserMessage] No matching user prompt for AI response ${currentAiIndex}`);
+                if (currentAiIndex < 0 || currentAiIndex >= userPrompts.length) {
+                    logger.error('[getUserMessage] Cannot match AI response to user prompt');
                     return '';
                 }
 
-                const userPrompt = userPrompts[currentAiIndex] as HTMLElement;
-                const text = userPrompt.textContent?.trim() || '';
-                logger.debug(`[getUserMessage] Extracted Gemini user message: ${text.substring(0, 50)}`);
-                return text;
-            } else {
-                // ChatGPT: messageElement is <article>, need to find assistant element inside
-                logger.debug('[getUserMessage] ChatGPT mode');
-
-                // Get all user messages and assistant messages
-                const userMessages = Array.from(document.querySelectorAll('[data-message-author-role="user"]'));
-                const assistantMessages = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
-
-                logger.debug(`[getUserMessage] Found ${userMessages.length} user messages, ${assistantMessages.length} assistant messages`);
-
-                // Find current assistant message index
-                // messageElement might be <article>, so look inside first
-                let currentIndex = assistantMessages.indexOf(messageElement);
-
-                if (currentIndex < 0) {
-                    // messageElement is probably <article>, find assistant inside
-                    const assistantInside = messageElement.querySelector('[data-message-author-role="assistant"]');
-                    if (assistantInside) {
-                        currentIndex = assistantMessages.indexOf(assistantInside as Element);
-                        logger.debug(`[getUserMessage] Found assistant inside article, index: ${currentIndex}`);
-                    }
-                }
-
-                if (currentIndex < 0) {
-                    logger.error('[getUserMessage] Current assistant message not found in list');
-                    return '';
-                }
-
-                logger.debug(`[getUserMessage] Current assistant index: ${currentIndex}`);
-
-                // Match with corresponding user message (same index)
-                if (currentIndex >= userMessages.length) {
-                    logger.error(`[getUserMessage] No matching user message for assistant ${currentIndex}`);
-                    return '';
-                }
-
-                const userMessage = userMessages[currentIndex] as HTMLElement;
-
-                // Try to extract content using .whitespace-pre-wrap (verified by testing)
-                const whitespacePre = userMessage.querySelector('.whitespace-pre-wrap');
-                if (whitespacePre) {
-                    const text = whitespacePre.textContent?.trim() || '';
-                    logger.debug(`[getUserMessage] Extracted ChatGPT user message: ${text.substring(0, 50)}`);
-                    return text;
-                }
-
-                // Fallback: use direct textContent
-                const text = userMessage.textContent?.trim() || '';
-                logger.debug(`[getUserMessage] Extracted ChatGPT user message (fallback): ${text.substring(0, 50)}`);
-                return text;
+                const prompt = userPrompts[currentAiIndex] as HTMLElement;
+                return prompt.textContent?.trim() || '';
             }
+
+            // ChatGPT fallback
+            logger.debug('[getUserMessage] ChatGPT fallback mode');
+            const userMessages = Array.from(document.querySelectorAll('[data-message-author-role="user"]'));
+            const assistantMessages = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
+
+            let currentIndex = assistantMessages.indexOf(messageElement);
+            if (currentIndex < 0) {
+                const assistantInside = messageElement.querySelector('[data-message-author-role="assistant"]');
+                if (assistantInside) {
+                    currentIndex = assistantMessages.indexOf(assistantInside as Element);
+                }
+            }
+
+            if (currentIndex < 0 || currentIndex >= userMessages.length) {
+                logger.error('[getUserMessage] Cannot match assistant to user message');
+                return '';
+            }
+
+            const userMessage = userMessages[currentIndex] as HTMLElement;
+            const whitespacePre = userMessage.querySelector('.whitespace-pre-wrap');
+            return (whitespacePre?.textContent || userMessage.textContent)?.trim() || '';
         } catch (error) {
             logger.error('[getUserMessage] Exception:', error);
             return '';

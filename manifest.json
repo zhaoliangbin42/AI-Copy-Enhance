@@ -11,7 +11,8 @@
         "https://chatgpt.com/*",
         "https://chat.openai.com/*",
         "https://gemini.google.com/*",
-        "https://claude.ai/*"
+        "https://claude.ai/*",
+        "https://chat.deepseek.com/*"
     ],
     "content_scripts": [
         {
@@ -19,7 +20,8 @@
                 "https://chatgpt.com/*",
                 "https://chat.openai.com/*",
                 "https://gemini.google.com/*",
-                "https://claude.ai/*"
+                "https://claude.ai/*",
+                "https://chat.deepseek.com/*"
             ],
             "js": [
                 "content.js"

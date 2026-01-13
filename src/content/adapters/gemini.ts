@@ -284,6 +284,10 @@ export class GeminiAdapter extends SiteAdapter {
         return Icons.gemini;
     }
 
+    getPlatformName(): string {
+        return 'Gemini';
+    }
+
     getThemeDetector(): ThemeDetector {
         return {
             detect: () => {

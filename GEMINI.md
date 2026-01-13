@@ -1,39 +1,38 @@
 # AI-MarkDone 开发规范
 
-> **适用对象**: AI Agent (Claude/Gemini/GPT) 及人类开发者
-> **版本**: 4.0.0
+> 适用对象: AI Agent (Claude/Gemini/GPT) 及人类开发者  
+> 版本: 4.1.0
 
 ---
 
-## 📌 项目概述
+## 项目概述
 
 | 属性 | 值 |
 |:-----|:---|
-| **项目名称** | AI-MarkDone |
-| **类型** | Chrome 浏览器扩展 (Manifest V3) |
-| **目标平台** | ChatGPT, Gemini, Claude |
-| **技术栈** | TypeScript, Vite, Shadow DOM |
-| **核心功能** | 公式复制、Markdown 复制、实时预览、字数统计、书签管理 |
+| 项目名称 | AI-MarkDone |
+| 类型 | Chrome 浏览器扩展 (Manifest V3) |
+| 目标平台 | ChatGPT, Gemini, Claude, Deepseek |
+| 技术栈 | TypeScript, Vite, Shadow DOM |
+| 核心功能 | 公式复制、Markdown 复制、实时预览、字数统计、书签管理 |
 
 ---
 
-## 📋 规则文件
+## 规则文件
 
-> [!IMPORTANT]
-> 开发前必须阅读对应规则文件。
+开发前必须阅读对应规则文件。
 
 | 规则 | 文件 | 说明 |
 |:----|:----|:----|
-| 🚨 红线规则 | [critical-rules.md](.agent/rules/critical-rules.md) | 绝对禁止违反 |
-| 📝 CHANGELOG | [changelog.md](.agent/rules/changelog.md) | 变更日志格式 (🚫 严禁敏感信息) |
-| 🎨 样式规范 | [style-guide.md](.agent/rules/style-guide.md) | CSS/Token 规则 |
-| 📋 日志规范 | [logging.md](.agent/rules/logging.md) | 日志格式与级别 |
+| 红线规则 | [critical-rules.md](.agent/rules/critical-rules.md) | 绝对禁止违反 |
+| CHANGELOG | [changelog.md](.agent/rules/changelog.md) | 变更日志格式 |
+| 样式规范 | [style-guide.md](.agent/rules/style-guide.md) | CSS/Token 规则 |
+| 日志规范 | [logging.md](.agent/rules/logging.md) | 日志格式与级别 |
 
 ---
 
-## 🔧 工作流
+## 工作流
 
-> 输入斜杠命令触发对应工作流。
+输入斜杠命令触发对应工作流。
 
 | 命令 | 工作流 | 用途 |
 |:-----|:-------|:-----|
@@ -47,7 +46,7 @@
 
 ---
 
-## 🧠 Think Keywords
+## Think Keywords
 
 | 关键词 | 思考预算 | 适用场景 |
 |:-------|:---------|:---------|
@@ -57,12 +56,12 @@
 
 ---
 
-## 🏗️ 架构概览
+## 架构概览
 
 ```
 src/
 ├── content/          # Content Script 主入口
-│   ├── adapters/     # 平台适配器 (ChatGPT/Gemini/Claude)
+│   ├── adapters/     # 平台适配器 (ChatGPT/Gemini/Claude/Deepseek)
 │   ├── features/     # 功能模块
 │   └── parsers/      # Markdown 解析器
 ├── bookmarks/        # 书签功能模块
@@ -73,17 +72,28 @@ src/
 
 ---
 
-## 📁 参考文档
+## 文档规范
+
+工程文档遵循以下原则：
+
+1. **内容平权**: 所有内容同等权重，禁止使用 `[!IMPORTANT]`、`[!WARNING]` 等人为强调标记
+2. **逻辑驱动**: 文档仅包含与业务逻辑相关的技术内容，不引入主观权重判断
+3. **简洁清晰**: 使用表格、列表等结构化形式，避免冗余描述
+4. **可执行性**: 每条规则必须可验证、可执行，不使用模糊表述
+
+---
+
+## 参考文档
 
 | 文档 | 用途 |
 |:----|:----|
 | [CAPABILITY_MATRIX.md](docs/antigravity/platform/CAPABILITY_MATRIX.md) | 平台功能支持矩阵 |
-| [platform-adaptation.md](.agent/workflows/platform-adaptation.md) | **Platform Integration Manual** (SOP & Contract) |
+| [platform-adaptation.md](.agent/workflows/platform-adaptation.md) | Platform Integration Manual |
 
 ---
 
-## ✅ 提交前检查
+## 提交前检查
 
 - [ ] `npm run build` 成功
 - [ ] 接口变更已更新 `PLATFORM_ADAPTATION_GUIDE.md`
-- [ ] `CHANGELOG.md` 已更新（见 [changelog.md](.agent/rules/changelog.md)） **(Must be in English / 必须使用英文)**
+- [ ] `CHANGELOG.md` 已更新（见 [changelog.md](.agent/rules/changelog.md)），必须使用英文

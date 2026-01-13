@@ -208,6 +208,18 @@ export abstract class SiteAdapter {
     abstract getIcon(): string;
 
     /**
+     * Get platform name for identification (e.g., bookmarks, analytics)
+     * 
+     * @returns Platform name string (e.g., 'ChatGPT', 'Gemini', 'Claude', 'Deepseek')
+     * 
+     * This is used for:
+     * - Storing platform identifier in bookmarks
+     * - Displaying correct platform icon in bookmark list
+     * - Platform-specific analytics (future)
+     */
+    abstract getPlatformName(): string;
+
+    /**
      * Get platform-specific focus protection strategy
      * 
      * Some platforms (e.g., Claude.ai) aggressively steal focus from modal inputs

@@ -56,6 +56,7 @@ export class [Platform]Adapter extends SiteAdapter {
     getInputSelector(): string { /* ... */ }
     getSendButtonSelector(): string { /* ... */ }
     getIcon(): string { /* ... */ }
+    getPlatformName(): string { return '[Platform]'; } // 用于书签存储
     getThemeDetector(): ThemeDetector { /* ... */ }
 }
 ```
@@ -149,6 +150,21 @@ const SUPPORTED_HOSTS = [
 export const Icons = {
     [platform]: `<svg>...</svg>`
 };
+```
+
+**书签图标适配**: 添加平台图标后，同步更新 `src/bookmarks/datasource/BookmarkDataSource.ts` 中的 `getPlatformIcon()` 函数。
+
+```typescript
+// src/bookmarks/datasource/BookmarkDataSource.ts
+function getPlatformIcon(platform?: string): string {
+    const p = platform?.toLowerCase() || 'chatgpt';
+    switch (p) {
+        case 'gemini': return Icons.gemini;
+        case 'claude': return Icons.claude;
+        case '[platform]': return Icons.[platform]; // 新增
+        default: return Icons.chatgpt;
+    }
+}
 ```
 
 ---
