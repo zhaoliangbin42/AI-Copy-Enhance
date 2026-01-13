@@ -87,8 +87,8 @@ export class MessageSender {
 
         // Try 3-layer fallback strategy
         const success =
-            this.tryExecCommand(input, text, focusInput) ||
             this.tryInputEvent(input, text) ||
+            this.tryExecCommand(input, text, focusInput) ||
             this.tryDirectDOM(input, text);
 
         if (success) {
@@ -311,7 +311,7 @@ export class MessageSender {
      */
     private async clearInput(input: HTMLElement, focusInput: boolean = true): Promise<void> {
         if (input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement) {
-            input.value = '';
+            this.setReactValue(input, '');
         } else if (input.getAttribute('contenteditable') === 'true') {
             // Select all and delete - only if we can focus
             if (focusInput) {
@@ -356,32 +356,46 @@ export class MessageSender {
     }
 
     /**
-     * Strategy 2: InputEvent dispatch
+     * Strategy 2: InputEvent dispatch (Enhanced for React)
      */
     private tryInputEvent(input: HTMLElement, text: string): boolean {
         try {
-            // Set content first
             if (input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement) {
-                input.value = text;
+                this.setReactValue(input, text);
             } else {
                 input.textContent = text;
+                input.dispatchEvent(new InputEvent('input', {
+                    bubbles: true,
+                    cancelable: true,
+                    inputType: 'insertText',
+                    data: text
+                }));
             }
 
-            // Dispatch input event
-            const inputEvent = new InputEvent('input', {
-                bubbles: true,
-                cancelable: true,
-                inputType: 'insertText',
-                data: text
-            });
-
-            input.dispatchEvent(inputEvent);
-            logger.debug('[MessageSender] InputEvent succeeded');
+            logger.debug('[MessageSender] InputEvent succeeded (React-compatible)');
             return true;
         } catch (e) {
             logger.debug('[MessageSender] InputEvent failed:', e);
         }
         return false;
+    }
+
+    /**
+     * Helper: Set value using React-compatible property descriptor
+     * This bypasses React's controlled component wrapper to update the internal state
+     */
+    private setReactValue(input: HTMLTextAreaElement | HTMLInputElement, value: string): void {
+        const proto = Object.getPrototypeOf(input);
+        const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+
+        // Check if setter exists
+        if (setter) {
+            setter.call(input, value);
+        } else {
+            input.value = value;
+        }
+
+        input.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     /**

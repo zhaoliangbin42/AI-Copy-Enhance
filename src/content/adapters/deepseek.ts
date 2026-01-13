@@ -168,7 +168,29 @@ export class DeepseekAdapter extends SiteAdapter {
     }
 
     getSendButtonSelector(): string {
-        return 'button.ds-button, .ds-atom-button';
+        return '.ds-floating-button';
+    }
+
+    getSendButton(): HTMLElement | null {
+        // Strategy 1: Semantic Topology Search (Hash-Free)
+        // Deepseek input area structure: [Upload Button] [File Input] [Send Button]
+        // We use input[type="file"] as a stable anchor since hash class names (e.g. .bf38813a) are unstable.
+        const fileInput = document.querySelector('input[type="file"]');
+
+        if (fileInput && fileInput.parentElement) {
+            // The container holds both Upload and Send buttons
+            const container = fileInput.parentElement;
+            const buttons = container.querySelectorAll('.ds-icon-button');
+
+            if (buttons.length > 0) {
+                // The Send/Stop button is structurally the last interaction element in this container
+                return buttons[buttons.length - 1] as HTMLElement;
+            }
+        }
+
+        // Strategy 2: Fallback for Desktop/Old Layouts
+        // .ds-floating-button was observed in some desktop versions
+        return document.querySelector('.ds-floating-button');
     }
 
     getIcon(): string {
@@ -237,37 +259,23 @@ export class DeepseekAdapter extends SiteAdapter {
      * Inject toolbar before the action bar (after message content)
      */
     injectToolbar(messageElement: HTMLElement, toolbarWrapper: HTMLElement): boolean {
-        // DEBUG LOGGING START
-        console.log('[DeepseekAdapter] Injecting toolbar...', {
-            messageClasses: messageElement.className,
-            childCount: messageElement.childElementCount
-        });
-
         const actionBar = messageElement.querySelector(this.getActionBarSelector());
-        console.log('[DeepseekAdapter] ActionBar found?', !!actionBar);
-
         if (actionBar && actionBar.parentElement) {
-            console.log('[DeepseekAdapter] Inserting BEFORE ActionBar', {
-                actionBarParent: actionBar.parentElement.className,
-                actionBarClasses: actionBar.className
-            });
             actionBar.parentElement.insertBefore(toolbarWrapper, actionBar);
             return true;
         }
 
         // Fallback logic
-        console.log('[DeepseekAdapter] Fallback: Checking for main markdown content');
+
 
         // Check if there is any MAIN markdown content (exclude thinking)
         const allMarkdowns = Array.from(messageElement.querySelectorAll('.ds-markdown'));
         const hasMainMarkdown = allMarkdowns.some(md => !md.closest('.ds-think-content'));
 
         if (!hasMainMarkdown) {
-            console.log('[DeepseekAdapter] Still thinking (no main markdown), skipping toolbar injection');
             return false;
         }
 
-        console.log('[DeepseekAdapter] Main markdown found, appending toolbar to messageElement');
         messageElement.appendChild(toolbarWrapper);
         return true;
     }
