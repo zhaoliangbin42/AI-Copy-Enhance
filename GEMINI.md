@@ -46,6 +46,31 @@
 
 ---
 
+## Artifacts 与 Skills
+
+### Artifacts (Antigravity 内置)
+
+| Artifact | 用途 | 生成时机 |
+|:---------|:-----|:---------|
+| `task.md` | 任务分解与进度跟踪 | Planning Mode 自动 |
+| `implementation_plan.md` | 技术实现计划 | Planning Mode，需用户 Review |
+| `walkthrough.md` | 完成后的变更总结 | Verification 后自动 |
+
+### Skills (能力补充)
+
+仅用于 Artifacts 未覆盖的能力：
+
+| Skill | 用途 | 激活时机 |
+|:------|:-----|:---------|
+| `brainstorming` | 对话技巧（需求探索） | 需求不清晰时 |
+| `systematic-debugging` | Bug 调试方法论 | `/bugfix` 强制 |
+| `test-driven-development` | TDD 纪律 | 写代码前 |
+| `verification-before-completion` | 完成前验证 | 声称完成前 |
+| `requesting-code-review` | 发起代码审查 | `/review` |
+| `receiving-code-review` | 响应审查反馈 | 收到反馈时 |
+
+---
+
 ## Think Keywords
 
 | 关键词 | 思考预算 | 适用场景 |
@@ -76,7 +101,7 @@ src/
 
 工程文档遵循以下原则：
 
-1. **内容平权**: 所有内容同等权重，禁止使用 `[!IMPORTANT]`、`[!WARNING]` 等人为强调标记
+1. **内容平权**: 所有内容同等权重，慎用 `[!IMPORTANT]`、`[!WARNING]` 等人为强调标记
 2. **逻辑驱动**: 文档仅包含与业务逻辑相关的技术内容，不引入主观权重判断
 3. **简洁清晰**: 使用表格、列表等结构化形式，避免冗余描述
 4. **可执行性**: 每条规则必须可验证、可执行，不使用模糊表述
