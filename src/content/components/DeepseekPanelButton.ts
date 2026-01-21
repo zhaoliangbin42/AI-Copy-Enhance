@@ -120,17 +120,12 @@ export class DeepseekPanelButton {
         hoverBg.className = 'ds-icon-button__hover-bg';
         button.appendChild(hoverBg);
 
-        // Create icon container with unified Icons.bookMarked
+        // Create icon container with brand icon
         const iconContainer = document.createElement('div');
         iconContainer.className = 'ds-icon';
-        iconContainer.innerHTML = Icons.bookMarked;
-
-        // Adjust SVG size to match Deepseek's --l size buttons (16x16)
-        const svg = iconContainer.querySelector('svg');
-        if (svg) {
-            svg.setAttribute('width', '16');
-            svg.setAttribute('height', '16');
-        }
+        iconContainer.appendChild(Icons.createBrandIcon());
+        iconContainer.style.width = '22px';
+        iconContainer.style.height = '22px';
 
         button.appendChild(iconContainer);
 

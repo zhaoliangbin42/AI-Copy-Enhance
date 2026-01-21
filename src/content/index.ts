@@ -11,7 +11,7 @@ import { logger, LogLevel } from '../utils/logger';
 import { SimpleBookmarkStorage } from '../bookmarks/storage/SimpleBookmarkStorage';
 import { BookmarkSaveModal } from '../bookmarks/components/BookmarkSaveModal';
 import { simpleBookmarkPanel } from '../bookmarks/components/SimpleBookmarkPanel';
-import { pageHeaderIcon } from './components/PageHeaderIcon';
+import { chatGPTPanelButton } from './components/ChatGPTPanelButton';
 import { geminiPanelButton } from './components/GeminiPanelButton';
 import { claudePanelButton } from './components/ClaudePanelButton';
 import { deepseekPanelButton } from './components/DeepseekPanelButton';
@@ -129,7 +129,7 @@ class ContentScript {
             deepseekPanelButton.init();
         } else {
             // Initialize ChatGPT page header icon
-            pageHeaderIcon.init();
+            chatGPTPanelButton.init();
         }
 
         // Load bookmarks for current page BEFORE starting observer - AITimeline pattern

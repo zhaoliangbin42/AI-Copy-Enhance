@@ -95,16 +95,10 @@ export class ClaudePanelButton {
         // Create icon wrapper
         const iconWrapper = document.createElement('div');
         iconWrapper.className = 'flex items-center justify-center text-text-500 group-hover/btn:text-text-100';
-        iconWrapper.innerHTML = Icons.bookMarked;
+        iconWrapper.appendChild(Icons.createBrandIcon());
 
-        // Adjust SVG attributes for Claude
-        const svg = iconWrapper.querySelector('svg');
-        if (svg) {
-            svg.setAttribute('width', '20');
-            svg.setAttribute('height', '20');
-            svg.classList.add('shrink-0');
-            svg.setAttribute('aria-hidden', 'true');
-        }
+        // Add padding right for visual balance
+        button.style.paddingRight = '8px';
 
         button.appendChild(iconWrapper);
 

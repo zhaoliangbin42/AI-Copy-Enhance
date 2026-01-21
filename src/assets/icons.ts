@@ -468,6 +468,23 @@ export const Icons = {
      * Source: Simple Icons (CC0) simplified
      */
     alipay: `<svg role="img" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><title>Alipay</title><path d="M18.84 21.06c-2.47 1.25-5.32 1.34-6.73.54-.91-.52 1.13-5.28 1.13-5.28s1.6 3.1 3.18 3.99c1.07.6 1.94.75 2.42.75m-6.49-5.11s-2.91-4.2-3.41-5.18c-1.27-.08-2.69-.32-2.69-.32.32-.82.68-1.57.68-1.57h2.88c.17-.61.34-1.4.34-1.4h-3.6V5.45H10.5V2.9h1.96v2.55h5.54v2.03H12.9v.03c-.23 1.25-.56 2.62-.97 3.84h6.05l-.43 2.53H6.84c.33.68 1.76 3.49 2.21 4.29 0 0-4.66 1.4-6.15-2.03l-1.83 1.05c.87 2.1 2.37 3.65 3.86 4.5 1.5.85 3.75 1.05 5.25 1.05 1.5 0 3.7-.2 5.09-.99 2.3-1.3 3.12-3.47 3.12-3.47l-1.92-1.07c-.4 1.15-2.02 2.6-4.12 1.42.01-.01-1.01-.58-1.-5.84z"/></svg>`,
+
+    // ============================================
+    // BRAND ICON HELPER
+    // ============================================
+
+    /**
+     * Brand icon helper
+     * Creates IMG element with AI-MarkDone brand icon (128x128 PNG)
+     * Size controlled by parent container CSS
+     */
+    createBrandIcon(): HTMLImageElement {
+        const img = document.createElement('img');
+        img.src = chrome.runtime.getURL('icons/icon128.png');
+        img.alt = 'AI-MarkDone';
+        img.style.display = 'block';
+        return img;
+    }
 } as const;
 
 /**
