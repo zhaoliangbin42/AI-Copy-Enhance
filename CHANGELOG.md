@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Code Block Formatting**: Normalization of Deepseek's code blocks for standard rendering.
   - **Reliable Sending**: Robust "Anti-Fragile" send button detection logic.
 - **Export Conversations**: New Export button in toolbar to download conversations as Markdown files.
+- **Header Bookmark Button**: Quick-access bookmark panel button added to page header for Claude and Deepseek platforms.
 
 ### Fixed
 - **Theme System**: Fixed theme detection regression to ensure toolbar colors match the platform theme (Dark/Light).

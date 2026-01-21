@@ -6,8 +6,10 @@ import { Icons } from '../../assets/icons';
  * Claude Header Panel Button
  * Adds bookmark panel toggle button to Claude.ai header
  * 
- * Injection point: Top-right action container (div.fixed.right-3.z-header)
- * This container holds the user profile button in a flex layout with gap-3.5
+ * Injection point: Header action container with chat-actions testid
+ * Structure: header > div.right-3 > div[data-testid="chat-actions"]
+ * 
+ * Button will be inserted BEFORE the Share button inside the chat-actions container
  */
 export class ClaudePanelButton {
     private button: HTMLElement | null = null;
@@ -53,25 +55,25 @@ export class ClaudePanelButton {
      * @returns true if injection succeeded, false otherwise
      */
     private injectButton(): boolean {
-        // Primary selector: Top-right action container with z-header class
-        // This is a flex container that holds the user profile button
-        const actionContainer = document.querySelector<HTMLElement>('div.fixed.right-3.z-header');
-
-        if (!actionContainer) {
-            logger.debug('[ClaudePanelButton] Action container not found');
-            return false;
-        }
-
         // Check if button already exists
         if (document.querySelector('#claude-bookmark-panel-btn')) {
             logger.debug('[ClaudePanelButton] Button already exists');
             return true;
         }
 
+        // Primary selector: Container with chat-actions testid
+        // This contains the Share button and other action buttons
+        const actionContainer = document.querySelector<HTMLElement>('[data-testid="chat-actions"]');
+
+        if (!actionContainer) {
+            logger.debug('[ClaudePanelButton] Chat actions container not found');
+            return false;
+        }
+
         // Create button matching Claude's style
         this.button = this.createButton();
 
-        // Insert at the beginning of the container (left of profile button)
+        // Insert at the beginning of the container (left of Share button)
         actionContainer.insertBefore(this.button, actionContainer.firstChild);
 
         logger.info('[ClaudePanelButton] Button injected successfully');
@@ -87,34 +89,24 @@ export class ClaudePanelButton {
         button.setAttribute('aria-label', 'View Bookmarks');
         button.setAttribute('type', 'button');
 
-        // Match Claude's ghost button styling
-        // Claude uses inline-flex, rounded-md, and specific padding for icon buttons
-        button.style.cssText = `
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            transition: background-color 0.15s ease;
-            color: var(--text-secondary, #6B7280);
-        `;
+        // Match Claude's ghost button style
+        button.className = 'inline-flex items-center justify-center relative shrink-0 can-focus select-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:drop-shadow-none border-transparent transition font-base duration-300 ease-[cubic-bezier(0.165,0.85,0.45,1)] h-8 w-8 rounded-md active:scale-95 group/btn Button_ghost__BUAoh';
 
-        // Add hover effect via event listeners (since we can't inject CSS)
-        button.addEventListener('mouseenter', () => {
-            button.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-            button.style.color = 'var(--text-primary, #1F2937)';
-        });
-        button.addEventListener('mouseleave', () => {
-            button.style.backgroundColor = 'transparent';
-            button.style.color = 'var(--text-secondary, #6B7280)';
-        });
+        // Create icon wrapper
+        const iconWrapper = document.createElement('div');
+        iconWrapper.className = 'flex items-center justify-center text-text-500 group-hover/btn:text-text-100';
+        iconWrapper.innerHTML = Icons.bookMarked;
 
-        // Use bookMarked icon from Icons
-        button.innerHTML = Icons.bookMarked;
+        // Adjust SVG attributes for Claude
+        const svg = iconWrapper.querySelector('svg');
+        if (svg) {
+            svg.setAttribute('width', '20');
+            svg.setAttribute('height', '20');
+            svg.classList.add('shrink-0');
+            svg.setAttribute('aria-hidden', 'true');
+        }
+
+        button.appendChild(iconWrapper);
 
         button.addEventListener('click', () => this.handleClick());
 

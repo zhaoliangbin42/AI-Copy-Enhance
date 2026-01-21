@@ -13,6 +13,8 @@ import { BookmarkSaveModal } from '../bookmarks/components/BookmarkSaveModal';
 import { simpleBookmarkPanel } from '../bookmarks/components/SimpleBookmarkPanel';
 import { pageHeaderIcon } from './components/PageHeaderIcon';
 import { geminiPanelButton } from './components/GeminiPanelButton';
+import { claudePanelButton } from './components/ClaudePanelButton';
+import { deepseekPanelButton } from './components/DeepseekPanelButton';
 import { ThemeManager, Theme } from '../utils/ThemeManager';
 import { eventBus } from './utils/EventBus';
 import { collectAllMessages, getConversationMetadata, saveMessagesAsMarkdown, saveMessagesAsPdf } from './features/save-messages';
@@ -119,6 +121,12 @@ class ContentScript {
 
             // Initialize Gemini panel button
             geminiPanelButton.init();
+        } else if (window.location.href.includes('claude.ai')) {
+            // Initialize Claude panel button
+            claudePanelButton.init();
+        } else if (window.location.href.includes('chat.deepseek.com')) {
+            // Initialize Deepseek panel button
+            deepseekPanelButton.init();
         } else {
             // Initialize ChatGPT page header icon
             pageHeaderIcon.init();
