@@ -108,7 +108,36 @@ const DEFAULT_LEVEL = LogLevel.WARN;
 2. **检查内容**: 确保所有新功能和修复都已包含在内。
 3. **保留格式**: 保持 Keep a Changelog 格式。
 
----
+### 3.5 更新 README.md 和 README.zh.md
+
+> [!IMPORTANT]
+> README 是用户首先看到的文档，必须与当前版本保持同步。
+> **中英文双版本都必须更新！**
+
+**必须检查并更新的位置：**
+
+| 文件 | 位置 | 说明 |
+|:-----|:-----|:-----|
+| `README.md` | Line 3 (标题) | 包含所有支持的平台 |
+| `README.md` | Lines 73-79 (Platform Support) | 更新平台支持状态 |
+| `README.md` | Lines 118-128 (Changelog Latest) | 更新为当前版本 |
+| `README.zh.md` | Line 3 (标题) | 包含所有支持的平台 |
+| `README.zh.md` | Lines 72-78 (平台支持) | 更新平台支持状态 |
+| `README.zh.md` | Lines 115-125 (更新日志) | 更新为当前版本 |
+
+```bash
+// turbo
+echo "=== README.md 版本检查 ==="
+head -5 README.md
+sed -n '73,79p' README.md
+sed -n '118,128p' README.md
+
+// turbo
+echo "=== README.zh.md 版本检查 ==="
+head -5 README.zh.md
+sed -n '72,78p' README.zh.md
+sed -n '115,125p' README.zh.md
+```
 
 ## Phase 4: 构建验证 (Build)
 
@@ -188,6 +217,7 @@ git push origin main --tags
 - [ ] **Phase 3**: manifest.json 版本已更新 (与 package.json 一致)
 - [ ] **Phase 3**: Logger 级别已调整 (如需要)
 - [ ] **Phase 3**: CHANGELOG.md 已更新
+- [ ] **Phase 3**: README.md 和 README.zh.md 已更新 (平台支持状态、最新版本日志)
 - [ ] **Phase 4**: `npm run build` 成功
 - [ ] **Phase 5**: Git commit 已创建
 - [ ] **Phase 6**: 用户已通知后续步骤

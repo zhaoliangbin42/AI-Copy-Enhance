@@ -1,6 +1,6 @@
 <div align="center">
   <img src="./public/icons/icon128.png" alt="AI-MarkDone Logo" width="100" height="100">
-  <h1>AI-MarkDone</h1>
+  <h1>AI-MarkDone — ChatGPT, Gemini, Claude, DeepSeek 扩展插件</h1>
   <p><strong>专为学生、科研人员、AI 重度依赖者设计的沉浸式阅读插件，提供阅读模式、公式复制、一键跳转、书签管理等成吨功能。✨</strong></p>
   <p><em>作为科研工作者，我懂你要什么😉</em></p>
 
@@ -73,8 +73,8 @@
 | :--- | :--- |
 | **ChatGPT** | ✅ 完全支持 |
 | **Gemini** | ✅ 完全支持 |
-| **Claude** | 🔜 计划中 |
-| **DeepSeek** | 🔜 计划中 |
+| **Claude** | ✅ 完全支持 |
+| **DeepSeek** | ✅ 完全支持 |
 
 ---
 
@@ -114,13 +114,11 @@ npm run build
 
 ## 📅 更新日志 (Latest)
 
-### v2.5.0
-- **✨ 新增**: 完整的设置系统（行为、存储、数据管理）。
-- **✨ 新增**: 赞赏支持（微信 / Buy Me a Coffee）。
-- **✨ 新增**: 全新的无障碍对话框系统（Dialog System）。
-- **✨ 新增**: 书签导入时的重复检测与合并功能。
-- **⚡️ 优化**: 批量操作性能显著提升。
-- **🎨 优化**: UI 细节与设计语言的全面统一。
+### v2.8.0
+- **✨ 新增**: 完整支持 **Claude** 和 **DeepSeek** 平台。
+- **✨ 新增**: 导出对话为 Markdown 或 PDF，精美排版样式。
+- **✨ 新增**: 更换顶部书签按钮为品牌图标。
+- **🐛 修复**: 主题检测、公式提取、阅读模式等多项问题。
 
 [查看完整更新日志](./CHANGELOG.md)
 

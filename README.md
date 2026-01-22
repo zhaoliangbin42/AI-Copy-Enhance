@@ -1,6 +1,6 @@
 <div align="center">
   <img src="./public/icons/icon128.png" alt="AI-MarkDone Logo" width="100" height="100">
-  <h1>AI-MarkDone -- An extension for ChatGPT and Gemini.</h1>
+  <h1>AI-MarkDone -- An extension for ChatGPT, Gemini, Claude, and DeepSeek.</h1>
   <p><strong>The ultimate immersive reading extension for students, researchers, and AI power users. ✨</strong></p>
   <p><em>Reading Mode, One-Click Markdown Copy, Deep Research Parser, Word Count, and Bookmarks—all in one place.</em></p>
   <p><em>Built by researchers, for researchers. 😉</em></p>
@@ -74,8 +74,8 @@ If any of these sound familiar, **AI-MarkDone** is built exactly for you.
 | :--- | :--- |
 | **ChatGPT** | ✅ Fully Supported |
 | **Gemini** | ✅ Fully Supported |
-| **Claude** | 🔜 Planned |
-| **DeepSeek** | 🔜 Planned |
+| **Claude** | ✅ Fully Supported |
+| **DeepSeek** | ✅ Fully Supported |
 
 ---
 
@@ -117,13 +117,11 @@ npm run build
 
 ## 📅 Changelog (Latest)
 
-### v2.5.0
-- **✨ New**: Comprehensive Settings System (Behavior, Storage, Data).
-- **✨ New**: Sponsor support (WeChat / Buy Me a Coffee).
-- **✨ New**: Unified Accessible Dialog System.
-- **✨ New**: Smart merge & duplicate detection for bookmark imports.
-- **⚡️ Perf**: Massive performance boost for batch operations.
-- **🎨 UI**: Unified design language and enhanced visual details.
+### v2.8.0
+- **✨ New**: Full support for **Claude** and **DeepSeek** platforms.
+- **✨ New**: Export conversations as Markdown or PDF with beautiful styling.
+- **✨ New**: Replaced header bookmark button with brand icon.
+- **🐛 Fix**: Theme detection, formula extraction, and reader mode issues.
 
 [Full Changelog](./CHANGELOG.md)
 
